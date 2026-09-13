@@ -1,7 +1,7 @@
 export const validationVersion = 'tja-upload-v1'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
-export type Difficulty = { course: string; level: number; blockIndex: number }
+export type Difficulty = { course: string; level: number; blockIndex: number; player: string }
 export type Metadata = { title: string; subtitle: string; maker: string; bpm: number; offset: number; demoStart: number; wave: string; difficulties: Difficulty[] }
 export class ValidationError extends Error {
   constructor(public code: string, message: string, public line = 0, public expected = '', public actual = '') { super(message) }
@@ -11,7 +11,7 @@ const bytes = (s: string) => new TextEncoder().encode(s).length
 export function safeFilename(s: string) {
   return !!s && s !== '.' && s !== '..' && bytes(s) <= 240 && s.trim() === s && !/[\u0000-\u001f\u007f-\u009f/\\:"<>|?*]/u.test(s)
 }
-const courses: Record<string, string> = { '0': 'Easy', '1': 'Normal', '2': 'Hard', '3': 'Oni', '4': 'Edit', Easy: 'Easy', Normal: 'Normal', Hard: 'Hard', Oni: 'Oni', Edit: 'Edit' }
+const courses: Record<string, string> = { '0': 'Easy', '1': 'Normal', '2': 'Hard', '3': 'Oni', '4': 'Edit', easy: 'Easy', normal: 'Normal', hard: 'Hard', oni: 'Oni', edit: 'Edit', tower: 'Tower', dan: 'Dan', '5': 'Tower', '6': 'Dan' }
 export function parseTja(data: Uint8Array, encoding: string, audioName: string): Metadata {
   const m: Metadata = { title: '', subtitle: '', maker: '', bpm: 0, offset: 0, demoStart: 0, wave: '', difficulties: [] }
   if (!data.length || data.length > maxTja) fail('FILE_SIZE_INVALID', 'TJA 不能为空且不能超过 2 MiB')
@@ -29,9 +29,9 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     if (!s) continue
     if (s.startsWith('#NEXTSONG')) fail('TJA_RESOURCE_UNSUPPORTED', '示范版暂不支持切歌或额外资源', line)
     if (s.startsWith('#START')) {
-      if (s !== '#START' || inBlock || level === 0) fail('TJA_STRUCTURE_INVALID', '每个谱面需要 LEVEL:1–10 和独立的 #START / #END；暂不支持双人谱', line)
+      if (!['#START', '#START P1', '#START P2'].includes(s) || inBlock || level === 0) fail('TJA_STRUCTURE_INVALID', '每个谱面需要 LEVEL:1–10 和独立的 #START / #END', line)
       started = true; inBlock = true; hasNotes = false
-      m.difficulties.push({ course, level, blockIndex: m.difficulties.length }); continue
+      m.difficulties.push({ course, level, blockIndex: m.difficulties.length, player: s.slice(6).trim() }); continue
     }
     if (s === '#END') {
       if (!inBlock || !hasNotes) fail('TJA_STRUCTURE_INVALID', '谱面块为空或 #END 没有对应的 #START', line)
@@ -49,8 +49,8 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     }
     if (['LYRICS', 'BGIMAGE', 'BGMOVIE'].includes(upper) && value) fail('TJA_RESOURCE_UNSUPPORTED', '示范版仅接受 TJA 与单个 OGG', line)
     if (key === 'COURSE') {
-      if (!Object.hasOwn(courses, value) || inBlock) fail('TJA_STRUCTURE_INVALID', 'COURSE 需要 Easy / Normal / Hard / Oni / Edit（或 0–4）', line)
-      course = courses[value]; level = 0; continue
+      if (!Object.hasOwn(courses, value.toLowerCase()) || inBlock) fail('TJA_STRUCTURE_INVALID', 'COURSE 需要 Easy / Normal / Hard / Oni / Edit / Tower / Dan（或 0–6）', line)
+      course = courses[value.toLowerCase()]; level = 0; continue
     }
     if (key === 'LEVEL') {
       const n = Number(value)
@@ -79,7 +79,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
   if (!safeFilename(m.wave) || !m.wave.toLowerCase().endsWith('.ogg')) fail('TJA_WAVE_PATH_INVALID', 'WAVE 必须为不带路径、引号的 .ogg 文件名', waveLine)
   if (!safeFilename(audioName)) fail('UPLOAD_FILENAME_INVALID', '上传文件名不能包含路径或特殊字符')
   if (m.wave.normalize('NFC') !== audioName.normalize('NFC')) throw new ValidationError('TJA_AUDIO_MISMATCH', `第 ${waveLine} 行引用了「${m.wave}」，但你选择的是「${audioName}」。请选择对应文件，或修改 TJA 的 WAVE 后重新选择。`, waveLine, m.wave, audioName)
-  if (!m.title || m.bpm <= 0 || m.demoStart < 0 || inBlock || !m.difficulties.length) fail('TJA_STRUCTURE_INVALID', '需要 TITLE、正数 BPM 和完整谱面块，DEMOSTART 不能为负数')
+  if (!m.title || m.bpm <= 0 || inBlock || !m.difficulties.length) fail('TJA_STRUCTURE_INVALID', '需要 TITLE、正数 BPM 和完整谱面块')
   return m
 }
 export async function validateFiles(tja: File, audio: File, encoding: string): Promise<Metadata> {
