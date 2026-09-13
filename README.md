@@ -2,6 +2,8 @@
 
 React + TypeScript + Vite 前端，独立 Git 仓库。**仅使用 pnpm**，提交 `pnpm-lock.yaml`；包管理器版本记录在 package.json。Go / PostgreSQL 后端位于相邻的 `../backend` 独立仓库。
 
+远端仓库：[OurTaiko/Fanmade_Frontend](https://github.com/OurTaiko/Fanmade_Frontend)，使用 `ourtaiko` 远端管理。
+
 ## 启动
 
 环境：Node.js 22.12+（本机验证为 26.8）、pnpm 12.3.4。
