@@ -19,6 +19,7 @@ pnpm dev
 
 - 发现谱面：真实 PostgreSQL 数据、关键词搜索、难度筛选和分页。
 - 作品详情：多难度 / P1 / P2 展示、音频试听、原始 TJA 和 ZIP 下载。
+- 编辑信息：作者和管理员在详情页打开弹窗，修改英文、日文、中文、韩文歌名／副标题，支持按语言恢复原值；保存后立即更新详情。
 - 投稿：文件选择或拖放、UTF-8 / Shift-JIS、本地 WAVE 匹配、元数据预览、上传进度、服务端校验反馈。
 - 账号：用户名 / 密码注册登录、我的作品、删除和退出。
 - 390px 移动端布局与桌面布局。
@@ -51,11 +52,17 @@ pnpm test:e2e
 ## 代码布局
 
 - `src/pages.tsx`：发现、账号、详情页面。
+- `src/edit-metadata.tsx`：原生 dialog 编辑弹窗、局部保存、恢复原值与失败反馈。
 - `src/upload.tsx`：文件快照、本地校验和上传状态。
 - `src/tja.ts`：纯文本解析、资源名匹配。
 - `src/api.ts`：API 类型、JSON 请求和 XHR 进度。
 - `src/session-context.ts`、`src/session.tsx`：会话上下文与 Provider，分离以支持热更新。
 - `src/components.tsx`、`src/styles.css`：公共界面与响应式样式。
 - `e2e/upload.spec.ts`：Playwright 真实浏览器测试。
+- `e2e/edit.spec.ts`：作者编辑、取消／焦点恢复、保存失败重试、移动端、恢复原值与权限入口测试。
+
+编辑入口使用 Session 的 user.id / user.isAdmin 判断，最终权限由 Go API 独立校验。匿名或普通他人账号没有按钮；管理员角色只能由服务端配置，不能通过注册或 PATCH 声明。取消和 Escape 不保存，保存期间禁止关闭和重复提交，失败保留草稿；原始 TJA、谱面版本和成绩不受展示编辑影响。
+
+本次验证：pnpm lint/build/format:check、29 个基础测试与编辑 Playwright 测试通过；agent-browser 检查桌面及 390px 弹窗，无横向溢出、错误遮罩或页面错误。管理员真实放行／撤权由后端 PostgreSQL 测试覆盖，浏览器管理员入口使用受控会话响应测试。
 
 后台验证是最终依据。前端不把解析出的标题、难度或“验证通过”标记当作后端可信数据发送；上传原始文件后由后端重新解析。游戏、邮箱验证、替换版本、管理员页面和社交功能仍在后续计划。
