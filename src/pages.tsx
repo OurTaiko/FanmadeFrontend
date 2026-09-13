@@ -14,11 +14,13 @@ import {
   Clock3,
   UserRound,
   Disc3,
+  Pencil,
 } from 'lucide-react'
 import { api, jsonRequest, resource } from './api'
 import type { Chart, ChartList, Session } from './api'
 import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
 import { useSession } from './session-context'
+import { EditMetadata } from './edit-metadata'
 
 export function Library({ mine = false }: { mine?: boolean }) {
   const [params, setParams] = useSearchParams(),
@@ -255,10 +257,14 @@ export function Detail() {
     [error, setError] = useState(''),
     [confirm, setConfirm] = useState(false),
     [busy, setBusy] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [saved, setSaved] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
+    setEditing(false)
+    setSaved(false)
     api<Chart>(`/charts/${id}`, { signal: controller.signal })
       .then(setChart)
       .catch((e) => {
@@ -322,10 +328,40 @@ export function Detail() {
             <a className="button secondary" href={resource(chart, 'tja')}>
               TJA 原文件
             </a>
+            {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
+              <button
+                className="button secondary"
+                onClick={() => {
+                  setSaved(false)
+                  setEditing(true)
+                }}
+              >
+                <Pencil size={16} />
+                编辑信息
+              </button>
+            )}
           </div>
         </div>
       </div>
       {error && <Notice>{error}</Notice>}
+      {saved && (
+        <div className="notice" role="status">
+          谱面信息已保存。
+        </div>
+      )}
+      {editing && session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
+        <EditMetadata
+          key={chart.id}
+          chart={chart}
+          csrf={session.csrfToken}
+          onDismiss={() => setEditing(false)}
+          onSaved={(updated) => {
+            setChart(updated)
+            setEditing(false)
+            setSaved(true)
+          }}
+        />
+      )}
       <div className="detail-columns">
         <section className="panel">
           <div className="panel-heading">
