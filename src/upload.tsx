@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { uploadChart } from './api'
 import { DifficultyBadges, Notice } from './components'
-import { useSession } from './session'
+import { useSession } from './session-context'
 import { validateFiles } from './tja'
 import type { Metadata } from './tja'
 

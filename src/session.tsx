@@ -1,14 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { SessionContext } from './session-context'
 import type { ReactNode } from 'react'
 import { api, jsonRequest } from './api'
 import type { Session } from './api'
-type SessionState = Session & {
-  loading: boolean
-  error: string
-  setSession: (s: Session) => void
-  logout: () => Promise<void>
-}
-const Context = createContext<SessionState | null>(null)
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>({ user: null, csrfToken: '' })
   const [loading, setLoading] = useState(true),
@@ -30,13 +24,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession({ user: null, csrfToken: '' })
   }
   return (
-    <Context.Provider value={{ ...session, loading, error, setSession, logout }}>
+    <SessionContext.Provider value={{ ...session, loading, error, setSession, logout }}>
       {children}
-    </Context.Provider>
+    </SessionContext.Provider>
   )
-}
-export function useSession() {
-  const value = useContext(Context)
-  if (!value) throw new Error('SessionProvider missing')
-  return value
 }
