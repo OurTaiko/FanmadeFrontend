@@ -18,7 +18,7 @@ import {
 import { api, jsonRequest, resource } from './api'
 import type { Chart, ChartList, Session } from './api'
 import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
-import { useSession } from './session'
+import { useSession } from './session-context'
 
 export function Library({ mine = false }: { mine?: boolean }) {
   const [params, setParams] = useSearchParams(),

@@ -19,11 +19,9 @@ export type Chart = Metadata & {
 export type ChartList = { items: Chart[]; total: number; page: number; pageSize: number }
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { credentials: 'include', ...init })
-  const data = await response
-    .json()
-    .catch(() => ({
-      message: response.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请稍后重试',
-    }))
+  const data = await response.json().catch(() => ({
+    message: response.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请稍后重试',
+  }))
   if (!response.ok) throw new Error(data.message || '请求失败')
   return data as T
 }

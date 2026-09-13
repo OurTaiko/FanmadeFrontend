@@ -11,7 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useSession } from './session'
+import { useSession } from './session-context'
 import type { Chart } from './api'
 import type { Difficulty } from './tja'
 
