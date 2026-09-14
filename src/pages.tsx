@@ -21,6 +21,7 @@ import type { Chart, ChartList, Session } from './api'
 import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
+import { ChartActivity } from './chart-activity'
 
 export function Library({ mine = false }: { mine?: boolean }) {
   const [params, setParams] = useSearchParams(),
@@ -362,6 +363,7 @@ export function Detail() {
           }}
         />
       )}
+      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
       <div className="detail-columns">
         <section className="panel">
           <div className="panel-heading">

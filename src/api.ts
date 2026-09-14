@@ -2,7 +2,11 @@ import type { Metadata } from './tja'
 export type User = { id: string; username: string; emailVerified: boolean; isAdmin: boolean }
 export type Locale = 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
-export type Chart = Metadata & {
+export type Chart = Omit<Metadata, 'difficulties'> & {
+  difficulties: (Metadata['difficulties'][number] & {
+    style: 'Single' | 'Double'
+    cloudScoreEligible: boolean
+  })[]
   id: string
   ownerId: string
   uploader: string
@@ -20,6 +24,28 @@ export type Chart = Metadata & {
   subtitleTranslations: Partial<Record<Locale, string>>
 }
 export type ChartList = { items: Chart[]; total: number; page: number; pageSize: number }
+export type LeaderboardEntry = {
+  id: string
+  userId: string
+  username: string
+  rank: number
+  score: number
+  good: number
+  ok: number
+  bad: number
+  drumroll: number
+  submittedAt: string
+}
+export type Leaderboard = {
+  songId: string
+  versionId: string
+  difficulty: string
+  supported: boolean
+  items: LeaderboardEntry[]
+  total: number
+  page: number
+  pageSize: number
+}
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { credentials: 'include', ...init })
   const data = await response.json().catch(() => ({
@@ -35,8 +61,10 @@ export function jsonRequest(method: string, body: unknown, csrf = ''): RequestIn
     body: JSON.stringify(body),
   }
 }
-export const resource = (chart: Chart, kind: 'audio' | 'tja' | 'download') =>
-  `/api/v1/charts/${chart.id}/versions/${chart.versionId}/${kind}`
+export const resource = (
+  chart: Pick<Chart, 'id' | 'versionId'>,
+  kind: 'audio' | 'tja' | 'download',
+) => `/api/v1/charts/${chart.id}/versions/${chart.versionId}/${kind}`
 export function uploadChart(
   form: FormData,
   csrf: string,
