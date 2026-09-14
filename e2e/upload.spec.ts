@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { mailboxCode } from './registration-helpers'
 
 const root = process.env.ESE_ROOT || join(homedir(), 'Documents/GitHub/ESE')
 const chartPath = join(root, '03 Vocaloid/Happy Synthesizer/Happy Synthesizer.tja')
@@ -12,12 +13,18 @@ const wrongAudio = join(root, '05 Variety/Destr0yer/Destr0yer.ogg')
 test('register, reject mismatched ESE audio locally, publish, download, delete and logout', async ({
   page,
 }) => {
+  test.skip(!process.env.FANMADE_TEST_MAILBOX, 'Requires isolated backend mail fixture')
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/register')
   await page.getByLabel('用户名', { exact: true }).fill(`web_${randomUUID().slice(0, 8)}`)
   await page.getByLabel('密码', { exact: true }).fill(randomUUID())
-  await page.getByRole('button', { name: '创建账号', exact: true }).click()
+  const email = `upload_${randomUUID().slice(0, 8)}@example.test`
+  await page.getByLabel('邮箱', { exact: true }).fill(email)
+  await page.getByRole('button', { name: '获取验证码', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('验证码已发送')
+  await page.getByLabel('邮箱验证码', { exact: true }).fill(mailboxCode(email))
+  await page.getByRole('button', { name: '验证并创建账号', exact: true }).click()
   await expect(page).toHaveURL(/\/upload$/)
   const uploadRequests: string[] = []
   page.on('request', (r) => {

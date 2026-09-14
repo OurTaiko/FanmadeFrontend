@@ -1107,6 +1107,28 @@ progress {
   gap: 9px;
   font-size: 14px;
 }
+.email-code-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.email-code-row label {
+  display: grid;
+  gap: 9px;
+  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.email-code-row input {
+  width: 100%;
+}
+.email-code-row button {
+  flex-shrink: 0;
+}
+.email-code-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
 .auth-form .notice {
   margin: 0;
 }

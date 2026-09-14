@@ -3,8 +3,11 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { registerAccount } from './registration-helpers'
 
-const origin = 'http://127.0.0.1:5173'
+test.skip(!process.env.FANMADE_TEST_MAILBOX, 'Requires isolated backend mail fixture')
+
+const origin = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
 const root = process.env.ESE_ROOT || join(homedir(), 'Documents/GitHub/ESE')
 const folder = join(root, '03 Vocaloid/Happy Synthesizer')
 
@@ -14,12 +17,11 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  const registration = await page.request.post('/api/v1/auth/register', {
-    headers: { Origin: origin },
-    data: { username: 'edit_' + randomUUID().slice(0, 8), password: randomUUID() },
-  })
-  expect(registration.status()).toBe(200)
-  const session = await registration.json()
+  const session = await registerAccount(
+    page.request,
+    'edit_' + randomUUID().slice(0, 8),
+    randomUUID(),
+  )
   expect(session.user.isAdmin).toBe(false)
   const uploaded = await page.request.post('/api/v1/charts', {
     headers: { Origin: origin, 'X-CSRF-Token': session.csrfToken, 'Idempotency-Key': randomUUID() },
@@ -94,11 +96,11 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
       await otherPage.goto(path)
       await expect(otherPage.getByRole('heading', { name: chart.title, exact: true })).toBeVisible()
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toHaveCount(0)
-      const result = await outsider.request.post('/api/v1/auth/register', {
-        headers: { Origin: origin },
-        data: { username: 'other_' + randomUUID().slice(0, 8), password: randomUUID() },
-      })
-      const other = await result.json()
+      const other = await registerAccount(
+        outsider.request,
+        'other_' + randomUUID().slice(0, 8),
+        randomUUID(),
+      )
       await otherPage.reload()
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toHaveCount(0)
       const denied = await outsider.request.patch('/api/v1' + path, {

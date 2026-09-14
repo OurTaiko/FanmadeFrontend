@@ -86,3 +86,18 @@ PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.sp
 本次验证：pnpm lint/build/format:check、29 个基础测试与编辑 Playwright 测试通过；agent-browser 检查桌面及 390px 弹窗，无横向溢出、错误遮罩或页面错误。管理员真实放行／撤权由后端 PostgreSQL 测试覆盖，浏览器管理员入口使用受控会话响应测试。
 
 后台验证是最终依据。前端不把解析出的标题、难度或“验证通过”标记当作后端可信数据发送；上传原始文件后由后端重新解析。游戏、邮箱验证、替换版本、管理员页面和社交功能仍在后续计划。
+
+## 邮箱验证注册
+
+注册页面要求邮箱和 6 位验证码，未填完整验证码时禁用“验证并创建账号”。获取成功后显示重发倒计时；验证码错误、过期、锁定或邮件发送失败均展示后端提示。更换邮箱会清空验证码，登录页面仍只需要用户名和密码。
+
+SMTP 配置放在后端 `.env`，前端不接触 SMTP 密码。后端自动加载 `.env`，发件人默认 `OurTaiko <no-reply@mail.ourtaiko.org>`。见后端 `docs/EMAIL_VERIFICATION.md`。
+
+注册浏览器测试通过后端隔离夹具启动（先 `pnpm install` 并安装 Chrome）：
+
+```sh
+cd ../backend
+FRONTEND_E2E=1 DATABASE_TEST_URL='postgres://localhost/ourtaiko_fanmade?host=/tmp&sslmode=disable' go test ./internal/httpapi -run TestRegistrationBrowser -v -count=1
+```
+
+夹具自动启动临时 API/Vite，使用独立数据库 schema 和测试收件箱，不向真实邮箱发信。需要创建账号的 E2E 用例在未配置测试收件箱时跳过，不能绕过邮箱验证。常规开发仍使用 `pnpm dev`；`VITE_API_TARGET` 可仅为隔离测试覆盖 Vite 的代理目标，默认后端为 `http://127.0.0.1:8080`。

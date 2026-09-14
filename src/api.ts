@@ -46,12 +46,22 @@ export type Leaderboard = {
   page: number
   pageSize: number
 }
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly retryAfter = 0,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { credentials: 'include', ...init })
   const data = await response.json().catch(() => ({
     message: response.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请稍后重试',
   }))
-  if (!response.ok) throw new Error(data.message || '请求失败')
+  if (!response.ok)
+    throw new ApiError(data.message || '请求失败', Number(response.headers.get('Retry-After')) || 0)
   return data as T
 }
 export function jsonRequest(method: string, body: unknown, csrf = ''): RequestInit {

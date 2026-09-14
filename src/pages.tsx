@@ -16,7 +16,7 @@ import {
   Disc3,
   Pencil,
 } from 'lucide-react'
-import { api, jsonRequest, resource } from './api'
+import { api, ApiError, jsonRequest, resource } from './api'
 import type { Chart, ChartList, Session } from './api'
 import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
 import { useSession } from './session-context'
@@ -186,16 +186,61 @@ export function Auth({ register = false }: { register?: boolean }) {
     navigate = useNavigate()
   const [username, setUsername] = useState(''),
     [password, setPassword] = useState(''),
+    [email, setEmail] = useState(''),
+    [code, setCode] = useState(''),
+    [verificationId, setVerificationId] = useState(''),
+    [sending, setSending] = useState(false),
+    [sentMessage, setSentMessage] = useState(''),
+    [retryAt, setRetryAt] = useState(0),
+    [secondsLeft, setSecondsLeft] = useState(0),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false)
+  useEffect(() => {
+    if (!retryAt) return
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)))
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [retryAt])
+  const validCode = /^[0-9]{6}$/.test(code) && verificationId !== ''
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const sendCode = async () => {
+    if (!validEmail || sending || busy || secondsLeft > 0) return
+    setSending(true)
+    setError('')
+    setSentMessage('')
+    try {
+      const result = await api<{ verificationId: string; retryAfter: number }>(
+        '/auth/email-code',
+        jsonRequest('POST', { email }),
+      )
+      setVerificationId(result.verificationId)
+      setCode('')
+      setSecondsLeft(result.retryAfter)
+      setRetryAt(Date.now() + result.retryAfter * 1000)
+      setSentMessage('验证码已发送，请查看邮箱（含垃圾邮件）。10 分钟内有效。')
+    } catch (e) {
+      setError((e as Error).message)
+      if (e instanceof ApiError && e.retryAfter > 0) {
+        setSecondsLeft(e.retryAfter)
+        setRetryAt(Date.now() + e.retryAfter * 1000)
+      }
+    } finally {
+      setSending(false)
+    }
+  }
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (busy || sending || (register && !validCode)) return
     setBusy(true)
     setError('')
     try {
       const s = await api<Session>(
         `/auth/${register ? 'register' : 'login'}`,
-        jsonRequest('POST', { username, password }),
+        jsonRequest(
+          'POST',
+          register ? { username, password, email, code, verificationId } : { username, password },
+        ),
       )
       session.setSession(s)
       navigate('/upload')
@@ -236,9 +281,70 @@ export function Auth({ register = false }: { register?: boolean }) {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
+        {register && (
+          <>
+            <label>
+              邮箱
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                value={email}
+                disabled={sending || busy}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setCode('')
+                  setVerificationId('')
+                  setSentMessage('')
+                  setError('')
+                }}
+              />
+            </label>
+            <div className="email-code-row">
+              <label>
+                邮箱验证码
+                <input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  pattern="[0-9]{6}"
+                  title="邮件中的 6 位数字验证码"
+                  maxLength={6}
+                  placeholder="6 位数字"
+                  value={code}
+                  disabled={busy}
+                  onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                />
+              </label>
+              <button
+                type="button"
+                className="button secondary"
+                disabled={!validEmail || sending || busy || secondsLeft > 0}
+                onClick={sendCode}
+              >
+                {sending
+                  ? '发送中…'
+                  : secondsLeft > 0
+                    ? `${secondsLeft} 秒后重发`
+                    : verificationId
+                      ? '重新获取'
+                      : '获取验证码'}
+              </button>
+            </div>
+            {sentMessage && (
+              <p className="email-code-hint" role="status">
+                {sentMessage}
+              </p>
+            )}
+          </>
+        )}
         {error && <Notice>{error}</Notice>}
-        <button className="button primary full" disabled={busy}>
-          {busy ? '请稍候…' : register ? '创建账号' : '登录'}
+        <button
+          className="button primary full"
+          disabled={busy || sending || (register && !validCode)}
+        >
+          {busy ? '请稍候…' : register ? '验证并创建账号' : '登录'}
           <ArrowRight size={17} />
         </button>
         <p className="auth-switch">
@@ -246,7 +352,7 @@ export function Auth({ register = false }: { register?: boolean }) {
           <Link to={register ? '/login' : '/register'}>{register ? '前往登录' : '创建账号'}</Link>
         </p>
       </form>
-      <p className="demo-note">本地示范版暂未启用邮箱绑定与验证。</p>
+      {register && <p className="demo-note">验证邮箱后即可创建账号。</p>}
     </div>
   )
 }
