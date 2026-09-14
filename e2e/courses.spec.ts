@@ -91,7 +91,7 @@ test('five course filters and ordinary preview; unsupported cards and details st
   await expect(page.getByText('不支持的Dan作品')).toHaveCount(0)
   for (const entry of unsupported) {
     await page.goto(`/charts/${entry.id}`)
-    await expect(page.getByRole('alert')).toContainText('该谱面类型不受支持')
+    await expect(page.getByRole('alertdialog')).toContainText('该谱面类型不受支持')
     await expect(page.locator('canvas, audio')).toHaveCount(0)
     await expect(page.getByRole('link', { name: '下载谱面包' })).toHaveCount(0)
   }
@@ -125,16 +125,18 @@ test('mixed Tower/Dan and numeric aliases cannot upload; replacing with Oni rest
       mimeType: 'text/plain',
       buffer: Buffer.from(tja(['Oni', course])),
     })
-    await expect(page.getByRole('status')).toContainText('不支持塔（Tower）或段位（Dan）谱面')
-    await expect(page.getByRole('button', { name: '发布谱面', exact: true })).toBeDisabled()
+    await expect(page.getByRole('alertdialog')).toContainText('不支持塔（Tower）或段位（Dan）谱面')
     await expect(page.getByText('本地校验通过')).toHaveCount(0)
+    await page.getByRole('button', { name: '知道了', exact: true }).click()
+    await expect(page.getByRole('button', { name: '发布谱面', exact: true })).toBeDisabled()
   }
   await page.getByLabel('选择 TJA 谱面').setInputFiles({
     name: 'valid.tja',
     mimeType: 'text/plain',
     buffer: Buffer.from(tja(['Oni'])),
   })
-  await expect(page.getByRole('status')).toContainText('本地校验通过')
+  await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
   await expect(page.getByRole('button', { name: '发布谱面', exact: true })).toBeEnabled()
   expect(uploads).toEqual([])
 })

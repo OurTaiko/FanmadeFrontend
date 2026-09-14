@@ -184,8 +184,9 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
     return (
       <div className="activity-state">
         <Trophy size={30} />
-        <h3>此难度为 DOUBLE 谱面</h3>
-        <p className="muted">双人谱面不记录云端成绩，暂无排行榜。</p>
+        <Notice kind="info" title="此难度为 DOUBLE 谱面">
+          双人谱面不记录云端成绩，暂无排行榜。
+        </Notice>
       </div>
     )
   const pages = Math.max(1, Math.ceil(data.total / data.pageSize))

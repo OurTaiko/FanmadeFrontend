@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useState } from 'react'
+import { Notice } from './notifications'
 import { useSession } from './session-context'
 import type { Chart } from './api'
 import type { Difficulty } from './tja'
@@ -88,13 +89,7 @@ export function ChartCard({ chart }: { chart: Chart }) {
     </Link>
   )
 }
-export function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="notice error" role="alert">
-      {children}
-    </div>
-  )
-}
+export { Notice } from './notifications'
 export function Layout() {
   const session = useSession(),
     [error, setError] = useState('')
@@ -152,7 +147,10 @@ export function Layout() {
                 <button
                   className="icon-button"
                   aria-label="退出登录"
-                  onClick={() => session.logout().catch((e) => setError(e.message))}
+                  onClick={() => {
+                    setError('')
+                    void session.logout().catch((e) => setError(e.message))
+                  }}
                 >
                   <LogOut size={17} />
                 </button>

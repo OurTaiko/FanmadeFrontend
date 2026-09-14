@@ -22,6 +22,8 @@ import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './compo
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
+import { Modal } from './notifications'
+import { useNotification } from './notification-context'
 import { supportsChart } from './courses'
 
 export function Library({ mine = false }: { mine?: boolean }) {
@@ -183,6 +185,7 @@ function FolderIcon() {
   return <FileMusic size={42} />
 }
 export function Auth({ register = false }: { register?: boolean }) {
+  const { notify } = useNotification()
   const session = useSession(),
     navigate = useNavigate()
   const [username, setUsername] = useState(''),
@@ -191,7 +194,6 @@ export function Auth({ register = false }: { register?: boolean }) {
     [code, setCode] = useState(''),
     [verificationId, setVerificationId] = useState(''),
     [sending, setSending] = useState(false),
-    [sentMessage, setSentMessage] = useState(''),
     [retryAt, setRetryAt] = useState(0),
     [secondsLeft, setSecondsLeft] = useState(0),
     [error, setError] = useState(''),
@@ -209,7 +211,6 @@ export function Auth({ register = false }: { register?: boolean }) {
     if (!validEmail || sending || busy || secondsLeft > 0) return
     setSending(true)
     setError('')
-    setSentMessage('')
     try {
       const result = await api<{ verificationId: string; retryAfter: number }>(
         '/auth/email-code',
@@ -219,7 +220,7 @@ export function Auth({ register = false }: { register?: boolean }) {
       setCode('')
       setSecondsLeft(result.retryAfter)
       setRetryAt(Date.now() + result.retryAfter * 1000)
-      setSentMessage('验证码已发送，请查看邮箱（含垃圾邮件）。10 分钟内有效。')
+      notify('验证码已发送，请查看邮箱（含垃圾邮件）。10 分钟内有效。', 'success')
     } catch (e) {
       setError((e as Error).message)
       if (e instanceof ApiError && e.retryAfter > 0) {
@@ -297,7 +298,6 @@ export function Auth({ register = false }: { register?: boolean }) {
                   setEmail(e.target.value)
                   setCode('')
                   setVerificationId('')
-                  setSentMessage('')
                   setError('')
                 }}
               />
@@ -333,11 +333,6 @@ export function Auth({ register = false }: { register?: boolean }) {
                       : '获取验证码'}
               </button>
             </div>
-            {sentMessage && (
-              <p className="email-code-hint" role="status">
-                {sentMessage}
-              </p>
-            )}
           </>
         )}
         {error && <Notice>{error}</Notice>}
@@ -358,6 +353,7 @@ export function Auth({ register = false }: { register?: boolean }) {
   )
 }
 export function Detail() {
+  const { notify } = useNotification()
   const { id } = useParams(),
     session = useSession(),
     navigate = useNavigate()
@@ -381,11 +377,15 @@ export function Detail() {
     return () => controller.abort()
   }, [id])
   const remove = async () => {
+    setError('')
     setBusy(true)
     try {
       await api(`/charts/${id}`, jsonRequest('DELETE', {}, session.csrfToken))
+      setConfirm(false)
       navigate('/me/charts')
+      notify('作品已删除。', 'success')
     } catch (e) {
+      setConfirm(false)
       setError((e as Error).message)
     } finally {
       setBusy(false)
@@ -453,11 +453,7 @@ export function Detail() {
         </div>
       </div>
       {error && <Notice>{error}</Notice>}
-      {saved && (
-        <div className="notice" role="status">
-          谱面信息已保存。
-        </div>
-      )}
+      {saved && <Notice kind="success">谱面信息已保存。</Notice>}
       {editing && session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
         <EditMetadata
           key={chart.id}
@@ -513,25 +509,38 @@ export function Detail() {
           </dl>
           {session.user?.id === chart.ownerId && (
             <div className="delete-area">
-              {confirm ? (
-                <>
-                  <p>删除后，作品和下载链接将不再公开。</p>
-                  <button className="button danger" disabled={busy} onClick={remove}>
-                    {busy ? '删除中…' : '确认删除'}
-                  </button>
-                  <button
-                    className="button ghost"
-                    disabled={busy}
-                    onClick={() => setConfirm(false)}
-                  >
-                    取消
-                  </button>
-                </>
-              ) : (
-                <button className="button ghost danger-text" onClick={() => setConfirm(true)}>
-                  <Trash2 size={15} />
-                  删除作品
-                </button>
+              <button className="button ghost danger-text" onClick={() => setConfirm(true)}>
+                <Trash2 size={15} />
+                删除作品
+              </button>
+              {confirm && (
+                <Modal
+                  title="删除作品？"
+                  busy={busy}
+                  onDismiss={() => setConfirm(false)}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        className="button secondary"
+                        disabled={busy}
+                        onClick={() => setConfirm(false)}
+                      >
+                        取消
+                      </button>
+                      <button
+                        type="button"
+                        className="button danger"
+                        disabled={busy}
+                        onClick={remove}
+                      >
+                        {busy ? '删除中…' : '确认删除'}
+                      </button>
+                    </>
+                  }
+                >
+                  删除后，作品和下载链接将不再公开。
+                </Modal>
               )}
             </div>
           )}
