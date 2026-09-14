@@ -9,6 +9,7 @@ React + TypeScript + Vite 前端，独立 Git 仓库。**仅使用 pnpm**，提�
 环境：Node.js 22.12+（本机验证为 26.8）、pnpm 12.3.4。
 
 ```sh
+git submodule update --init --recursive
 pnpm install --frozen-lockfile
 pnpm dev
 ```
@@ -26,6 +27,9 @@ pnpm dev
 - 编辑信息：作者和管理员在详情页打开弹窗，修改英文、日文、中文、韩文歌名／副标题，支持按语言恢复原值；保存后立即更新详情。
 - 投稿：文件选择或拖放、UTF-8 / Shift-JIS、本地 WAVE 匹配、元数据预览、上传进度、服务端校验反馈。
 - 账号：用户名 / 密码注册登录、我的作品、删除和退出。
+- 歌曲详情：共享难度选择器，默认 Oni，缺失时依次回退 Edit、Hard、Normal、Easy。第一个 Tab 为交互谱面预览，第二个为当前难度排行榜。
+- 谱面预览：从后端当前版本文件接口下载原始 TJA，按记录的 UTF-8 / Shift-JIS 解码；切换难度和 Tab 不重复下载。支持缩放、分支选择、Single / P1 / P2 切换、悬停和点击查看音符信息、两次点击选中区间。
+- 排行榜：每位玩家显示当前版本单人谱的最高分、良／可／不可／连打，同分并列，每页 20 人。DOUBLE 不提供云端排行榜；歌曲更名不影响记录。
 - 390px 移动端布局与桌面布局。
 
 正式注册要求绑定验证邮箱，但本示范版按约定暂缓实现。可直接创建本地演示账号；不会把账号标记为邮箱已验证。
@@ -47,6 +51,9 @@ ESE_ROOT=~/Documents/GitHub/ESE pnpm test
 
 # 先启动前后端并导入 ESE 示例；需要系统 Google Chrome：
 pnpm test:e2e
+
+# 局域网详情页回归（使用已导入的 ESE 演示曲库）
+PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.spec.ts
 ```
 
 浏览器测试创建临时账号和作品，测试结束后软删除作品。测试涵盖：错误 OGG 无上传请求、正确文件发布、下载原字节一致、音频就绪、删除后下载失效、退出、搜索、双人谱展示和移动端无横向溢出。
@@ -60,10 +67,19 @@ pnpm test:e2e
 - `src/upload.tsx`：文件快照、本地校验和上传状态。
 - `src/tja.ts`：纯文本解析、资源名匹配。
 - `src/api.ts`：API 类型、JSON 请求和 XHR 进度。
+- `src/chart-activity.tsx`：详情难度选择、TJA 请求和排行榜分页。
+- `src/chart-preview.tsx`、`src/preview-tja.ts`：TJARenderer 交互画布及按谱面块分离的解析适配。
 - `src/session-context.ts`、`src/session.tsx`：会话上下文与 Provider，分离以支持热更新。
 - `src/components.tsx`、`src/styles.css`：公共界面与响应式样式。
 - `e2e/upload.spec.ts`：Playwright 真实浏览器测试。
 - `e2e/edit.spec.ts`：作者编辑、取消／焦点恢复、保存失败重试、移动端、恢复原值与权限入口测试。
+- `e2e/detail.spec.ts`：真实 ESE 预览、默认难度、手机布局、DOUBLE、音符点击、分支、排行榜分页与失败重试。
+
+## TJARenderer 依赖
+
+`TJARenderer/` 为 [jack9966qk/TJARenderer](https://github.com/jack9966qk/TJARenderer) 的 Git submodule，固定版本由 Git 的 submodule 提交指针记录。克隆时使用 `git clone --recurse-submodules`，或执行上面的初始化命令；不在子模块内运行 npm，也不修改其源码。前端通过 Vite 编译其中的 TypeScript，无额外运行时包依赖；上游 MIT LICENSE 保留在子模块内。
+
+交互方式参考 OurTaikoWiki 和 [TJAAnalyzer](https://github.com/jack9966qk/TJAAnalyzer)。为了支持选区高亮与复用已解析谱面，适配层使用 TJARenderer 的内部 ChartView API，因此升级 submodule 时需要重新运行预览测试。渲染模块独立懒加载，不进入首页主体包。预览用内存中的谱面块副本，原始 TJA 下载、后端校验和版本不受影响。
 
 编辑入口使用 Session 的 user.id / user.isAdmin 判断，最终权限由 Go API 独立校验。匿名或普通他人账号没有按钮；管理员角色只能由服务端配置，不能通过注册或 PATCH 声明。取消和 Escape 不保存，保存期间禁止关闭和重复提交，失败保留草稿；原始 TJA、谱面版本和成绩不受展示编辑影响。
 
