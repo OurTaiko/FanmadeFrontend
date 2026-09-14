@@ -8,11 +8,11 @@ import {
   Check,
   FileMusic,
   LoaderCircle,
-  ShieldCheck,
   Upload,
-  X,
 } from 'lucide-react'
 import { uploadChart } from './api'
+import { Modal } from './notifications'
+import { useNotification } from './notification-context'
 import { DifficultyBadges, Notice } from './components'
 import { useSession } from './session-context'
 import { isAudioFilename, validateFiles } from './tja'
@@ -25,6 +25,7 @@ function createRequestKey() {
 }
 
 export function UploadPage() {
+  const { notify } = useNotification()
   const session = useSession(),
     navigate = useNavigate()
   const [tja, setTja] = useState<File | null>(null),
@@ -33,8 +34,7 @@ export function UploadPage() {
   const [metadata, setMetadata] = useState<Metadata | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
-  const [error, setError] = useState(''),
-    [description, setDescription] = useState(''),
+  const [description, setDescription] = useState(''),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
     [audioUrl, setAudioUrl] = useState('')
@@ -43,7 +43,6 @@ export function UploadPage() {
   const reset = () => {
     setMetadata(null)
     setValidationError('')
-    setError('')
     requestKey.current = createRequestKey()
   }
   useEffect(() => {
@@ -93,7 +92,7 @@ export function UploadPage() {
       tracks = files.filter((f) => isAudioFilename(f.name))
     reset()
     if (charts.length > 1 || tracks.length > 1 || charts.length + tracks.length !== files.length) {
-      setError('请拖入一个 TJA 和一个 OGG 或 MP3 音频，不接受额外文件')
+      notify('请拖入一个 TJA 和一个 OGG 或 MP3 音频，不接受额外文件', 'error')
       return
     }
     if (charts[0]) setTja(charts[0])
@@ -102,7 +101,6 @@ export function UploadPage() {
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!tja || !audio || !metadata || busy) return
-    setError('')
     setBusy(true)
     setProgress(0)
     const abort = new AbortController()
@@ -123,8 +121,9 @@ export function UploadPage() {
         setProgress,
       )
       navigate(`/charts/${chart.id}`)
+      notify('谱面已发布。', 'success')
     } catch (e) {
-      setError((e as Error).message)
+      if (!abort.signal.aborted) notify((e as Error).message, 'error')
     } finally {
       setBusy(false)
       controller.current = null
@@ -147,10 +146,9 @@ export function UploadPage() {
         </div>
       </div>
       {!session.loading && !session.user && (
-        <div className="notice">
-          <Link to="/login">登录或注册</Link>
-          后即可发布。你也可以先选择文件，检查谱面与音频是否匹配。
-        </div>
+        <Notice kind="info" title="登录后即可发布">
+          你可以先选择文件检查谱面与音频是否匹配，发布前请通过右上角登录或注册。
+        </Notice>
       )}
       <form onSubmit={submit} className="upload-layout">
         <div>
@@ -208,45 +206,13 @@ export function UploadPage() {
                 <option value="shift-jis">Shift-JIS</option>
               </select>
             </label>
-            <div
-              className={`validation-status ${metadata ? 'success' : validationError ? 'failed' : ''}`}
-              role="status"
-              aria-live="polite"
-            >
-              {validating ? (
-                <>
-                  <LoaderCircle className="spin" size={20} />
-                  <div>
-                    <b>正在检查文件…</b>
-                    <p>读取 TJA 并核对音频引用</p>
-                  </div>
-                </>
-              ) : validationError ? (
-                <>
-                  <X size={20} />
-                  <div>
-                    <b>文件校验未通过</b>
-                    <p>{validationError}</p>
-                  </div>
-                </>
-              ) : metadata ? (
-                <>
-                  <ShieldCheck size={22} />
-                  <div>
-                    <b>本地校验通过</b>
-                    <p>WAVE: {metadata.wave} 与所选音频一致</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck size={21} />
-                  <div>
-                    <b>等待选择文件</b>
-                    <p>选择两个文件后，将自动核对 TJA 内的音频引用。</p>
-                  </div>
-                </>
-              )}
-            </div>
+            {validationError && <Notice title="文件校验未通过">{validationError}</Notice>}
+            {metadata && (
+              <Notice
+                kind="success"
+                title="本地校验通过"
+              >{`WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
+            )}
           </section>
           <section className="panel description-panel">
             <h2>
@@ -306,43 +272,54 @@ export function UploadPage() {
               </div>
             )}
             <div className="submit-area">
-              {error && <Notice>{error}</Notice>}
-              {busy && (
-                <div className="upload-progress" role="status">
-                  <progress max={100} value={progress} />
-                  <span>
-                    {progress < 100 ? `正在上传 ${progress}%` : '上传完成，正在校验并保存…'}
-                  </span>
-                </div>
-              )}
               <button
                 type="submit"
                 className="button primary full"
                 disabled={!metadata || validating || busy || !session.user}
               >
                 {busy ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}{' '}
-                {busy ? '正在发布…' : '发布谱面'}
+                {busy ? '正在发布…' : validating ? '正在校验…' : '发布谱面'}
                 {!busy && <ArrowRight size={17} />}
               </button>
               {busy && (
-                <button
-                  className="button ghost full"
-                  type="button"
-                  onClick={() => controller.current?.abort()}
+                <Modal
+                  title="正在发布谱面"
+                  busy
+                  onDismiss={() => {}}
+                  actions={
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={() => controller.current?.abort()}
+                    >
+                      取消上传
+                    </button>
+                  }
                 >
-                  取消上传
-                </button>
+                  <div className="upload-progress" role="status">
+                    <progress max={100} value={progress} />
+                    <span>
+                      {progress < 100 ? `正在上传 ${progress}%` : '上传完成，正在校验并保存…'}
+                    </span>
+                  </div>
+                </Modal>
               )}
               <p>发布后，其他人可以浏览、试听并下载你的作品。</p>
             </div>
           </section>
-          <div className="upload-tips">
-            <ShieldCheck size={20} />
-            <div>
-              <b>文件对应，才能上传</b>
-              <p>TJA 中的 WAVE 文件名必须与所选音频一致，包括大小写。服务器还会独立校验一次。</p>
-            </div>
-          </div>
+          <button
+            type="button"
+            className="button ghost full"
+            onClick={() =>
+              notify(
+                'TJA 中的 WAVE 文件名必须与所选音频一致，包括大小写。音频支持 OGG / MP3，最大 100 MiB；TJA 最大 2 MiB。服务器会再次校验文件。',
+                'info',
+                '上传规则',
+              )
+            }
+          >
+            查看上传规则
+          </button>
         </aside>
       </form>
     </>

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { RotateCcw, X } from 'lucide-react'
 import { api, jsonRequest } from './api'
 import type { Chart, Locale } from './api'
-import { Notice } from './components'
+import { useNotification } from './notification-context'
 
 const languages = [
   { code: 'en', label: '英文', caption: '默认显示' },
@@ -43,7 +43,8 @@ export function EditMetadata({
     ko: initial('ko'),
   }))
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const { notify } = useNotification()
+  const setError = (message: string) => notify(message, 'error')
   const dialog = useRef<HTMLDialogElement>(null)
   const firstInput = useRef<HTMLInputElement>(null)
   const request = useRef<AbortController | null>(null)
@@ -71,7 +72,6 @@ export function EditMetadata({
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (request.current || !changed) return
-    setError('')
     const patch: Patch = {}
     for (const { code, label } of languages) {
       const current = draft[code],
@@ -214,11 +214,6 @@ export function EditMetadata({
             </fieldset>
           ))}
         </div>
-        {error && (
-          <div className="metadata-dialog-error">
-            <Notice>{error}</Notice>
-          </div>
-        )}
         <footer className="metadata-dialog-footer">
           <span className="muted">
             {busy ? '正在保存…' : changed ? '有尚未保存的修改' : '修改后即可保存'}

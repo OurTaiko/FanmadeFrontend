@@ -6,6 +6,7 @@ import type { HitInfo } from '../TJARenderer/src/hit-testing'
 import type { BranchName, NoteLocation } from '../TJARenderer/src/primitives'
 import type { Chart } from './api'
 import { Notice } from './components'
+import { useNotification } from './notification-context'
 import { parsePreviewTja } from './preview-tja'
 
 const branchLabels = { normal: '普通分支', expert: '玄人分支', master: '达人分支' }
@@ -30,6 +31,7 @@ export default function ChartPreview({
   const blocks = chart.difficulties.filter((d) => d.course === course)
   const preferred =
     blocks.find((d) => d.cloudScoreEligible) ?? blocks.find((d) => d.player === 'P1') ?? blocks[0]
+  const { notify } = useNotification()
   const [blockIndex, setBlockIndex] = useState(preferred?.blockIndex ?? 0)
   const [branch, setBranch] = useState<'all' | BranchName>('all')
   const [zoom, setZoom] = useState(initialZoom)
@@ -224,10 +226,20 @@ export default function ChartPreview({
           </button>
         </div>
       </div>
-      <p className="preview-hint">
+      <button
+        type="button"
+        className="button ghost small"
+        onClick={() =>
+          notify(
+            '点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。',
+            'info',
+            '预览操作说明',
+          )
+        }
+      >
         <MousePointerClick size={16} />
-        点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。
-      </p>
+        操作说明
+      </button>
       {renderError && <Notice>{renderError}</Notice>}
       <div
         ref={viewportRef}

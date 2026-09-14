@@ -138,8 +138,9 @@ LEVEL:5
     })
   })
   await page.goto(`/charts/${chart.id}`)
+  await expect(page.getByRole('alertdialog')).toContainText('HTTP 503')
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
   await expect(page.getByLabel('选择难度', { exact: true })).toHaveValue('Edit')
-  await expect(page.getByRole('alert')).toContainText('HTTP 503')
   failTja = false
   await page.getByRole('button', { name: '重新加载', exact: true }).click()
   const canvas = page.locator('canvas')
@@ -167,7 +168,8 @@ LEVEL:5
   await expect(page.locator('.preview-note-info')).toContainText('150')
   await expect(page.locator('.preview-note-info')).not.toContainText('点击音符查看')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('排行榜暂时不可用')
+  await expect(page.getByRole('alertdialog')).toContainText('排行榜暂时不可用')
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
   failBoard = false
   await page.getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.getByRole('cell', { name: '900,000', exact: true })).toHaveCount(20)
