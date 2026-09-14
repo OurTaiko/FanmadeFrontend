@@ -15,6 +15,8 @@ pnpm dev
 
 打开 `http://127.0.0.1:5173`。后端需先在 `http://127.0.0.1:8080` 启动；Vite 转发 `/api`，无需修改浏览器跨域配置。请使用 127.0.0.1，避免与 localhost 混用导致 Origin 或会话校验失败。
 
+局域网真机测试可运行 `pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort`，并使用 `http://<Mac 局域网 IP>:5173/register` 注册。后端进程需设置 `APP_ORIGIN=http://<Mac 局域网 IP>:5173` 后重启，否则注册、登录等写入请求会被来源校验拒绝；该配置仅接受一个网页来源，切回本机地址测试时也需同步调整。前端仍通过 Vite 代理连接本机后端。
+
 `pnpm-workspace.yaml` 已明确允许 esbuild 与 agent-browser 的必要安装脚本。不要生成 package-lock.json 或 yarn.lock。
 
 ## 功能

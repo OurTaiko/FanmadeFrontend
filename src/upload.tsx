@@ -18,6 +18,12 @@ import { useSession } from './session-context'
 import { validateFiles } from './tja'
 import type { Metadata } from './tja'
 
+function createRequestKey() {
+  // getRandomValues remains available over LAN HTTP, unlike randomUUID.
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 export function UploadPage() {
   const session = useSession(),
     navigate = useNavigate()
@@ -32,13 +38,13 @@ export function UploadPage() {
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
     [audioUrl, setAudioUrl] = useState('')
-  const requestKey = useRef(crypto.randomUUID()),
+  const requestKey = useRef(createRequestKey()),
     controller = useRef<AbortController | null>(null)
   const reset = () => {
     setMetadata(null)
     setValidationError('')
     setError('')
-    requestKey.current = crypto.randomUUID()
+    requestKey.current = createRequestKey()
   }
   useEffect(() => {
     let active = true
@@ -258,7 +264,7 @@ export function UploadPage() {
               disabled={busy}
               onChange={(e) => {
                 setDescription(e.target.value)
-                requestKey.current = crypto.randomUUID()
+                requestKey.current = createRequestKey()
               }}
             />
             <span className="character-count">{description.length} / 1000</span>
