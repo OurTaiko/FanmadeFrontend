@@ -168,7 +168,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
           <p>
             {q || course
               ? '换一个关键词或难度再试试。'
-              : '选择一份 TJA 和它引用的 OGG，开始你的投稿。'}
+              : '选择一份 TJA 和它引用的 OGG 或 MP3，开始你的投稿。'}
           </p>
           <Link to="/upload" className="button secondary">
             发布谱面
@@ -476,7 +476,9 @@ export function Detail() {
         <section className="panel">
           <div className="panel-heading">
             <h2>听听这段节奏</h2>
-            <span className="muted">OGG / Vorbis</span>
+            <span className="muted">
+              {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
+            </span>
           </div>
           <audio
             aria-label="音频试听"

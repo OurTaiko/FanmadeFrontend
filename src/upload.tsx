@@ -15,7 +15,7 @@ import {
 import { uploadChart } from './api'
 import { DifficultyBadges, Notice } from './components'
 import { useSession } from './session-context'
-import { validateFiles } from './tja'
+import { isAudioFilename, validateFiles } from './tja'
 import type { Metadata } from './tja'
 
 function createRequestKey() {
@@ -90,10 +90,10 @@ export function UploadPage() {
     if (busy) return
     const files = Array.from(e.dataTransfer.files),
       charts = files.filter((f) => /\.tja$/i.test(f.name)),
-      tracks = files.filter((f) => /\.ogg$/i.test(f.name))
+      tracks = files.filter((f) => isAudioFilename(f.name))
     reset()
     if (charts.length > 1 || tracks.length > 1 || charts.length + tracks.length !== files.length) {
-      setError('请拖入一个 TJA 和一个 OGG，不接受额外文件')
+      setError('请拖入一个 TJA 和一个 OGG 或 MP3 音频，不接受额外文件')
       return
     }
     if (charts[0]) setTja(charts[0])
@@ -143,7 +143,7 @@ export function UploadPage() {
             发布你的谱面
             <span className="title-dot" />
           </h1>
-          <p>准备好 TJA 和对应的 OGG，支持简单、普通、困难、魔王和里谱。</p>
+          <p>准备好 TJA 和对应的 OGG 或 MP3 音频，支持简单、普通、困难、魔王和里谱。</p>
         </div>
       </div>
       {!session.loading && !session.user && (
@@ -173,20 +173,20 @@ export function UploadPage() {
                   <label className={`file-picker ${file ? 'selected' : ''}`} key={kind}>
                     {kind === 'tja' ? <FileMusic size={24} /> : <AudioLines size={24} />}
                     <span>
-                      <b>{kind === 'tja' ? 'TJA 谱面' : 'OGG 音频'}</b>
+                      <b>{kind === 'tja' ? 'TJA 谱面' : 'OGG / MP3 音频'}</b>
                       <small>
                         {file
                           ? file.name
                           : kind === 'tja'
                             ? '.tja · 最大 2 MiB'
-                            : '.ogg · Vorbis · 最大 100 MiB'}
+                            : '.ogg / .mp3 · 最大 100 MiB'}
                       </small>
                     </span>
                     {file ? <Check size={18} /> : <span className="choose-label">选择</span>}
                     <input
                       type="file"
-                      aria-label={kind === 'tja' ? '选择 TJA 谱面' : '选择 OGG 音频'}
-                      accept={kind === 'tja' ? '.tja' : '.ogg'}
+                      aria-label={kind === 'tja' ? '选择 TJA 谱面' : '选择 OGG 或 MP3 音频'}
+                      accept={kind === 'tja' ? '.tja' : '.ogg,.mp3'}
                       disabled={busy}
                       onChange={(e) => choose(kind, e)}
                     />
@@ -340,7 +340,7 @@ export function UploadPage() {
             <ShieldCheck size={20} />
             <div>
               <b>文件对应，才能上传</b>
-              <p>TJA 中的 WAVE 文件名必须与 OGG 一致，包括大小写。服务器还会独立校验一次。</p>
+              <p>TJA 中的 WAVE 文件名必须与所选音频一致，包括大小写。服务器还会独立校验一次。</p>
             </div>
           </div>
         </aside>

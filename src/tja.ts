@@ -1,6 +1,6 @@
 import { parseTjaCourse } from './courses'
 
-export const validationVersion = 'tja-upload-v5'
+export const validationVersion = 'tja-upload-v6'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
 export type Difficulty = { course: string; level: number; blockIndex: number; player: string }
@@ -29,6 +29,41 @@ const fail = (code: string, message: string, line = 0): never => {
   throw new ValidationError(code, message, line)
 }
 const bytes = (s: string) => new TextEncoder().encode(s).length
+export const isAudioFilename = (name: string) => /\.(ogg|mp3)$/i.test(name)
+
+async function validateAudioHeader(audio: File) {
+  const header = new Uint8Array(await audio.slice(0, 10).arrayBuffer())
+  if (/\.ogg$/i.test(audio.name)) {
+    if (new TextDecoder().decode(header.slice(0, 4)) !== 'OggS')
+      fail('AUDIO_INVALID', '音频不是有效 Ogg 文件，请检查实际格式')
+    return
+  }
+  const id3 =
+    header.length === 10 &&
+    new TextDecoder().decode(header.slice(0, 3)) === 'ID3' &&
+    header[3] >= 2 &&
+    header[3] <= 4 &&
+    header[4] !== 255 &&
+    header.slice(6, 10).every((b) => b < 128)
+  if (id3) {
+    const tagSize = header.slice(6, 10).reduce((size, b) => size * 128 + b, 0)
+    const footer = header[3] === 4 && (header[5] & 16) !== 0 ? 10 : 0
+    if (10 + tagSize + footer + 4 <= audio.size) return
+  } else if (
+    header.length >= 4 &&
+    header[0] === 255 &&
+    (header[1] & 224) === 224 &&
+    ((header[1] >> 3) & 3) !== 1 &&
+    ((header[1] >> 1) & 3) === 1 &&
+    header[2] >> 4 > 0 &&
+    header[2] >> 4 < 15 &&
+    ((header[2] >> 2) & 3) !== 3
+  )
+    return
+  // This is a lightweight signature check. The backend validates all frames and decodes the file.
+  fail('AUDIO_INVALID', '音频不是有效 MP3 文件，请检查实际格式，不要只修改扩展名')
+}
+
 export function safeFilename(s: string) {
   return (
     !!s &&
@@ -120,7 +155,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       continue
     }
     if (['LYRICS', 'BGIMAGE', 'BGMOVIE'].includes(upper) && value)
-      fail('TJA_RESOURCE_UNSUPPORTED', '示范版仅接受 TJA 与单个 OGG', line)
+      fail('TJA_RESOURCE_UNSUPPORTED', '仅接受 TJA 与单个 OGG 或 MP3 音频', line)
     if (upper === 'COURSE') {
       if (['tower', 'dan', '5', '6'].includes(value.toLowerCase()))
         fail(
@@ -173,8 +208,8 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     }
   }
   if (!waves || !m.wave) fail('TJA_WAVE_MISSING', 'TJA 缺少非空的 WAVE 音频引用', waveLine)
-  if (!safeFilename(m.wave) || !m.wave.toLowerCase().endsWith('.ogg'))
-    fail('TJA_WAVE_PATH_INVALID', 'WAVE 必须为不带路径、引号的 .ogg 文件名', waveLine)
+  if (!safeFilename(m.wave) || !isAudioFilename(m.wave))
+    fail('TJA_WAVE_PATH_INVALID', 'WAVE 必须为不带路径、引号的 .ogg 或 .mp3 文件名', waveLine)
   if (!safeFilename(audioName)) fail('UPLOAD_FILENAME_INVALID', '上传文件名不能包含路径或特殊字符')
   if (m.wave.normalize('NFC') !== audioName.normalize('NFC'))
     throw new ValidationError(
@@ -189,12 +224,11 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
   return m
 }
 export async function validateFiles(tja: File, audio: File, encoding: string): Promise<Metadata> {
-  if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !/\.ogg$/i.test(audio.name))
-    fail('UPLOAD_FILES_INVALID', '请选择一个 .tja 谱面和一个 .ogg 音频')
+  if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !isAudioFilename(audio.name))
+    fail('UPLOAD_FILES_INVALID', '请选择一个 .tja 谱面和一个 .ogg 或 .mp3 音频')
   if (!tja.size || tja.size > maxTja || !audio.size || audio.size > maxAudio)
-    fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，OGG 最大 100 MiB')
+    fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
   const metadata = parseTja(new Uint8Array(await tja.arrayBuffer()), encoding, audio.name)
-  if (new TextDecoder().decode(await audio.slice(0, 4).arrayBuffer()) !== 'OggS')
-    fail('AUDIO_INVALID', '音频不是有效 Ogg 文件，请检查实际格式')
+  await validateAudioHeader(audio)
   return metadata
 }

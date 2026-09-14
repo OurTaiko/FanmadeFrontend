@@ -111,3 +111,7 @@ pnpm exec playwright test e2e/courses.spec.ts
 ```
 
 该用例验证五种筛选、普通谱面预览、不支持作品不可见，以及 Tower/Dan/5/6 混合谱面在本地被拒绝且没有上传请求；替换为 Oni 后恢复发布按钮。
+
+## MP3 上传
+
+支持一个 TJA 搭配一个 OGG（Vorbis）或 MP3，音频上限 100 MiB。WAVE 必须与音频文件名完全对应；浏览器检查文件头，后端检查真实格式及完整解码。试听、下载和 ZIP 保留原始 MP3，不转码。`pnpm test` 包含 MP3 有／无 ID3、扩展名大小写、错误文件名与伪装文件头测试。
