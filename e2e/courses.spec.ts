@@ -114,7 +114,7 @@ test('mixed Tower/Dan and numeric aliases cannot upload; replacing with Oni rest
       uploads.push(request.url())
   })
   await page.goto('/upload')
-  await page.getByLabel('选择 OGG 音频').setInputFiles({
+  await page.getByLabel('选择 OGG 或 MP3 音频').setInputFiles({
     name: 'music.ogg',
     mimeType: 'audio/ogg',
     buffer: Buffer.from('OggS fixture'),

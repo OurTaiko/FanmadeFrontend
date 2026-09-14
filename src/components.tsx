@@ -60,7 +60,7 @@ export function Cover({
       <Disc3 className="cover-disc" strokeWidth={0.8} />
       <span className="cover-title">{chart.title}</span>
       <span className="cover-format">
-        TJA <span>＋</span> OGG
+        TJA <span>＋</span> OGG / MP3
       </span>
     </div>
   )
