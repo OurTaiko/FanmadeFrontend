@@ -4,6 +4,8 @@ React + TypeScript + Vite 前端，独立 Git 仓库。**仅使用 pnpm**，提�
 
 远端仓库：[OurTaiko/Fanmade_Frontend](https://github.com/OurTaiko/Fanmade_Frontend)，使用 `ourtaiko` 远端管理。
 
+生产服务器通过 Git 拉取本仓库及 TJARenderer 子模块，使用 pnpm 构建，1Panel OpenResty 提供静态文件和同域 `/api/`。服务器更新入口为 `bash /opt/ourtaiko-fanmade/src/frontend/deploy/publish.sh`，按 Git 版本保存构建并切换站点目录；不会启动 Vite 开发服务。后端仓库的 `docs/DEPLOYMENT.md` 记录完整部署路径。
+
 ## 启动
 
 环境：Node.js 22.12+（本机验证为 26.8）、pnpm 12.3.4。
