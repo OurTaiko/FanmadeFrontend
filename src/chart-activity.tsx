@@ -7,6 +7,7 @@ import { courseNames, Notice } from './components'
 import { defaultDifficulty } from './chart-difficulty'
 import { useSession } from './session-context'
 import { maxTja } from './tja'
+import { isSupportedCourse } from './courses'
 
 const ChartPreview = lazy(() => import('./chart-preview'))
 
@@ -17,7 +18,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const courses = [...new Set(chart.difficulties.map((d) => d.course))]
+  const courses = [...new Set(chart.difficulties.map((d) => d.course).filter(isSupportedCourse))]
   const { id, versionId, encoding } = chart
 
   useEffect(() => {
@@ -203,7 +204,9 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
       ) : (
         <div className="leaderboard-scroll" tabIndex={0} role="region" aria-label="成绩排名表格">
           <table>
-            <caption className="sr-only">{courseNames[course] ?? course} 难度排行榜</caption>
+            <caption className="sr-only">
+              {isSupportedCourse(course) ? courseNames[course] : course} 难度排行榜
+            </caption>
             <thead>
               <tr>
                 {['排名', '玩家', '总分', '良', '可', '不可', '连打', '提交时间'].map((label) => (

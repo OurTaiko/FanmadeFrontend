@@ -22,6 +22,7 @@ import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './compo
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
+import { supportsChart } from './courses'
 
 export function Library({ mine = false }: { mine?: boolean }) {
   const [params, setParams] = useSearchParams(),
@@ -399,6 +400,7 @@ export function Detail() {
         </Link>
       </>
     )
+  if (!supportsChart(chart.difficulties)) return <Notice>该谱面类型不受支持。</Notice>
   return (
     <>
       <Link className="back-link" to="/">

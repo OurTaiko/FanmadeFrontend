@@ -15,15 +15,9 @@ import { useSession } from './session-context'
 import type { Chart } from './api'
 import type { Difficulty } from './tja'
 
-export const courseNames: Record<string, string> = {
-  Easy: '简单',
-  Normal: '普通',
-  Hard: '困难',
-  Oni: '魔王',
-  Edit: '里谱',
-  Tower: '塔',
-  Dan: '段位',
-}
+import { courseNames, isSupportedCourse, supportsChart } from './courses'
+export { courseNames } from './courses'
+
 export function DifficultyBadges({
   difficulties,
   detailed = false,
@@ -31,9 +25,10 @@ export function DifficultyBadges({
   difficulties: Difficulty[]
   detailed?: boolean
 }) {
+  const supported = difficulties.filter((d) => isSupportedCourse(d.course))
   const items = detailed
-    ? difficulties
-    : difficulties.filter(
+    ? supported
+    : supported.filter(
         (d, index, all) => all.findIndex((other) => other.course === d.course) === index,
       )
   return (
@@ -41,7 +36,7 @@ export function DifficultyBadges({
       {items.map((d) => (
         <span className={`difficulty ${d.course.toLowerCase()}`} key={d.blockIndex}>
           <span>
-            {courseNames[d.course] || d.course}
+            {isSupportedCourse(d.course) ? courseNames[d.course] : ''}
             {detailed && d.player ? ` ${d.player}` : ''}
           </span>
           <b>★ {d.level}</b>
@@ -71,6 +66,7 @@ export function Cover({
   )
 }
 export function ChartCard({ chart }: { chart: Chart }) {
+  if (!supportsChart(chart.difficulties)) return null
   return (
     <Link className="chart-card" to={`/charts/${chart.id}`}>
       <Cover chart={chart} />

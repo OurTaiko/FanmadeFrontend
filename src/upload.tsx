@@ -143,7 +143,7 @@ export function UploadPage() {
             发布你的谱面
             <span className="title-dot" />
           </h1>
-          <p>准备好 TJA 和对应的 OGG，剩下的交给我们。</p>
+          <p>准备好 TJA 和对应的 OGG，支持简单、普通、困难、魔王和里谱。</p>
         </div>
       </div>
       {!session.loading && !session.user && (

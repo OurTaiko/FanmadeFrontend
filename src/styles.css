@@ -716,11 +716,6 @@ main {
   background: #462733;
   color: #f19aae;
 }
-.difficulty.tower,
-.difficulty.dan {
-  background: #243d48;
-  color: #93cadf;
-}
 .card-footer {
   display: flex;
   align-items: center;

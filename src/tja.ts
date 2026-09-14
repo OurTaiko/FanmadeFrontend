@@ -1,4 +1,6 @@
-export const validationVersion = 'tja-upload-v1'
+import { parseTjaCourse } from './courses'
+
+export const validationVersion = 'tja-upload-v5'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
 export type Difficulty = { course: string; level: number; blockIndex: number; player: string }
@@ -40,22 +42,6 @@ export function safeFilename(s: string) {
     }) &&
     !/[/\\:"<>|?*]/u.test(s)
   )
-}
-const courses: Record<string, string> = {
-  '0': 'Easy',
-  '1': 'Normal',
-  '2': 'Hard',
-  '3': 'Oni',
-  '4': 'Edit',
-  easy: 'Easy',
-  normal: 'Normal',
-  hard: 'Hard',
-  oni: 'Oni',
-  edit: 'Edit',
-  tower: 'Tower',
-  dan: 'Dan',
-  '5': 'Tower',
-  '6': 'Dan',
 }
 export function parseTja(data: Uint8Array, encoding: string, audioName: string): Metadata {
   const m: Metadata = {
@@ -135,14 +121,21 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     }
     if (['LYRICS', 'BGIMAGE', 'BGMOVIE'].includes(upper) && value)
       fail('TJA_RESOURCE_UNSUPPORTED', '示范版仅接受 TJA 与单个 OGG', line)
-    if (key === 'COURSE') {
-      if (!Object.hasOwn(courses, value.toLowerCase()) || inBlock)
+    if (upper === 'COURSE') {
+      if (['tower', 'dan', '5', '6'].includes(value.toLowerCase()))
         fail(
-          'TJA_STRUCTURE_INVALID',
-          'COURSE 需要 Easy / Normal / Hard / Oni / Edit / Tower / Dan（或 0–6）',
+          'TJA_COURSE_UNSUPPORTED',
+          '不支持塔（Tower）或段位（Dan）谱面，请移除这些谱面块后重新上传',
           line,
         )
-      course = courses[value.toLowerCase()]
+      const parsed = parseTjaCourse(value)
+      if (!parsed || inBlock || key !== 'COURSE')
+        fail(
+          'TJA_STRUCTURE_INVALID',
+          '请使用大写 COURSE，难度需要 Easy / Normal / Hard / Oni / Edit（或 0–4）',
+          line,
+        )
+      course = parsed!
       level = 0
       continue
     }
