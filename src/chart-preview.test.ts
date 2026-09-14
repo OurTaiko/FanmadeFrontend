@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { courseNames, supportsChart } from './courses'
 import { defaultDifficulty } from './chart-difficulty'
 import { parsePreviewTja } from './preview-tja'
 import type { Difficulty } from './tja'
@@ -17,6 +18,10 @@ describe('detail difficulty selection', () => {
       courses.pop()
     }
     expect(defaultDifficulty([])).toBe('')
+    expect(defaultDifficulty([{ course: 'Tower', level: 5, blockIndex: 0, player: '' }])).toBe('')
+    expect(Object.keys(courseNames)).toEqual(['Easy', 'Normal', 'Hard', 'Oni', 'Edit'])
+    expect(supportsChart([{ course: 'Oni' }, { course: 'Dan' }])).toBe(false)
+    expect(supportsChart([{ course: 'Oni' }, { course: 'Edit' }])).toBe(true)
   })
 })
 
@@ -82,6 +87,13 @@ COURSE:Oni
 #END`)
     expect(Object.keys(parsed[0].branches ?? {})).toEqual(['normal', 'expert', 'master'])
     expect(parsed[0].branches?.master?.bars.some((bar) => bar.join('') === '1212')).toBe(true)
+  })
+  it.each(['Tower', 'Dan', '5', '6', 'tower', 'dAn'])('rejects %s in preview input', (course) => {
+    expect(() =>
+      parsePreviewTja(
+        `TITLE:Song\nBPM:120\nCOURSE:Oni\n#START\n1,\n#END\nCOURSE:${course}\n#START\n1,\n#END`,
+      ),
+    ).toThrow('仅支持')
   })
   it('reports incomplete data instead of showing another chart', () => {
     expect(() => parsePreviewTja('TITLE:Empty')).toThrow()

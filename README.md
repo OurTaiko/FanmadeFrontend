@@ -38,7 +38,7 @@ pnpm dev
 
 真实数据来自本机 `~/Documents/GitHub/ESE`，不是伪造 TJA。先启动后端，在后端仓库执行 `python3 scripts/demo.py seed` 可通过上传 API 导入 6 组演示谱面。源文件不会被修改或放进前端 Git。
 
-核心规则在 `src/tja.ts`，共享测试样例为 `contracts/validation.json`，与后端副本保持相同。需要资源的 `#NEXTSONG` 多音频谱暂不接受。ESE 中 `Together.tja` 缺少一个 #START，已在参考库测试中记录，原文件不改写。
+核心规则在 `src/tja.ts`，共享测试样例为 `contracts/validation.json`，与后端副本保持相同。仅接受 Easy / Normal / Hard / Oni / Edit（TJA 数字 0–4），拒绝 Tower / Dan（含 5 / 6、大小写变体）；混合普通难度也整份拒绝。筛选、徽标和详情选择器只展示五种普通难度；如果 API 返回混合或不支持作品，隐藏卡片并阻止详情加载资源。需要资源的 `#NEXTSONG` 多音频谱暂不接受。ESE 中 `Together.tja` 缺少一个 #START，已在参考库测试中记录，原文件不改写。
 
 ## 检查
 
@@ -101,3 +101,11 @@ FRONTEND_E2E=1 DATABASE_TEST_URL='postgres://localhost/ourtaiko_fanmade?host=/tm
 ```
 
 夹具自动启动临时 API/Vite，使用独立数据库 schema 和测试收件箱，不向真实邮箱发信。需要创建账号的 E2E 用例在未配置测试收件箱时跳过，不能绕过邮箱验证。常规开发仍使用 `pnpm dev`；`VITE_API_TARGET` 可仅为隔离测试覆盖 Vite 的代理目标，默认后端为 `http://127.0.0.1:8080`。
+
+难度限制的隔离浏览器测试只需启动前端，无需后端、数据库或邮件服务：
+
+```sh
+pnpm exec playwright test e2e/courses.spec.ts
+```
+
+该用例验证五种筛选、普通谱面预览、不支持作品不可见，以及 Tower/Dan/5/6 混合谱面在本地被拒绝且没有上传请求；替换为 Oni 后恢复发布按钮。

@@ -13,6 +13,7 @@ describe('shared TJA upload contract', () => {
         } catch (error) {
           expect(error).toBeInstanceOf(ValidationError)
           expect((error as ValidationError).code).toBe(c.code)
+          if (c.line) expect((error as ValidationError).line).toBe(c.line)
         }
       } else {
         const metadata = parseTja(bytes, c.encoding, c.audio)

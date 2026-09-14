@@ -1,3 +1,4 @@
+import { parseTjaCourse } from './courses'
 import { parseTJA } from '../TJARenderer/src/tja-parser'
 import type { ParsedChart } from '../TJARenderer/src/tja-parser'
 
@@ -35,6 +36,8 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       const key = line.slice(0, separator).trim().toUpperCase()
       const value = line.slice(separator + 1).trim()
       if (key === 'COURSE') {
+        if (!parseTjaCourse(value))
+          throw new Error('谱面预览仅支持 Easy / Normal / Hard / Oni / Edit 难度')
         hasCourse = true
         courseHeaders = {}
       } else {
