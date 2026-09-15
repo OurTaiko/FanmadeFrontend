@@ -133,3 +133,9 @@ pnpm exec playwright test e2e/courses.spec.ts
 后端独立验证文件并统一保存 UTF-8，按保存后的字节计算 SHA-256 和大小；下载得到相同的 UTF-8 内容。已有作品不自动改写。自动检测实现位于 `src/tja-encoding.ts`，统计检测器仅在非 UTF-8 文件需要时加载。
 
 验证覆盖多语言旧编码、Unicode BOM、损坏字符、WAVE 不匹配、转码后超限，以及浏览器实际提交的 UTF-8 multipart 内容；后端集成测试验证入库编码、哈希、大小、单文件下载、ZIP 与幂等重试。
+
+## 谱面分类
+
+上传页及谱面信息编辑弹窗从 `GET /api/v1/categories` 读取多选项；上传未选择时默认 Variety。信息编辑回显 `Chart.categoryIds`，仅分类改变时发送该字段；清空后由后端归入 Variety。分类变更保留谱面版本和成绩。需配套支持分类的后端；分类加载失败可原地重试。
+
+`e2e/categories.spec.ts` 覆盖真实 API 上传、默认值、加载失败重试、作者分类编辑、刷新回显与手机弹窗。测试需要隔离 API 及 `FANMADE_TEST_MAILBOX`，或 `FANMADE_CATEGORY_TEST_USER` / `FANMADE_CATEGORY_TEST_PASSWORD` 测试账号；使用 `PLAYWRIGHT_BASE_URL` 指向测试前端。
