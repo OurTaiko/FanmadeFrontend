@@ -16,7 +16,7 @@ import { useNotification } from './notification-context'
 import { DifficultyBadges, Notice } from './components'
 import { useSession } from './session-context'
 import { isAudioFilename, validateFiles } from './tja'
-import type { Metadata } from './tja'
+import type { PreparedTja } from './tja'
 
 function createRequestKey() {
   // getRandomValues remains available over LAN HTTP, unlike randomUUID.
@@ -29,9 +29,8 @@ export function UploadPage() {
   const session = useSession(),
     navigate = useNavigate()
   const [tja, setTja] = useState<File | null>(null),
-    [audio, setAudio] = useState<File | null>(null),
-    [encoding, setEncoding] = useState('utf-8')
-  const [metadata, setMetadata] = useState<Metadata | null>(null),
+    [audio, setAudio] = useState<File | null>(null)
+  const [metadata, setMetadata] = useState<PreparedTja | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
   const [description, setDescription] = useState(''),
@@ -54,7 +53,7 @@ export function UploadPage() {
       return
     }
     setValidating(true)
-    validateFiles(tja, audio, encoding)
+    validateFiles(tja, audio)
       .then((m) => {
         if (active) setMetadata(m)
       })
@@ -67,7 +66,7 @@ export function UploadPage() {
     return () => {
       active = false
     }
-  }, [tja, audio, encoding])
+  }, [tja, audio])
   useEffect(() => {
     if (!audio) {
       setAudioUrl('')
@@ -106,12 +105,12 @@ export function UploadPage() {
     const abort = new AbortController()
     controller.current = abort
     try {
-      await validateFiles(tja, audio, encoding)
+      const prepared = await validateFiles(tja, audio)
       if (abort.signal.aborted) return
       const form = new FormData()
-      form.append('tja', tja)
+      form.append('tja', prepared.file)
       form.append('audio', audio)
-      form.append('encoding', encoding)
+      form.append('encoding', 'utf-8')
       form.append('description', description)
       const chart = await uploadChart(
         form,
@@ -192,26 +191,12 @@ export function UploadPage() {
                 )
               })}
             </div>
-            <label className="encoding-field">
-              TJA 文本编码
-              <select
-                value={encoding}
-                disabled={busy}
-                onChange={(e) => {
-                  reset()
-                  setEncoding(e.target.value)
-                }}
-              >
-                <option value="utf-8">UTF-8（推荐 / ESE）</option>
-                <option value="shift-jis">Shift-JIS</option>
-              </select>
-            </label>
             {validationError && <Notice title="文件校验未通过">{validationError}</Notice>}
             {metadata && (
               <Notice
                 kind="success"
                 title="本地校验通过"
-              >{`WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
+              >{`已自动识别为 ${metadata.sourceEncoding}，上传文件统一使用 UTF-8。WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
             )}
           </section>
           <section className="panel description-panel">
