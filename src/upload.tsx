@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,12 +11,13 @@ import {
   Upload,
 } from 'lucide-react'
 import { CategoryPicker } from './categories'
-import { uploadChart } from './api'
+import { api, uploadChart } from './api'
+import type { Chart } from './api'
 import { Modal } from './notifications'
 import { useNotification } from './notification-context'
 import { courseNames, DifficultyBadges, Notice } from './components'
 import { useSession } from './session-context'
-import { isAudioFilename, validateFiles } from './tja'
+import { isAudioFilename, prepareTja, validateFiles } from './tja'
 import type { PreparedTja } from './tja'
 import { isSupportedCourse } from './courses'
 
@@ -26,7 +27,42 @@ function createRequestKey() {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export function UploadPage() {
+export function UpdatePage() {
+  const { id } = useParams()
+  const session = useSession()
+  const [chart, setChart] = useState<Chart | null>(null)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const controller = new AbortController()
+    setChart(null)
+    setError('')
+    api<Chart>(`/charts/${id}`, { signal: controller.signal })
+      .then((loaded) => {
+        if (!controller.signal.aborted) setChart(loaded)
+      })
+      .catch((e: Error) => {
+        if (!controller.signal.aborted) setError(e.message)
+      })
+    return () => controller.abort()
+  }, [id])
+  if (error)
+    return (
+      <>
+        <Link to={`/charts/${id}`}>返回歌曲</Link>
+        <Notice>{error}</Notice>
+      </>
+    )
+  if (!chart || session.loading) return <p role="status">正在加载歌曲…</p>
+  if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
+    return (
+      <p>
+        只有上传者或管理员可以更新歌曲。<Link to={`/charts/${id}`}>返回歌曲</Link>
+      </p>
+    )
+  return <UploadPage key={chart.versionId} existing={chart} />
+}
+
+export function UploadPage({ existing }: { existing?: Chart }) {
   const { notify } = useNotification()
   const session = useSession(),
     navigate = useNavigate()
@@ -35,11 +71,13 @@ export function UploadPage() {
   const [metadata, setMetadata] = useState<PreparedTja | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
-  const [categoryIds, setCategoryIds] = useState<string[]>([])
-  const [description, setDescription] = useState(''),
+  const [categoryIds, setCategoryIds] = useState<string[]>(existing?.categoryIds ?? [])
+  const [description, setDescription] = useState(existing?.description ?? ''),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
     [audioUrl, setAudioUrl] = useState('')
+  const [confirming, setConfirming] = useState(false)
+  const retainedAudioName = existing?.audioName
   const requestKey = useRef(createRequestKey()),
     controller = useRef<AbortController | null>(null)
   const reset = () => {
@@ -51,12 +89,13 @@ export function UploadPage() {
     let active = true
     setMetadata(null)
     setValidationError('')
-    if (!tja || !audio) {
+    if (!tja || (!audio && !retainedAudioName)) {
       setValidating(false)
       return
     }
     setValidating(true)
-    validateFiles(tja, audio)
+    const validation = audio ? validateFiles(tja, audio) : prepareTja(tja, retainedAudioName!)
+    validation
       .then((m) => {
         if (active) setMetadata(m)
       })
@@ -69,7 +108,7 @@ export function UploadPage() {
     return () => {
       active = false
     }
-  }, [tja, audio])
+  }, [tja, audio, retainedAudioName])
   useEffect(() => {
     if (!audio) {
       setAudioUrl('')
@@ -100,19 +139,31 @@ export function UploadPage() {
     if (charts[0]) setTja(charts[0])
     if (tracks[0]) setAudio(tracks[0])
   }
-  const submit = async (e: FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!tja || !audio || !metadata || busy) return
+    if (!metadata || busy) return
+    if (existing) setConfirming(true)
+    else void save()
+  }
+  const save = async () => {
+    if (!tja || (!audio && !existing) || !metadata || busy) return
+    setConfirming(false)
     setBusy(true)
     setProgress(0)
     const abort = new AbortController()
     controller.current = abort
     try {
-      const prepared = await validateFiles(tja, audio)
+      const prepared = audio
+        ? await validateFiles(tja, audio)
+        : await prepareTja(tja, existing!.audioName)
       if (abort.signal.aborted) return
       const form = new FormData()
       form.append('tja', prepared.file)
-      form.append('audio', audio)
+      if (audio) form.append('audio', audio)
+      if (existing) {
+        form.append('expectedVersionId', existing.versionId)
+        form.append('confirmReset', 'true')
+      }
       form.append('encoding', 'utf-8')
       form.append('description', description)
       form.append('categoryIds', JSON.stringify(categoryIds))
@@ -128,9 +179,10 @@ export function UploadPage() {
         requestKey.current,
         abort.signal,
         setProgress,
+        existing?.id,
       )
       navigate(`/charts/${chart.id}`)
-      notify('谱面已发布。', 'success')
+      notify(existing ? '歌曲已更新，全部旧谱面和旧成绩已删除。' : '谱面已发布。', 'success')
     } catch (e) {
       if (!abort.signal.aborted) notify((e as Error).message, 'error')
     } finally {
@@ -140,24 +192,41 @@ export function UploadPage() {
   }
   return (
     <>
-      <Link className="back-link" to="/">
+      <Link className="back-link" to={existing ? `/charts/${existing.id}` : '/'}>
         <ArrowLeft size={16} />
-        返回发现
+        {existing ? '返回歌曲' : '返回发现'}
       </Link>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">SHARE YOUR RHYTHM</div>
+          <div className="eyebrow">{existing ? 'UPDATE YOUR CHART' : 'SHARE YOUR RHYTHM'}</div>
           <h1>
-            发布你的谱面
+            {existing ? '更新歌曲与谱面' : '发布你的谱面'}
             <span className="title-dot" />
           </h1>
-          <p>准备好 TJA 和对应的 OGG 或 MP3 音频，支持简单、普通、困难、魔王和里谱。</p>
+          <p>
+            {existing
+              ? `正在更新「${existing.title}」。选择完整的新 TJA，可同时更换音频。`
+              : '准备好 TJA 和对应的 OGG 或 MP3 音频，支持简单、普通、困难、魔王和里谱。'}
+          </p>
         </div>
       </div>
       {!session.loading && !session.user && (
         <Notice kind="info" title="登录后即可发布">
           你可以先选择文件检查谱面与音频是否匹配，发布前请通过右上角登录或注册。
         </Notice>
+      )}
+      {existing && (
+        <section className="panel replacement-warning" aria-label="更新须知">
+          <h2>更新将清空全部旧成绩</h2>
+          <p>
+            新 TJA
+            将替换整首歌曲的谱面。所有玩家在这首歌上的成绩、排行榜记录和旧文件都会删除，即使某个难度没有变化也不继承成绩。
+          </p>
+          <p>
+            歌曲地址保留，名称和副标题以新 TJA
+            为准。未选择新音频时沿用当前音频。只有新文件校验并保存成功后才会删除旧数据。
+          </p>
+        </section>
       )}
       <form onSubmit={submit} className="upload-layout">
         <div>
@@ -166,7 +235,9 @@ export function UploadPage() {
               <h2>
                 <span className="step">01</span>选择文件
               </h2>
-              <span className="muted">两个文件，缺一不可</span>
+              <span className="muted">
+                {existing ? '新 TJA 必选，音频可沿用' : '两个文件，缺一不可'}
+              </span>
             </div>
             <div className="file-drop" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
               <Upload size={26} />
@@ -186,7 +257,9 @@ export function UploadPage() {
                           ? file.name
                           : kind === 'tja'
                             ? '.tja · 最大 2 MiB'
-                            : '.ogg / .mp3 · 最大 100 MiB'}
+                            : existing
+                              ? `沿用 ${existing.audioName}`
+                              : '.ogg / .mp3 · 最大 100 MiB'}
                       </small>
                     </span>
                     {file ? <Check size={18} /> : <span className="choose-label">选择</span>}
@@ -201,6 +274,19 @@ export function UploadPage() {
                 )
               })}
             </div>
+            {existing && audio && (
+              <button
+                type="button"
+                className="button ghost"
+                disabled={busy}
+                onClick={() => {
+                  reset()
+                  setAudio(null)
+                }}
+              >
+                沿用当前音频 {existing.audioName}
+              </button>
+            )}
             {validationError && <Notice title="文件校验未通过">{validationError}</Notice>}
             {metadata && (
               <Notice
@@ -295,7 +381,7 @@ export function UploadPage() {
         <aside>
           <section className="panel preview-panel">
             <div className="panel-heading">
-              <h2>投稿预览</h2>
+              <h2>{existing ? '更新预览' : '投稿预览'}</h2>
               <span className="preview-tag">PREVIEW</span>
             </div>
             {metadata ? (
@@ -338,12 +424,18 @@ export function UploadPage() {
                 disabled={!metadata || validating || busy || !session.user}
               >
                 {busy ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}{' '}
-                {busy ? '正在发布…' : validating ? '正在校验…' : '发布谱面'}
+                {busy
+                  ? '正在保存…'
+                  : validating
+                    ? '正在校验…'
+                    : existing
+                      ? '更新歌曲与谱面'
+                      : '发布谱面'}
                 {!busy && <ArrowRight size={17} />}
               </button>
               {busy && (
                 <Modal
-                  title="正在发布谱面"
+                  title={existing ? '正在更新歌曲' : '正在发布谱面'}
                   busy
                   onDismiss={() => {}}
                   actions={
@@ -364,7 +456,11 @@ export function UploadPage() {
                   </div>
                 </Modal>
               )}
-              <p>发布后，其他人可以浏览、试听并下载你的作品。</p>
+              <p>
+                {existing
+                  ? '更新成功后，所有难度的成绩从零开始。'
+                  : '发布后，其他人可以浏览、试听并下载你的作品。'}
+              </p>
             </div>
           </section>
           <button
@@ -382,6 +478,35 @@ export function UploadPage() {
           </button>
         </aside>
       </form>
+      {confirming && existing && (
+        <Modal
+          title="替换歌曲并清空全部旧成绩？"
+          alert
+          onDismiss={() => setConfirming(false)}
+          actions={
+            <>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => setConfirming(false)}
+              >
+                取消
+              </button>
+              <button type="button" className="button primary" onClick={() => void save()}>
+                确认替换并清空
+              </button>
+            </>
+          }
+        >
+          <p>
+            「{existing.title}」将替换为「{metadata?.title}」，包含 {metadata?.difficulties.length}{' '}
+            个谱面块。
+          </p>
+          <p>
+            这首歌所有玩家的旧成绩、旧谱面及旧文件都会永久删除，无法撤销。未改动的难度也会清空成绩。
+          </p>
+        </Modal>
+      )}
     </>
   )
 }

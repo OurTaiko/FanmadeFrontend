@@ -87,7 +87,7 @@ PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.sp
 
 本次验证：pnpm lint/build/format:check、29 个基础测试与编辑 Playwright 测试通过；agent-browser 检查桌面及 390px 弹窗，无横向溢出、错误遮罩或页面错误。管理员真实放行／撤权由后端 PostgreSQL 测试覆盖，浏览器管理员入口使用受控会话响应测试。
 
-后台验证是最终依据。前端不把解析出的标题、难度或“验证通过”标记当作后端可信数据发送；上传转换后的 UTF-8 文件后由后端重新解析。游戏、邮箱验证、替换版本、管理员页面和社交功能仍在后续计划。
+后台验证是最终依据。前端不把解析出的标题、难度或“验证通过”标记当作后端可信数据发送；上传转换后的 UTF-8 文件后由后端重新解析。管理员页面和社交功能仍在后续计划。
 
 ## 邮箱验证注册
 
@@ -145,3 +145,12 @@ pnpm exec playwright test e2e/courses.spec.ts
 上传校验后显示各谱面块的「难度与制作者」表格，默认使用 TJA 的 MAKER，支持单独修改与清空；提交为按 blockIndex 对应的 difficultyMakers。预览汇总署名以 ` | ` 去重连接。详情页保留歌曲总署名，并在难度选择器下显示选中难度的署名；同难度多块按 P1/P2 分列。
 
 验证：`pnpm test`、`pnpm build`、`pnpm lint`；运行本地前后端后，`pnpm exec playwright test e2e/makers.spec.ts` 检查默认填值、修改后提交、切换难度及 390px 手机布局。该用例拦截上传响应，不发布真实作品。
+
+
+## 更新歌曲与谱面
+
+歌曲详情页的上传者／管理员可点击「更新歌曲与谱面」，进入 `/charts/:id/update`。新 TJA 必选，音频可沿用当前文件或重新选择；回显原分类及投稿说明，新 TJA 的 MAKER 默认填入各难度署名表。提交前展示不可撤销的清空确认。
+
+成功替换保留歌曲链接，删除整首歌所有旧谱面、旧文件和所有玩家的旧成绩，A 更新为 A+B 时 A 的成绩也清空；名称与副标题以新 TJA 为准。服务器独立校验权限、版本和确认字段，失败保留旧数据，重试不会重复执行删除。仅「编辑信息」仍保持原来的展示编辑行为，不更换版本或清空成绩。需要后端迁移 015 及 `PUT /charts/{id}/files`。
+
+`pnpm exec playwright test e2e/replacement.spec.ts` 验证沿用／替换音频、制作者映射、取消确认、失败重试、移动端和桌面端展示。

@@ -4,7 +4,7 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { SessionProvider } from './session'
 import { Layout } from './components'
 import { Auth, Detail, Library } from './pages'
-import { UploadPage } from './upload'
+import { UpdatePage, UploadPage } from './upload'
 import { NotificationProvider } from './notifications'
 import { CategoryProvider } from './categories'
 import './styles.css'
@@ -19,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route index element={<Library />} />
                 <Route path="me/charts" element={<Library mine />} />
                 <Route path="upload" element={<UploadPage />} />
+                <Route path="charts/:id/update" element={<UpdatePage />} />
                 <Route path="charts/:id" element={<Detail />} />
                 <Route path="login" element={<Auth key="login" />} />
                 <Route path="register" element={<Auth key="register" register />} />

@@ -1807,3 +1807,17 @@ body:has(dialog[open]) {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+.replacement-warning {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  border-left: 4px solid #dd654f;
+}
+.replacement-warning h2 {
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+.replacement-warning p {
+  margin: 8px 0;
+  line-height: 1.7;
+}

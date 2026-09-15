@@ -83,10 +83,14 @@ export function uploadChart(
   key: string,
   signal: AbortSignal,
   onProgress: (n: number) => void,
+  replaceChartId?: string,
 ): Promise<Chart> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/v1/charts')
+    xhr.open(
+      replaceChartId ? 'PUT' : 'POST',
+      replaceChartId ? `/api/v1/charts/${replaceChartId}/files` : '/api/v1/charts',
+    )
     xhr.withCredentials = true
     xhr.setRequestHeader('X-CSRF-Token', csrf)
     xhr.setRequestHeader('Idempotency-Key', key)
@@ -102,8 +106,8 @@ export function uploadChart(
         reject(new Error(xhr.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请重试'))
       }
     }
-    xhr.onerror = () => reject(new Error('网络连接中断，请重试；同一次上传不会重复创建作品'))
-    xhr.onabort = () => reject(new Error('已取消等待；若服务器已保存，重试会返回原作品'))
+    xhr.onerror = () => reject(new Error('网络连接中断，请重试；同一次请求不会重复保存'))
+    xhr.onabort = () => reject(new Error('已取消等待；若服务器已保存，重试会返回已保存的作品'))
     xhr.ontimeout = () => reject(new Error('处理超时，请稍后重试'))
     xhr.timeout = 240000
     const abort = () => xhr.abort()
