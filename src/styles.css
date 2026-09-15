@@ -1739,3 +1739,23 @@ body:has(dialog[open]) {
 .metadata-dialog-content > .category-picker {
   margin-bottom: 24px;
 }
+
+.category-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+.category-labels li {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

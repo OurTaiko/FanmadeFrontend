@@ -75,6 +75,10 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
   const chart = await publish(page)
   try {
     expect(chart.categoryIds).toEqual(['game', 'pop'])
+    await expect(page.getByRole('list', { name: '所属分类' }).getByRole('listitem')).toHaveText([
+      'Game',
+      'Pop',
+    ])
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: '编辑信息', exact: true }).click()
     const modal = page.getByRole('dialog', { name: '编辑谱面信息' })
@@ -94,6 +98,10 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     const updated = await (await page.request.get('/api/v1/charts/' + chart.id)).json()
     expect(updated.categoryIds).toEqual(['classic', 'virtual-singer'])
     expect(updated.versionId).toBe(chart.versionId)
+    await expect(page.getByRole('list', { name: '所属分类' }).getByRole('listitem')).toHaveText([
+      'Classic',
+      'Virtual Singer',
+    ])
     await page.reload()
     await page.getByRole('button', { name: '编辑信息', exact: true }).click()
     await expect(page.getByRole('checkbox', { name: 'Virtual Singer', exact: true })).toBeChecked()
@@ -104,6 +112,14 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     const defaulted = await (await page.request.get('/api/v1/charts/' + chart.id)).json()
     expect(defaulted.categoryIds).toEqual(['variety'])
+    await expect(page.getByRole('list', { name: '所属分类' }).getByRole('listitem')).toHaveText([
+      'Variety',
+    ])
+    for (const path of ['/', '/me/charts']) {
+      await page.goto(path)
+      const card = page.locator(`.chart-card[href="/charts/${chart.id}"]`)
+      await expect(card.getByRole('list', { name: '所属分类' })).toHaveText('Variety')
+    }
     expect(errors).toEqual([])
   } finally {
     await page.request.delete('/api/v1/charts/' + chart.id, {
@@ -120,6 +136,7 @@ test('upload with no selected categories defaults to Variety', async ({ page }) 
   const chart = await publish(page)
   try {
     expect(chart.categoryIds).toEqual(['variety'])
+    await expect(page.getByRole('list', { name: '所属分类' })).toHaveText('Variety')
   } finally {
     await page.request.delete('/api/v1/charts/' + chart.id, {
       headers: { Origin: origin, 'X-CSRF-Token': session.csrfToken },
