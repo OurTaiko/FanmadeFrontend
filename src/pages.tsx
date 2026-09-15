@@ -411,7 +411,7 @@ export function Detail() {
       <div className="detail-hero">
         <Cover chart={chart} large />
         <div className="detail-intro">
-          <div className="eyebrow">FANMADE CHART · V1</div>
+          <div className="eyebrow">FANMADE CHART</div>
           <h1>{chart.title}</h1>
           <p className="subtitle">{chart.subtitle.replace(/^(--|\+\+)/, '')}</p>
           <CategoryLabels ids={chart.categoryIds} />
@@ -439,6 +439,11 @@ export function Detail() {
             <a className="button secondary" href={resource(chart, 'tja')}>
               TJA 原文件
             </a>
+            {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
+              <Link className="button secondary" to={`/charts/${chart.id}/update`}>
+                更新歌曲与谱面
+              </Link>
+            )}
             {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
               <button
                 className="button secondary"

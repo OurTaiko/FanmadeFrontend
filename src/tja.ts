@@ -223,17 +223,24 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
   return m
 }
 export type PreparedTja = Metadata & { file: File; sourceEncoding: string }
-export async function validateFiles(tja: File, audio: File): Promise<PreparedTja> {
-  if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !isAudioFilename(audio.name))
+export async function prepareTja(tja: File, audioName: string): Promise<PreparedTja> {
+  if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !isAudioFilename(audioName))
     fail('UPLOAD_FILES_INVALID', '请选择一个 .tja 谱面和一个 .ogg 或 .mp3 音频')
-  if (!tja.size || tja.size > maxTja || !audio.size || audio.size > maxAudio)
+  if (!tja.size || tja.size > maxTja)
     fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
-  const normalized = await normalizeTja(new Uint8Array(await tja.arrayBuffer()), audio.name)
-  const metadata = parseTja(normalized.data, 'utf-8', audio.name)
-  await validateAudioHeader(audio)
+  const normalized = await normalizeTja(new Uint8Array(await tja.arrayBuffer()), audioName)
+  const metadata = parseTja(normalized.data, 'utf-8', audioName)
   return {
     ...metadata,
     sourceEncoding: normalized.sourceEncoding,
     file: new File([normalized.data], tja.name, { type: 'text/plain;charset=utf-8' }),
   }
+}
+
+export async function validateFiles(tja: File, audio: File): Promise<PreparedTja> {
+  if (!audio.size || audio.size > maxAudio)
+    fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
+  const prepared = await prepareTja(tja, audio.name)
+  await validateAudioHeader(audio)
+  return prepared
 }
