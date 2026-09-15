@@ -25,6 +25,7 @@ import { ChartActivity } from './chart-activity'
 import { Modal } from './notifications'
 import { useNotification } from './notification-context'
 import { supportsChart } from './courses'
+import { CategoryLabels } from './categories'
 
 export function Library({ mine = false }: { mine?: boolean }) {
   const [params, setParams] = useSearchParams(),
@@ -413,6 +414,7 @@ export function Detail() {
           <div className="eyebrow">FANMADE CHART · V1</div>
           <h1>{chart.title}</h1>
           <p className="subtitle">{chart.subtitle.replace(/^(--|\+\+)/, '')}</p>
+          <CategoryLabels ids={chart.categoryIds} />
           <div className="detail-facts">
             <span>
               <Music2 size={17} />

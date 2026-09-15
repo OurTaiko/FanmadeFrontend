@@ -14,6 +14,7 @@ import { useState } from 'react'
 import { Notice } from './notifications'
 import { useSession } from './session-context'
 import type { Chart } from './api'
+import { CategoryLabels } from './categories'
 import type { Difficulty } from './tja'
 
 import { courseNames, isSupportedCourse, supportsChart } from './courses'
@@ -77,6 +78,7 @@ export function ChartCard({ chart }: { chart: Chart }) {
           <ArrowUpRight size={18} />
         </div>
         <p className="card-subtitle">{chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}</p>
+        <CategoryLabels ids={chart.categoryIds} />
         <DifficultyBadges difficulties={chart.difficulties} />
         <div className="card-footer">
           <span>
