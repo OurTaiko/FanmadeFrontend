@@ -139,3 +139,9 @@ pnpm exec playwright test e2e/courses.spec.ts
 上传页及谱面信息编辑弹窗从 `GET /api/v1/categories` 读取多选项；上传未选择时默认 Variety。信息编辑回显 `Chart.categoryIds`，仅分类改变时发送该字段；清空后由后端归入 Variety。分类变更保留谱面版本和成绩。需配套支持分类的后端；分类加载失败可原地重试。
 
 `e2e/categories.spec.ts` 覆盖真实 API 上传、默认值、加载失败重试、作者分类编辑、刷新回显与手机弹窗。测试需要隔离 API 及 `FANMADE_TEST_MAILBOX`，或 `FANMADE_CATEGORY_TEST_USER` / `FANMADE_CATEGORY_TEST_PASSWORD` 测试账号；使用 `PLAYWRIGHT_BASE_URL` 指向测试前端。
+
+## 难度制作者
+
+上传校验后显示各谱面块的「难度与制作者」表格，默认使用 TJA 的 MAKER，支持单独修改与清空；提交为按 blockIndex 对应的 difficultyMakers。预览汇总署名以 ` | ` 去重连接。详情页保留歌曲总署名，并在难度选择器下显示选中难度的署名；同难度多块按 P1/P2 分列。
+
+验证：`pnpm test`、`pnpm build`、`pnpm lint`；运行本地前后端后，`pnpm exec playwright test e2e/makers.spec.ts` 检查默认填值、修改后提交、切换难度及 390px 手机布局。该用例拦截上传响应，不发布真实作品。

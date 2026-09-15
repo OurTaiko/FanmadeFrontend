@@ -24,3 +24,19 @@ describe('shared TJA upload contract', () => {
       }
     })
 })
+
+it('defaults every difficulty to the scanned MAKER', () => {
+  const text =
+    'TITLE:Maker test\nMAKER:A\nBPM:120\nWAVE:test.ogg\n' +
+    ['Hard', 'Oni', 'Edit']
+      .map((course) => `COURSE:${course}\nLEVEL:5\n#START\n1000,\n#END\n`)
+      .join('')
+  const metadata = parseTja(new TextEncoder().encode(text), 'utf-8', 'test.ogg')
+  expect(metadata.difficulties.map((d) => d.maker)).toEqual(['A', 'A', 'A'])
+  const blank = parseTja(
+    new TextEncoder().encode(text.replace('MAKER:A\n', '')),
+    'utf-8',
+    'test.ogg',
+  )
+  expect(blank.difficulties.map((d) => d.maker)).toEqual(['', '', ''])
+})

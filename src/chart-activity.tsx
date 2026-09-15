@@ -80,6 +80,19 @@ export function ChartActivity({ chart }: { chart: Chart }) {
           </select>
         </label>
       </div>
+      <dl className="difficulty-makers" aria-live="polite">
+        {chart.difficulties
+          .filter((d) => d.course === course)
+          .map((d) => (
+            <div key={d.blockIndex}>
+              <dt>
+                {isSupportedCourse(d.course) ? courseNames[d.course] : d.course}
+                {d.player ? ` ${d.player}` : ''} 谱师
+              </dt>
+              <dd>{d.maker || '未填写'}</dd>
+            </div>
+          ))}
+      </dl>
       <div className="activity-tabs" role="tablist" aria-label="歌曲详情内容">
         {(['preview', 'leaderboard'] as const).map((value, index) => (
           <button
