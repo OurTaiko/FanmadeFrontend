@@ -1,4 +1,7 @@
 import { parseTjaCourse } from './courses'
+import { normalizeTja } from './tja-encoding'
+import { ValidationError } from './validation-error'
+export { ValidationError } from './validation-error'
 
 export const validationVersion = 'tja-upload-v6'
 export const maxTja = 2 * 1024 * 1024
@@ -13,17 +16,6 @@ export type Metadata = {
   demoStart: number
   wave: string
   difficulties: Difficulty[]
-}
-export class ValidationError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public line = 0,
-    public expected = '',
-    public actual = '',
-  ) {
-    super(message)
-  }
 }
 const fail = (code: string, message: string, line = 0): never => {
   throw new ValidationError(code, message, line)
@@ -98,7 +90,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       .decode(data)
       .replace(/^\uFEFF/, '')
   } catch {
-    fail('TJA_ENCODING_INVALID', '无法解码文本，请选择正确编码或转存为 UTF-8')
+    fail('TJA_ENCODING_INVALID', '无法解码文本，请转存为 UTF-8 后重新选择')
   }
   if (text.includes('\uFFFD') || text.includes('\u0000'))
     fail('TJA_ENCODING_INVALID', '文本包含无法识别的字符')
@@ -223,12 +215,18 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     fail('TJA_STRUCTURE_INVALID', '需要 TITLE、正数 BPM 和完整谱面块')
   return m
 }
-export async function validateFiles(tja: File, audio: File, encoding: string): Promise<Metadata> {
+export type PreparedTja = Metadata & { file: File; sourceEncoding: string }
+export async function validateFiles(tja: File, audio: File): Promise<PreparedTja> {
   if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !isAudioFilename(audio.name))
     fail('UPLOAD_FILES_INVALID', '请选择一个 .tja 谱面和一个 .ogg 或 .mp3 音频')
   if (!tja.size || tja.size > maxTja || !audio.size || audio.size > maxAudio)
     fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
-  const metadata = parseTja(new Uint8Array(await tja.arrayBuffer()), encoding, audio.name)
+  const normalized = await normalizeTja(new Uint8Array(await tja.arrayBuffer()), audio.name)
+  const metadata = parseTja(normalized.data, 'utf-8', audio.name)
   await validateAudioHeader(audio)
-  return metadata
+  return {
+    ...metadata,
+    sourceEncoding: normalized.sourceEncoding,
+    file: new File([normalized.data], tja.name, { type: 'text/plain;charset=utf-8' }),
+  }
 }
