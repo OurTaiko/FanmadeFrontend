@@ -1687,3 +1687,55 @@ audio {
 body:has(dialog[open]) {
   overflow: hidden;
 }
+
+.category-picker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.category-picker legend {
+  font-weight: 700;
+  font-size: 1rem;
+}
+.category-picker > p {
+  margin: 8px 0 14px;
+  font-size: 0.85rem;
+}
+.category-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.category-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.category-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--red);
+}
+.category-option:has(input:checked) {
+  background: rgba(250, 83, 92, 0.1);
+  border-color: var(--red);
+}
+.category-picker:disabled .category-option {
+  cursor: default;
+  opacity: 0.6;
+}
+.category-error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.metadata-dialog-content > .category-picker {
+  margin-bottom: 24px;
+}

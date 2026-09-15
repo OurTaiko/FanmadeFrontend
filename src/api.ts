@@ -2,12 +2,14 @@ import type { Metadata } from './tja'
 export type User = { id: string; username: string; emailVerified: boolean; isAdmin: boolean }
 export type Locale = 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
+export type Category = { id: string; title: string; genre: string }
 export type Chart = Omit<Metadata, 'difficulties'> & {
   difficulties: (Metadata['difficulties'][number] & {
     style: 'Single' | 'Double'
     cloudScoreEligible: boolean
   })[]
   id: string
+  categoryIds: string[]
   ownerId: string
   uploader: string
   versionId: string

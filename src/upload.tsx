@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   Upload,
 } from 'lucide-react'
+import { CategoryPicker } from './categories'
 import { uploadChart } from './api'
 import { Modal } from './notifications'
 import { useNotification } from './notification-context'
@@ -33,6 +34,7 @@ export function UploadPage() {
   const [metadata, setMetadata] = useState<PreparedTja | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
+  const [categoryIds, setCategoryIds] = useState<string[]>([])
   const [description, setDescription] = useState(''),
     [busy, setBusy] = useState(false),
     [progress, setProgress] = useState(0),
@@ -112,6 +114,7 @@ export function UploadPage() {
       form.append('audio', audio)
       form.append('encoding', 'utf-8')
       form.append('description', description)
+      form.append('categoryIds', JSON.stringify(categoryIds))
       const chart = await uploadChart(
         form,
         session.csrfToken,
@@ -198,6 +201,16 @@ export function UploadPage() {
                 title="本地校验通过"
               >{`已自动识别为 ${metadata.sourceEncoding}，上传文件统一使用 UTF-8。WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
             )}
+          </section>
+          <section className="panel description-panel">
+            <CategoryPicker
+              value={categoryIds}
+              disabled={busy}
+              onChange={(ids) => {
+                setCategoryIds(ids)
+                requestKey.current = createRequestKey()
+              }}
+            />
           </section>
           <section className="panel description-panel">
             <h2>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { RotateCcw, X } from 'lucide-react'
+import { CategoryPicker } from './categories'
 import { api, jsonRequest } from './api'
 import type { Chart, Locale } from './api'
 import { useNotification } from './notification-context'
@@ -14,6 +15,7 @@ const languages = [
 type Language = 'en' | Locale
 type Draft = Record<Language, { title: string; subtitle: string; restore: boolean }>
 type Patch = {
+  categoryIds?: string[]
   title?: string | null
   subtitle?: string | null
   titleTranslations?: Partial<Record<Locale, string | null>>
@@ -42,6 +44,9 @@ export function EditMetadata({
     zh: initial('zh'),
     ko: initial('ko'),
   }))
+  const [categoryIds, setCategoryIds] = useState<string[]>(chart.categoryIds ?? [])
+  const categoriesChanged =
+    [...categoryIds].sort().join() !== [...(chart.categoryIds ?? [])].sort().join()
   const [busy, setBusy] = useState(false)
   const { notify } = useNotification()
   const setError = (message: string) => notify(message, 'error')
@@ -63,16 +68,18 @@ export function EditMetadata({
     }
   }, [])
 
-  const changed = languages.some(
-    ({ code }) =>
-      draft[code].restore ||
-      draft[code].title !== initial(code).title ||
-      draft[code].subtitle !== initial(code).subtitle,
-  )
+  const changed =
+    categoriesChanged ||
+    languages.some(
+      ({ code }) =>
+        draft[code].restore ||
+        draft[code].title !== initial(code).title ||
+        draft[code].subtitle !== initial(code).subtitle,
+    )
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (request.current || !changed) return
-    const patch: Patch = {}
+    const patch: Patch = categoriesChanged ? { categoryIds } : {}
     for (const { code, label } of languages) {
       const current = draft[code],
         original = initial(code)
@@ -152,8 +159,9 @@ export function EditMetadata({
         </header>
         <div className="metadata-dialog-content">
           <p id="edit-metadata-hint" className="muted">
-            修改网站显示的名称和副标题。已保存的成绩不受影响，下载文件保留原内容。
+            修改分类、名称和副标题。已保存的成绩不受影响，下载文件保留原内容。
           </p>
+          <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
           {languages.map(({ code, label, caption }) => (
             <fieldset key={code} className="metadata-language" disabled={busy}>
               <legend>
