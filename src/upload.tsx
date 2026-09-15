@@ -14,10 +14,11 @@ import { CategoryPicker } from './categories'
 import { uploadChart } from './api'
 import { Modal } from './notifications'
 import { useNotification } from './notification-context'
-import { DifficultyBadges, Notice } from './components'
+import { courseNames, DifficultyBadges, Notice } from './components'
 import { useSession } from './session-context'
 import { isAudioFilename, validateFiles } from './tja'
 import type { PreparedTja } from './tja'
+import { isSupportedCourse } from './courses'
 
 function createRequestKey() {
   // getRandomValues remains available over LAN HTTP, unlike randomUUID.
@@ -115,6 +116,12 @@ export function UploadPage() {
       form.append('encoding', 'utf-8')
       form.append('description', description)
       form.append('categoryIds', JSON.stringify(categoryIds))
+      form.append(
+        'difficultyMakers',
+        JSON.stringify(
+          metadata.difficulties.map(({ blockIndex, maker }) => ({ blockIndex, maker })),
+        ),
+      )
       const chart = await uploadChart(
         form,
         session.csrfToken,
@@ -212,6 +219,57 @@ export function UploadPage() {
               }}
             />
           </section>
+          {metadata && (
+            <section className="panel maker-panel">
+              <h2>难度与制作者</h2>
+              <p className="muted">
+                {metadata.maker
+                  ? '已用谱面中的 MAKER 填入默认署名，你可以分别修改。'
+                  : '谱面未填写 MAKER，你可以分别填写各难度的制作者。'}
+              </p>
+              <table className="maker-table">
+                <thead>
+                  <tr>
+                    <th scope="col">难度</th>
+                    <th scope="col">制作者</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metadata.difficulties.map((d) => (
+                    <tr key={d.blockIndex}>
+                      <th scope="row">
+                        {isSupportedCourse(d.course) ? courseNames[d.course] : d.course} ·{' '}
+                        {d.course} ★{d.level}
+                        {d.player && ` · ${d.player}`} <small>#{d.blockIndex + 1}</small>
+                      </th>
+                      <td>
+                        <input
+                          aria-label={`${d.course}${d.player ? ` ${d.player}` : ''} 制作者 #${d.blockIndex + 1}`}
+                          value={d.maker}
+                          maxLength={500}
+                          placeholder="未填写"
+                          disabled={busy}
+                          onChange={(e) => {
+                            const maker = e.target.value
+                            setMetadata(
+                              (current) =>
+                                current && {
+                                  ...current,
+                                  difficulties: current.difficulties.map((block) =>
+                                    block.blockIndex === d.blockIndex ? { ...block, maker } : block,
+                                  ),
+                                },
+                            )
+                            requestKey.current = createRequestKey()
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
           <section className="panel description-panel">
             <h2>
               <span className="step">02</span>写下投稿说明<span className="optional">选填</span>
@@ -254,7 +312,11 @@ export function UploadPage() {
                 )}
                 <dl className="metadata compact">
                   <dt>谱师</dt>
-                  <dd>{metadata.maker || '未填写'}</dd>
+                  <dd>
+                    {[
+                      ...new Set(metadata.difficulties.map((d) => d.maker.trim()).filter(Boolean)),
+                    ].join(' | ') || '未填写'}
+                  </dd>
                   <dt>上传者</dt>
                   <dd>{session.user?.username || '尚未登录'}</dd>
                 </dl>

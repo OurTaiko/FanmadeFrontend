@@ -12,13 +12,16 @@ describe('detail difficulty selection', () => {
         course,
         blockIndex,
         player: '',
+        maker: '',
         level: 5,
       }))
       expect(defaultDifficulty(difficulties)).toBe(courses.at(-1))
       courses.pop()
     }
     expect(defaultDifficulty([])).toBe('')
-    expect(defaultDifficulty([{ course: 'Tower', level: 5, blockIndex: 0, player: '' }])).toBe('')
+    expect(
+      defaultDifficulty([{ course: 'Tower', level: 5, blockIndex: 0, player: '', maker: '' }]),
+    ).toBe('')
     expect(Object.keys(courseNames)).toEqual(['Easy', 'Normal', 'Hard', 'Oni', 'Edit'])
     expect(supportsChart([{ course: 'Oni' }, { course: 'Dan' }])).toBe(false)
     expect(supportsChart([{ course: 'Oni' }, { course: 'Edit' }])).toBe(true)

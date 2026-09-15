@@ -31,6 +31,7 @@ const chart: Chart = {
     blockIndex,
     level: 5,
     player: '',
+    maker: '',
     style: 'Single',
     cloudScoreEligible: true,
   })),

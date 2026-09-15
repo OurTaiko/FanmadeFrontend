@@ -6,7 +6,13 @@ export { ValidationError } from './validation-error'
 export const validationVersion = 'tja-upload-v6'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
-export type Difficulty = { course: string; level: number; blockIndex: number; player: string }
+export type Difficulty = {
+  course: string
+  level: number
+  blockIndex: number
+  player: string
+  maker: string
+}
 export type Metadata = {
   title: string
   subtitle: string
@@ -118,6 +124,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       m.difficulties.push({
         course,
         level,
+        maker: m.maker,
         blockIndex: m.difficulties.length,
         player: s.slice(6).trim(),
       })

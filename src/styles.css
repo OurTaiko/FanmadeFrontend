@@ -1759,3 +1759,51 @@ body:has(dialog[open]) {
   font-size: 12px;
   line-height: 1.5;
 }
+
+.maker-panel {
+  margin: 20px 0;
+  padding: 24px;
+}
+.maker-panel > p {
+  font-size: 13px;
+}
+.maker-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.maker-table th,
+.maker-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.maker-table th {
+  width: 42%;
+  font-size: 13px;
+}
+.maker-table input {
+  width: 100%;
+  min-width: 0;
+}
+.maker-table small {
+  color: var(--muted);
+}
+.difficulty-makers {
+  margin: 8px 0 20px;
+  font-size: 14px;
+}
+.difficulty-makers > div {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+.difficulty-makers dt {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.difficulty-makers dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
