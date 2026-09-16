@@ -1905,6 +1905,11 @@ body:has(dialog[open]) {
   align-self: flex-start;
   margin-top: 16px;
 }
+.profile-save-status {
+  margin: 0;
+  color: #6bd4a3;
+  font-size: 14px;
+}
 @media (max-width: 900px) {
   .profile-layout {
     grid-template-columns: 1fr;

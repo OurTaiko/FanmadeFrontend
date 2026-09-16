@@ -51,8 +51,7 @@ test('profile displays own login name, validates nickname, keeps draft on failur
   await expect(input).toHaveValue('  新的昵称 🎵  ')
   await expect(page.locator('.account-nickname')).toHaveText('公开昵称')
   await save.click()
-  await expect(page.getByRole('dialog', { name: '操作成功' })).toContainText('昵称已保存')
-  await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await expect(page.getByRole('status')).toHaveText('昵称已保存。')
   await expect(input).toHaveValue('新的昵称 🎵')
   await expect(page.locator('.account-nickname')).toHaveText('新的昵称 🎵')
   await expect(save).toBeDisabled()
@@ -98,4 +97,32 @@ test('anonymous profile requires login; legacy username login remains possible',
   )
   await username.fill('Valid123')
   expect(await username.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(true)
+})
+
+test('saving a nickname leaves the mobile page scrollable without dismissing a prompt', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 640 })
+  let current = structuredClone(base)
+  await page.route('**/api/v1/me', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      current = { ...base, user: { ...base.user, nickname: '新的昵称 🎵' } }
+    }
+    await route.fulfill({ json: current })
+  })
+  await page.goto('/me/profile')
+  await page.getByLabel('昵称', { exact: true }).fill('新的昵称 🎵')
+  await page.getByRole('button', { name: '保存昵称', exact: true }).click()
+  await expect(page.locator('.account-nickname')).toHaveText('新的昵称 🎵')
+  const savedScrollY = await page.evaluate(() => scrollY)
+  expect(savedScrollY).toBeGreaterThan(0)
+  await page.mouse.move(10, 320)
+  await page.mouse.wheel(0, -600)
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(savedScrollY)
+  await expect(page.getByRole('status')).toHaveText('昵称已保存。')
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+  await page.getByRole('status').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: 'test-results/profile-mobile-saved.png', fullPage: true })
+  await page.getByLabel('昵称', { exact: true }).fill('继续修改')
+  await expect(page.getByRole('status')).toBeEmpty()
 })
