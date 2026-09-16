@@ -29,6 +29,7 @@ function ProfileEditor({ user }: { user: User }) {
   const { notify } = useNotification()
   const [nickname, setNickname] = useState(user.nickname)
   const [busy, setBusy] = useState(false)
+  const [saved, setSaved] = useState(false)
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
   const trimmed = nickname.trim()
@@ -39,6 +40,7 @@ function ProfileEditor({ user }: { user: User }) {
     event.preventDefault()
     if (!valid || !changed || busy) return
     setBusy(true)
+    setSaved(false)
     const abort = new AbortController()
     controller.current = abort
     try {
@@ -49,7 +51,7 @@ function ProfileEditor({ user }: { user: User }) {
       if (abort.signal.aborted) return
       session.setSession(updated)
       setNickname(updated.user.nickname)
-      notify('昵称已保存。', 'success')
+      setSaved(true)
     } catch (error) {
       if (!abort.signal.aborted) notify((error as Error).message, 'error')
     } finally {
@@ -98,7 +100,10 @@ function ProfileEditor({ user }: { user: User }) {
             disabled={busy}
             aria-describedby="nickname-help nickname-count"
             aria-invalid={!valid}
-            onChange={(event) => setNickname(event.target.value)}
+            onChange={(event) => {
+              setNickname(event.target.value)
+              setSaved(false)
+            }}
           />
           <div className="nickname-help-row">
             <p className="muted field-help" id="nickname-help">
@@ -117,6 +122,9 @@ function ProfileEditor({ user }: { user: User }) {
             {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
             {busy ? '正在保存…' : '保存昵称'}
           </button>
+          <p className="profile-save-status" role="status">
+            {saved ? '昵称已保存。' : ''}
+          </p>
         </form>
       </div>
     </>
