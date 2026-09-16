@@ -318,13 +318,12 @@ svg {
   margin-top: 7px;
 }
 .brand-icon {
-  background: var(--red);
-  display: grid;
-  place-items: center;
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
   width: 43px;
   height: 43px;
-  border-radius: 14px;
-  color: white;
+  border-radius: 10px;
 }
 .nav-caption {
   font-size: 12px;
@@ -1449,9 +1448,6 @@ audio {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-  }
-  .brand-icon svg {
-    width: 23px;
   }
   .nav-caption,
   .sidebar-bottom,
