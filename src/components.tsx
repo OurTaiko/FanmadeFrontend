@@ -9,6 +9,7 @@ import {
   Music2,
   Headphones,
   ChevronRight,
+  UserRound,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Notice } from './notifications'
@@ -119,6 +120,12 @@ export function Layout() {
             <FolderHeart size={20} />
             我的作品
           </NavLink>
+          {session.user && (
+            <NavLink to="/me/profile">
+              <UserRound size={20} />
+              个人资料
+            </NavLink>
+          )}
           <NavLink to="/upload">
             <Upload size={20} />
             发布谱面<span className="nav-plus">＋</span>
@@ -144,8 +151,12 @@ export function Layout() {
               <span>连接中…</span>
             ) : session.user ? (
               <>
-                <span className="avatar">{session.user.username[0].toUpperCase()}</span>
-                <span>{session.user.username}</span>
+                <Link className="account-profile" to="/me/profile" aria-label="打开个人资料">
+                  <span className="avatar" aria-hidden="true">
+                    {Array.from(session.user.nickname ?? '')[0]}
+                  </span>
+                  <span className="account-nickname">{session.user.nickname}</span>
+                </Link>
                 <button
                   className="icon-button"
                   aria-label="退出登录"

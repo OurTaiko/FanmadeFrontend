@@ -14,7 +14,7 @@ test.skip(
 
 async function login(page: Page) {
   if (process.env.FANMADE_TEST_MAILBOX)
-    return registerAccount(page.request, 'cat_' + randomUUID().slice(0, 8), randomUUID())
+    return registerAccount(page.request, 'cat' + randomUUID().slice(0, 8), randomUUID())
   const response = await page.request.post('/api/v1/auth/login', {
     headers: { Origin: origin },
     data: { username, password },

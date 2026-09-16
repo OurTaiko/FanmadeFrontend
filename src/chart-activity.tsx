@@ -239,7 +239,7 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
                     </span>
                   </td>
                   <th scope="row">
-                    {entry.username}
+                    {entry.nickname}
                     {entry.userId === user?.id && <span className="me-label">你</span>}
                   </th>
                   <td className="score-value">{entry.score.toLocaleString('zh-CN')}</td>

@@ -56,7 +56,13 @@ for (const replaceAudio of [false, true]) {
     await page.route('**/api/v1/me', (route) =>
       route.fulfill({
         json: {
-          user: { id: 'owner', username: 'tester', isAdmin: false, emailVerified: true },
+          user: {
+            id: 'owner',
+            username: 'tester',
+            nickname: '测试昵称',
+            isAdmin: false,
+            emailVerified: true,
+          },
           csrfToken: 'csrf',
         },
       }),

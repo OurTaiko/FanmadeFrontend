@@ -266,12 +266,20 @@ export function Auth({ register = false }: { register?: boolean }) {
           <input
             autoComplete="username"
             required
-            pattern="[a-zA-Z0-9_]{3,24}"
-            title="3–24 位字母、数字或下划线"
+            pattern={register ? '[A-Za-z0-9]{3,24}' : undefined}
+            title={register ? '3–24 位英文字母或数字' : undefined}
+            maxLength={24}
+            aria-describedby={register ? 'registration-username-help' : undefined}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
         </label>
+        {register && (
+          <p className="muted field-help" id="registration-username-help">
+            用户名只能包含 3–24
+            位英文字母或数字，用于登录；初始昵称与用户名相同，可在个人资料中修改。
+          </p>
+        )}
         <label>
           密码
           <input
