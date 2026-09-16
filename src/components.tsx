@@ -103,9 +103,13 @@ export function Layout() {
       </a>
       <aside className="sidebar">
         <Link className="brand" to="/">
-          <span className="brand-icon">
-            <Disc3 size={28} />
-          </span>
+          <img
+            className="brand-icon"
+            src={`${import.meta.env.BASE_URL}icons/icon-192.png`}
+            alt=""
+            width={43}
+            height={43}
+          />
           <span>
             OurTaiko<small>FANMADE</small>
           </span>

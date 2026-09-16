@@ -18,7 +18,7 @@ pnpm dev
 
 打开 `http://127.0.0.1:5173`。后端需先在 `http://127.0.0.1:8080` 启动；Vite 转发 `/api`，无需修改浏览器跨域配置。请使用 127.0.0.1，避免与 localhost 混用导致 Origin 或会话校验失败。
 
-局域网真机测试可运行 `pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort`，并使用 `http://<Mac 局域网 IP>:5173/register` 注册。后端进程需设置 `APP_ORIGIN=http://<Mac 局域网 IP>:5173` 后重启，否则注册、登录等写入请求会被来源校验拒绝；该配置仅接受一个网页来源，切回本机地址测试时也需同步调整。前端仍通过 Vite 代理连接本机后端。
+局域网真机测试可运行 `pnpm icons && pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort`，并使用 `http://<Mac 局域网 IP>:5173/register` 注册。后端进程需设置 `APP_ORIGIN=http://<Mac 局域网 IP>:5173` 后重启，否则注册、登录等写入请求会被来源校验拒绝；该配置仅接受一个网页来源，切回本机地址测试时也需同步调整。前端仍通过 Vite 代理连接本机后端。
 
 `pnpm-workspace.yaml` 已明确允许 esbuild 与 agent-browser 的必要安装脚本。不要生成 package-lock.json 或 yarn.lock。
 
@@ -163,3 +163,11 @@ pnpm exec playwright test e2e/courses.spec.ts
 新注册用户名必须为 3–24 位英文字母或数字，初始昵称与用户名相同；登录页兼容旧账号。网站用户署名统一使用昵称：页头、上传预览、上传者及排行榜，自己的用户名仅在个人资料中显示。需要后端迁移 016；公开排行榜字段使用 nickname，作品 uploader 的值为昵称。
 
 验证：`pnpm exec playwright test e2e/profile.spec.ts` 覆盖个人资料、校验、失败重试、昵称刷新和移动布局；后端 `TestRegistrationBrowser` 在临时数据库和测试邮箱环境下验证注册 → 修改昵称 → 上传者／排行榜展示的真实链路。
+
+## 网站图标
+
+原始 logo 保存在 `assets/branding/icon.png`，需要提交到 Git。`pnpm dev` 和
+`pnpm build` 会先用锁定版本的 Sharp 生成 favicon、多尺寸 PNG 和 Apple touch
+icon；也可单独运行 `pnpm icons`。生成文件已加入 `.gitignore`，
+`public/site.webmanifest` 仍作为配置提交。CI 和部署服务器只需正常执行
+`pnpm install --frozen-lockfile`、`pnpm build`，无需手动准备图标。
