@@ -7,6 +7,7 @@ import { Auth, Detail, Library } from './pages'
 import { UpdatePage, UploadPage } from './upload'
 import { NotificationProvider } from './notifications'
 import { CategoryProvider } from './categories'
+import { ProfilePage } from './profile'
 import './styles.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
             <Routes>
               <Route element={<Layout />}>
                 <Route index element={<Library />} />
+                <Route path="me/profile" element={<ProfilePage />} />
                 <Route path="me/charts" element={<Library mine />} />
                 <Route path="upload" element={<UploadPage />} />
                 <Route path="charts/:id/update" element={<UpdatePage />} />

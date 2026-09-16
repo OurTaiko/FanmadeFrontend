@@ -127,7 +127,7 @@ LEVEL:5
         items: Array.from({ length: pageNumber === 1 ? 20 : 1 }, (_, i) => ({
           id: `entry${pageNumber}_${i}`,
           userId: 'public-user',
-          username: `player${(pageNumber - 1) * 20 + i}`,
+          nickname: `player${(pageNumber - 1) * 20 + i}`,
           rank: (pageNumber - 1) * 20 + i + 1,
           score: 900000,
           good: 300,

@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { mailboxCode } from './registration-helpers'
 
 test.skip(!process.env.FANMADE_TEST_MAILBOX, 'Requires isolated backend mail fixture')
@@ -13,7 +15,13 @@ test('empty code disables verification; wrong code reports backend error; correc
   const send = page.getByRole('button', { name: '获取验证码', exact: true })
   await expect(verify).toBeDisabled()
   await expect(send).toBeDisabled()
-  await page.getByLabel('用户名', { exact: true }).fill('verified_browser')
+  await page.getByLabel('用户名', { exact: true }).fill('invalid_name')
+  expect(
+    await page
+      .getByLabel('用户名', { exact: true })
+      .evaluate((input: HTMLInputElement) => input.validity.patternMismatch),
+  ).toBe(true)
+  await page.getByLabel('用户名', { exact: true }).fill('verifiedBrowser')
   await page.getByLabel('密码', { exact: true }).fill('browser-password-123')
   await page.getByLabel('邮箱', { exact: true }).fill('Browser@Example.test')
   await send.click()
@@ -35,8 +43,71 @@ test('empty code disables verification; wrong code reports backend error; correc
   await verify.click()
   await expect(page).toHaveURL(/\/upload$/)
   const me = await (await page.request.get('/api/v1/me')).json()
-  expect(me.user.username).toBe('verified_browser')
+  expect(me.user.username).toBe('verifiedBrowser')
   expect(me.user.emailVerified).toBe(true)
+  expect(me.user.nickname).toBe('verifiedBrowser')
+  const origin = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
+  const uploaded = await page.request.post('/api/v1/charts', {
+    headers: { Origin: origin, 'X-CSRF-Token': me.csrfToken, 'Idempotency-Key': randomUUID() },
+    multipart: {
+      tja: {
+        name: 'nickname.tja',
+        mimeType: 'text/plain',
+        buffer: Buffer.from(
+          'TITLE:Nickname test\nBPM:120\nWAVE:cbr.mp3\nCOURSE:Oni\nLEVEL:5\n#START\n1000,\n#END\n',
+        ),
+      },
+      audio: {
+        name: 'cbr.mp3',
+        mimeType: 'audio/mpeg',
+        buffer: readFileSync('../backend/internal/audio/testdata/cbr.mp3'),
+      },
+    },
+  })
+  expect(uploaded.status()).toBe(201)
+  const chart = await uploaded.json()
+  const score = await page.request.post('/api/v1/scores', {
+    headers: { Origin: origin, 'X-CSRF-Token': me.csrfToken },
+    data: {
+      songId: chart.id,
+      versionId: chart.versionId,
+      difficulty: 'Oni',
+      good: 1,
+      ok: 0,
+      bad: 0,
+      score: 100,
+      drumroll: 0,
+      max_combo: 1,
+    },
+  })
+  expect(score.status()).toBe(201)
+  await page.getByRole('link', { name: '个人资料', exact: true }).click()
+  await expect(page.getByLabel('用户名', { exact: true })).toHaveValue('verifiedBrowser')
+  await expect(page.getByLabel('用户名', { exact: true })).toHaveAttribute('readonly', '')
+  await page.getByLabel('昵称', { exact: true }).fill('节奏创作者 🎵')
+  await page.getByRole('button', { name: '保存昵称', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '操作成功' })).toContainText('昵称已保存')
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await expect(page.locator('.account-nickname')).toHaveText('节奏创作者 🎵')
+  const saved = await (await page.request.get('/api/v1/me')).json()
+  expect(saved.user.username).toBe('verifiedBrowser')
+  expect(saved.user.nickname).toBe('节奏创作者 🎵')
+  await page.reload()
+  await expect(page.getByLabel('昵称', { exact: true })).toHaveValue('节奏创作者 🎵')
+  await page.goto(`/charts/${chart.id}`)
+  await expect(page.locator('.detail-facts')).toContainText('节奏创作者 🎵')
+  await expect(page.locator('.metadata dd')).toContainText(['节奏创作者 🎵'])
+  await page.getByRole('tab', { name: '排行榜', exact: true }).click()
+  await expect(page.getByRole('rowheader', { name: '节奏创作者 🎵你' })).toBeVisible()
+  await expect(page.locator('body')).not.toContainText('verifiedBrowser')
+  const board = await (
+    await page.request.get(`/api/v1/charts/${chart.id}/leaderboard?difficulty=Oni`)
+  ).json()
+  expect(board.items[0].nickname).toBe('节奏创作者 🎵')
+  expect(board.items[0]).not.toHaveProperty('username')
+  const hiddenSearch = await (await page.request.get('/api/v1/charts?q=verifiedBrowser')).json()
+  expect(hiddenSearch.total).toBe(0)
+
   expect(errors).toEqual([])
 })
 

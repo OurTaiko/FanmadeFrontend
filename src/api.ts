@@ -1,5 +1,11 @@
 import type { Metadata } from './tja'
-export type User = { id: string; username: string; emailVerified: boolean; isAdmin: boolean }
+export type User = {
+  id: string
+  username: string
+  nickname: string
+  emailVerified: boolean
+  isAdmin: boolean
+}
 export type Locale = 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
 export type Category = { id: string; title: string; genre: string }
@@ -29,7 +35,7 @@ export type ChartList = { items: Chart[]; total: number; page: number; pageSize:
 export type LeaderboardEntry = {
   id: string
   userId: string
-  username: string
+  nickname: string
   rank: number
   score: number
   good: number

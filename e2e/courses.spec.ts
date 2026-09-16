@@ -52,7 +52,13 @@ test.beforeEach(async ({ page }) => {
     if (path === '/api/v1/me')
       return route.fulfill({
         json: {
-          user: { id: chart.ownerId, username: 'tester', isAdmin: false, emailVerified: true },
+          user: {
+            id: chart.ownerId,
+            username: 'tester',
+            nickname: '测试昵称',
+            isAdmin: false,
+            emailVerified: true,
+          },
           csrfToken: 'fixture',
         },
       })

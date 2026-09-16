@@ -19,7 +19,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
   page.on('pageerror', (e) => errors.push(e.message))
   const session = await registerAccount(
     page.request,
-    'edit_' + randomUUID().slice(0, 8),
+    'edit' + randomUUID().slice(0, 8),
     randomUUID(),
   )
   expect(session.user.isAdmin).toBe(false)
@@ -101,7 +101,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toHaveCount(0)
       const other = await registerAccount(
         outsider.request,
-        'other_' + randomUUID().slice(0, 8),
+        'other' + randomUUID().slice(0, 8),
         randomUUID(),
       )
       await otherPage.reload()

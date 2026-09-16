@@ -404,7 +404,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                     ].join(' | ') || '未填写'}
                   </dd>
                   <dt>上传者</dt>
-                  <dd>{session.user?.username || '尚未登录'}</dd>
+                  <dd>{session.user?.nickname || '尚未登录'}</dd>
                 </dl>
               </>
             ) : (
