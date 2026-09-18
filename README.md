@@ -6,6 +6,8 @@ React + TypeScript + Vite 前端，独立 Git 仓库。**仅使用 pnpm**，提�
 
 生产服务器通过 Git 拉取本仓库及 TJARenderer 子模块，使用 pnpm 构建，1Panel OpenResty 提供静态文件和同域 `/api/`。服务器更新入口为 `bash /opt/ourtaiko-fanmade/src/frontend/deploy/publish.sh`，按 Git 版本保存构建并切换站点目录；不会启动 Vite 开发服务。后端仓库的 `docs/DEPLOYMENT.md` 记录完整部署路径。
 
+推送 `main` 后，GitHub Actions 会先执行 lint、单元测试和生产构建，再通过 SSH 自动发布本次提交。服务器地址、用户名、密码和主机指纹通过 GitHub Secrets 配置，详见 [前端自动部署说明](deploy/README.md)。
+
 ## 启动
 
 环境：Node.js 22.12+（本机验证为 26.8）、pnpm 12.3.4。
@@ -137,6 +139,8 @@ pnpm exec playwright test e2e/courses.spec.ts
 ## 谱面分类
 
 上传页及谱面信息编辑弹窗从 `GET /api/v1/categories` 读取多选项；上传未选择时默认 Variety。信息编辑回显 `Chart.categoryIds`，仅分类改变时发送该字段；清空后由后端归入 Variety。分类变更保留谱面版本和成绩。需配套支持分类的后端；分类加载失败可原地重试。
+
+后端迁移 017 增加 Anime（ID `anime`），前端自动将其显示为上传／编辑选项及歌曲分类标签。`e2e/categories.spec.ts` 覆盖 Anime 多选上传、编辑加入／移除和刷新回显。
 
 `e2e/categories.spec.ts` 覆盖真实 API 上传、默认值、加载失败重试、作者分类编辑、刷新回显与手机弹窗。测试需要隔离 API 及 `FANMADE_TEST_MAILBOX`，或 `FANMADE_CATEGORY_TEST_USER` / `FANMADE_CATEGORY_TEST_PASSWORD` 测试账号；使用 `PLAYWRIGHT_BASE_URL` 指向测试前端。
 
