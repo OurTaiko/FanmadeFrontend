@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -16,8 +15,8 @@ import {
   Disc3,
   Pencil,
 } from 'lucide-react'
-import { api, ApiError, jsonRequest, resource } from './api'
-import type { Chart, ChartList, Session } from './api'
+import { api, jsonRequest, resource } from './api'
+import type { Chart, ChartList } from './api'
 import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
@@ -186,178 +185,41 @@ function FolderIcon() {
   return <FileMusic size={42} />
 }
 export function Auth({ register = false }: { register?: boolean }) {
-  const { notify } = useNotification()
-  const session = useSession(),
-    navigate = useNavigate()
-  const [username, setUsername] = useState(''),
-    [password, setPassword] = useState(''),
-    [email, setEmail] = useState(''),
-    [code, setCode] = useState(''),
-    [verificationId, setVerificationId] = useState(''),
-    [sending, setSending] = useState(false),
-    [retryAt, setRetryAt] = useState(0),
-    [secondsLeft, setSecondsLeft] = useState(0),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false)
-  useEffect(() => {
-    if (!retryAt) return
-    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)))
-    tick()
-    const timer = window.setInterval(tick, 1000)
-    return () => window.clearInterval(timer)
-  }, [retryAt])
-  const validCode = /^[0-9]{6}$/.test(code) && verificationId !== ''
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-  const sendCode = async () => {
-    if (!validEmail || sending || busy || secondsLeft > 0) return
-    setSending(true)
-    setError('')
-    try {
-      const result = await api<{ verificationId: string; retryAfter: number }>(
-        '/auth/email-code',
-        jsonRequest('POST', { email }),
-      )
-      setVerificationId(result.verificationId)
-      setCode('')
-      setSecondsLeft(result.retryAfter)
-      setRetryAt(Date.now() + result.retryAfter * 1000)
-      notify('验证码已发送，请查看邮箱（含垃圾邮件）。10 分钟内有效。', 'success')
-    } catch (e) {
-      setError((e as Error).message)
-      if (e instanceof ApiError && e.retryAfter > 0) {
-        setSecondsLeft(e.retryAfter)
-        setRetryAt(Date.now() + e.retryAfter * 1000)
-      }
-    } finally {
-      setSending(false)
-    }
-  }
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (busy || sending || (register && !validCode)) return
-    setBusy(true)
-    setError('')
-    try {
-      const s = await api<Session>(
-        `/auth/${register ? 'register' : 'login'}`,
-        jsonRequest(
-          'POST',
-          register ? { username, password, email, code, verificationId } : { username, password },
-        ),
-      )
-      session.setSession(s)
-      navigate('/upload')
-    } catch (e) {
-      setError((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
+  const [params] = useSearchParams()
+  const session = useSession()
+  const destination = params.get('returnTo') || '/upload'
   return (
     <div className="auth-wrap">
-      <div className="eyebrow">WELCOME TO OURTAIKO</div>
+      <div className="eyebrow">OURTAIKO ACCOUNT</div>
       <h1>{register ? '加入这段节奏。' : '欢迎回来。'}</h1>
-      <p className="muted">
-        {register ? '创建账号，分享你的下一份作品。' : '登录账号，继续你的谱面创作。'}
-      </p>
-      <form className="panel auth-form" onSubmit={submit}>
-        <label>
-          用户名
-          <input
-            autoComplete="username"
-            required
-            pattern={register ? '[A-Za-z0-9]{3,24}' : undefined}
-            title={register ? '3–24 位英文字母或数字' : undefined}
-            maxLength={24}
-            aria-describedby={register ? 'registration-username-help' : undefined}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </label>
-        {register && (
-          <p className="muted field-help" id="registration-username-help">
-            用户名只能包含 3–24
-            位英文字母或数字，用于登录；初始昵称与用户名相同，可在个人资料中修改。
-          </p>
-        )}
-        <label>
-          密码
-          <input
-            type="password"
-            autoComplete={register ? 'new-password' : 'current-password'}
-            required
-            minLength={8}
-            maxLength={72}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        {register && (
-          <>
-            <label>
-              邮箱
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                maxLength={254}
-                value={email}
-                disabled={sending || busy}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setCode('')
-                  setVerificationId('')
-                  setError('')
-                }}
-              />
-            </label>
-            <div className="email-code-row">
-              <label>
-                邮箱验证码
-                <input
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  required
-                  pattern="[0-9]{6}"
-                  title="邮件中的 6 位数字验证码"
-                  maxLength={6}
-                  placeholder="6 位数字"
-                  value={code}
-                  disabled={busy}
-                  onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                />
-              </label>
-              <button
-                type="button"
-                className="button secondary"
-                disabled={!validEmail || sending || busy || secondsLeft > 0}
-                onClick={sendCode}
-              >
-                {sending
-                  ? '发送中…'
-                  : secondsLeft > 0
-                    ? `${secondsLeft} 秒后重发`
-                    : verificationId
-                      ? '重新获取'
-                      : '获取验证码'}
-              </button>
-            </div>
-          </>
-        )}
-        {error && <Notice>{error}</Notice>}
-        <button
+      <p className="muted">一个 OurTaiko 账号，连接你的作品与游玩记录。</p>
+      <section className="panel auth-form" aria-label="账号中心登录">
+        <UserRound size={32} aria-hidden="true" />
+        <h2>{register ? '在账号中心创建账号' : '使用 OurTaiko 账号登录'}</h2>
+        <p>登录、昵称和密码由账号中心统一管理。完成登录后会自动返回这里。</p>
+        {params.has('error') && <Notice>登录未完成或授权已过期，请重新登录。</Notice>}
+        {session.error && <Notice>{session.error}</Notice>}
+        <a
           className="button primary full"
-          disabled={busy || sending || (register && !validCode)}
+          href={`/api/v1/auth/sso/login?returnTo=${encodeURIComponent(destination)}`}
         >
-          {busy ? '请稍候…' : register ? '验证并创建账号' : '登录'}
-          <ArrowRight size={17} />
-        </button>
-        <p className="auth-switch">
-          {register ? '已有账号？' : '还没有账号？'}
-          <Link to={register ? '/login' : '/register'}>{register ? '前往登录' : '创建账号'}</Link>
-        </p>
-      </form>
-      {register && <p className="demo-note">验证邮箱后即可创建账号。</p>}
+          前往账号中心登录 <ArrowRight size={17} />
+        </a>
+        <a
+          className="button secondary full"
+          href="/api/v1/auth/account/register"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          创建 OurTaiko 账号
+        </a>
+        <p className="muted">注册会在新标签页打开。完成后回到此页登录。</p>
+        {session.user && (
+          <Link className="button secondary" to="/upload">
+            已登录，继续发布谱面
+          </Link>
+        )}
+      </section>
     </div>
   )
 }

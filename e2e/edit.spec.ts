@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { registerAccount } from './registration-helpers'
 
-test.skip(!process.env.FANMADE_TEST_MAILBOX, 'Requires isolated backend mail fixture')
+test.skip(process.env.FANMADE_SSO_E2E !== '1', 'Requires local SSO development servers')
 
 const origin = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
 const root = process.env.ESE_ROOT || join(homedir(), 'Documents/GitHub/ESE')
@@ -17,11 +17,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
 }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  const session = await registerAccount(
-    page.request,
-    'edit' + randomUUID().slice(0, 8),
-    randomUUID(),
-  )
+  const session = await registerAccount(page, 'edit' + randomUUID().slice(0, 8), randomUUID())
   expect(session.user.isAdmin).toBe(false)
   const uploaded = await page.request.post('/api/v1/charts', {
     headers: { Origin: origin, 'X-CSRF-Token': session.csrfToken, 'Idempotency-Key': randomUUID() },
@@ -100,11 +96,11 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
       await expect(otherPage.getByRole('heading', { name: chart.title, exact: true })).toBeVisible()
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toHaveCount(0)
       const other = await registerAccount(
-        outsider.request,
+        otherPage,
         'other' + randomUUID().slice(0, 8),
         randomUUID(),
       )
-      await otherPage.reload()
+      await otherPage.goto(path)
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toHaveCount(0)
       const denied = await outsider.request.patch('/api/v1' + path, {
         headers: { Origin: origin, 'X-CSRF-Token': other.csrfToken },
@@ -115,7 +111,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
       await otherPage.route('**/api/v1/me', (route) =>
         route.fulfill({ json: { ...other, user: { ...other.user, isAdmin: true } } }),
       )
-      await otherPage.reload()
+      await otherPage.goto(path)
       await expect(otherPage.getByRole('button', { name: '编辑信息', exact: true })).toBeVisible()
       await otherPage.getByRole('button', { name: '编辑信息', exact: true }).click()
       await expect(otherPage.getByRole('dialog')).toBeVisible()

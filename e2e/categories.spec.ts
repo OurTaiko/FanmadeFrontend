@@ -4,23 +4,10 @@ import { readFileSync } from 'node:fs'
 import { registerAccount } from './registration-helpers'
 import { randomUUID } from 'node:crypto'
 
-const username = process.env.FANMADE_CATEGORY_TEST_USER
-const password = process.env.FANMADE_CATEGORY_TEST_PASSWORD
 const origin = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:5173'
-test.skip(
-  !process.env.FANMADE_TEST_MAILBOX && (!username || !password),
-  'Requires isolated test API and account or mail fixture',
-)
-
+test.skip(process.env.FANMADE_SSO_E2E !== '1', 'Requires local SSO development servers')
 async function login(page: Page) {
-  if (process.env.FANMADE_TEST_MAILBOX)
-    return registerAccount(page.request, 'cat' + randomUUID().slice(0, 8), randomUUID())
-  const response = await page.request.post('/api/v1/auth/login', {
-    headers: { Origin: origin },
-    data: { username, password },
-  })
-  expect(response.status()).toBe(200)
-  return response.json()
+  return registerAccount(page, 'cat' + randomUUID().slice(0, 8), randomUUID())
 }
 async function files(page: Page) {
   await page.getByLabel('选择 TJA 谱面').setInputFiles({

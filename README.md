@@ -20,7 +20,7 @@ pnpm dev
 
 打开 `http://127.0.0.1:5173`。后端需先在 `http://127.0.0.1:8080` 启动；Vite 转发 `/api`，无需修改浏览器跨域配置。请使用 127.0.0.1，避免与 localhost 混用导致 Origin 或会话校验失败。
 
-局域网真机测试可运行 `pnpm icons && pnpm exec vite --host 0.0.0.0 --port 5173 --strictPort`，并使用 `http://<Mac 局域网 IP>:5173/register` 注册。后端进程需设置 `APP_ORIGIN=http://<Mac 局域网 IP>:5173` 后重启，否则注册、登录等写入请求会被来源校验拒绝；该配置仅接受一个网页来源，切回本机地址测试时也需同步调整。前端仍通过 Vite 代理连接本机后端。
+本地 SSO 开发统一使用 `http://127.0.0.1:5173`，账号中心为 `http://127.0.0.1:8090`。其他地址需同时修改 APP_ORIGIN、SSO_ISSUER、精确回调登记和 COOKIE_SECURE；非 loopback 地址使用 HTTPS，详见 [后端 SSO 说明](../backend/docs/SSO.md)。
 
 `pnpm-workspace.yaml` 已明确允许 esbuild 与 agent-browser 的必要安装脚本。不要生成 package-lock.json 或 yarn.lock。
 
@@ -30,13 +30,13 @@ pnpm dev
 - 作品详情：多难度 / P1 / P2 展示、音频试听、原始 TJA 和 ZIP 下载。
 - 编辑信息：作者和管理员在详情页打开弹窗，修改英文、日文、中文、韩文歌名／副标题，支持按语言恢复原值；保存后立即更新详情。
 - 投稿：文件选择或拖放、自动识别编码并转换为 UTF-8、本地 WAVE 匹配、元数据预览、上传进度、服务端校验反馈。
-- 账号：用户名 / 密码注册登录、我的作品、删除和退出。
+- 账号：SSO 登录、账号中心注册／资料／密码管理、我的作品、删除和本站退出。
 - 歌曲详情：共享难度选择器，默认 Oni，缺失时依次回退 Edit、Hard、Normal、Easy。第一个 Tab 为交互谱面预览，第二个为当前难度排行榜。
 - 谱面预览：从后端当前版本文件接口下载原始 TJA，按记录的 UTF-8 / Shift-JIS 解码；切换难度和 Tab 不重复下载。支持缩放、分支选择、Single / P1 / P2 切换、悬停和点击查看音符信息、两次点击选中区间。
 - 排行榜：每位玩家显示当前版本单人谱的最高分、良／可／不可／连打，同分并列，每页 20 人。DOUBLE 不提供云端排行榜；歌曲更名不影响记录。
 - 390px 移动端布局与桌面布局。
 
-正式注册要求绑定验证邮箱，但本示范版按约定暂缓实现。可直接创建本地演示账号；不会把账号标记为邮箱已验证。
+正式注册和验证邮箱统一在 SSO 完成，本地开发验证邮件写入 OurTaikoSSO/.data/emails。
 
 ## ESE 参考文件
 
@@ -91,20 +91,17 @@ PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.sp
 
 后台验证是最终依据。前端不把解析出的标题、难度或“验证通过”标记当作后端可信数据发送；上传转换后的 UTF-8 文件后由后端重新解析。管理员页面和社交功能仍在后续计划。
 
-## 邮箱验证注册
+## SSO 账号接入
 
-注册页面要求邮箱和 6 位验证码，未填完整验证码时禁用“验证并创建账号”。获取成功后显示重发倒计时；验证码错误、过期、锁定或邮件发送失败均展示后端提示。更换邮箱会清空验证码，登录页面仍只需要用户名和密码。
+前端只提供账号中心入口。网站使用 OIDC + PKCE，回调后由后端设置 HttpOnly Cookie；前端通过 `/me` 读取当前用户和 CSRF。注册在新标签页完成，回到本站登录；修改昵称或密码后回到本站会自动刷新会话。浏览器不持有 SSO 服务密钥或 OAuth access token。
 
-SMTP 配置放在后端 `.env`，前端不接触 SMTP 密码。后端自动加载 `.env`，发件人默认 `OurTaiko <no-reply@mail.ourtaiko.org>`。见后端 `docs/EMAIL_VERIFICATION.md`。
-
-注册浏览器测试通过后端隔离夹具启动（先 `pnpm install` 并安装 Chrome）：
+启动 SSO、Go API 和 Vite 后运行：
 
 ```sh
-cd ../backend
-FRONTEND_E2E=1 DATABASE_TEST_URL='postgres://localhost/ourtaiko_fanmade?host=/tmp&sslmode=disable' go test ./internal/httpapi -run TestRegistrationBrowser -v -count=1
+FANMADE_SSO_E2E=1 pnpm test:e2e
 ```
 
-夹具自动启动临时 API/Vite，使用独立数据库 schema 和测试收件箱，不向真实邮箱发信。需要创建账号的 E2E 用例在未配置测试收件箱时跳过，不能绕过邮箱验证。常规开发仍使用 `pnpm dev`；`VITE_API_TARGET` 可仅为隔离测试覆盖 Vite 的代理目标，默认后端为 `http://127.0.0.1:8080`。
+本地测试经 SSO 实际注册、文件邮件验证及授权跳转，再测试上传和作品管理；不发送真实邮件。未设置该环境变量时跳过需要新建账号的集成用例。完整配置见 [SSO 接入](../backend/docs/SSO.md)。
 
 难度限制的隔离浏览器测试只需启动前端，无需后端、数据库或邮件服务：
 
@@ -162,11 +159,9 @@ pnpm exec playwright test e2e/courses.spec.ts
 
 ## 昵称与个人资料
 
-登录后可通过侧栏「个人资料」或页头昵称进入 `/me/profile`，查看自己的只读用户名并修改昵称。昵称支持中文、表情和重名，长度 1–40 个 Unicode 字符；保存后即时刷新页头和当前会话。失败保留草稿，未修改、空白及超长昵称不可提交。密码和邮箱修改尚未提供。
+`/me/profile` 显示自己的只读登录名和昵称，点击「管理 OurTaiko 账号」进入账号中心修改昵称、密码和设备设置。返回时通过 `/me` 刷新，作品与排行榜使用从 SSO 读取的公开昵称。登录名不出现在公开署名中。
 
-新注册用户名必须为 3–24 位英文字母或数字，初始昵称与用户名相同；登录页兼容旧账号。网站用户署名统一使用昵称：页头、上传预览、上传者及排行榜，自己的用户名仅在个人资料中显示。需要后端迁移 016；公开排行榜字段使用 nickname，作品 uploader 的值为昵称。
-
-验证：`pnpm exec playwright test e2e/profile.spec.ts` 覆盖个人资料、校验、失败重试、昵称刷新和移动布局；后端 `TestRegistrationBrowser` 在临时数据库和测试邮箱环境下验证注册 → 修改昵称 → 上传者／排行榜展示的真实链路。
+验证：`e2e/profile.spec.ts` 覆盖只读资料、管理入口、返回刷新和移动布局；真实跨服务改名、改密撤销、游戏成绩链路由 SSO 的 `manage.py smoke_fanmade` 验证。
 
 ## 网站图标
 
