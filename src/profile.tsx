@@ -1,11 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, LoaderCircle, UserRound } from 'lucide-react'
-import { api, jsonRequest } from './api'
-import type { Session, User } from './api'
+import { ArrowUpRight, UserRound } from 'lucide-react'
 import { useSession } from './session-context'
-import { useNotification } from './notification-context'
+import { Notice } from './components'
 
 export function ProfilePage() {
   const session = useSession()
@@ -15,50 +11,14 @@ export function ProfilePage() {
       <div className="empty">
         <UserRound size={42} />
         <h1>登录后查看个人资料</h1>
-        <p>在这里管理你的昵称。</p>
-        <Link className="button primary" to="/login">
+        {session.error && <Notice>{session.error}</Notice>}
+        <p>昵称和密码在 OurTaiko 账号中心管理。</p>
+        <Link className="button primary" to="/login?returnTo=/me/profile">
           前往登录
         </Link>
       </div>
     )
-  return <ProfileEditor key={session.user.id} user={session.user} />
-}
-
-function ProfileEditor({ user }: { user: User }) {
-  const session = useSession()
-  const { notify } = useNotification()
-  const [nickname, setNickname] = useState(user.nickname)
-  const [busy, setBusy] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const controller = useRef<AbortController | null>(null)
-  useEffect(() => () => controller.current?.abort(), [])
-  const trimmed = nickname.trim()
-  const length = Array.from(trimmed).length
-  const valid = length >= 1 && length <= 40 && !/[\p{Cc}\u2028\u2029]/u.test(trimmed)
-  const changed = trimmed !== user.nickname
-  const save = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!valid || !changed || busy) return
-    setBusy(true)
-    setSaved(false)
-    const abort = new AbortController()
-    controller.current = abort
-    try {
-      const updated = await api<Session & { user: User }>('/me', {
-        ...jsonRequest('PATCH', { nickname: trimmed }, session.csrfToken),
-        signal: abort.signal,
-      })
-      if (abort.signal.aborted) return
-      session.setSession(updated)
-      setNickname(updated.user.nickname)
-      setSaved(true)
-    } catch (error) {
-      if (!abort.signal.aborted) notify((error as Error).message, 'error')
-    } finally {
-      if (!abort.signal.aborted) setBusy(false)
-      if (controller.current === abort) controller.current = null
-    }
-  }
+  const user = session.user
   return (
     <>
       <div className="page-heading">
@@ -68,9 +28,10 @@ function ProfileEditor({ user }: { user: User }) {
             个人资料
             <span className="title-dot" />
           </h1>
-          <p>用喜欢的昵称，出现在你的作品和排行榜上。</p>
+          <p>你的 OurTaiko 账号，与你的作品一起。</p>
         </div>
       </div>
+      {session.error && <Notice>{session.error}</Notice>}
       <div className="profile-layout">
         <section className="panel profile-summary" aria-label="公开昵称">
           <span className="avatar profile-avatar" aria-hidden="true">
@@ -79,53 +40,23 @@ function ProfileEditor({ user }: { user: User }) {
           <h2>{user.nickname}</h2>
           <p className="muted">其他人看到的名字</p>
         </section>
-        <form className="panel profile-form" onSubmit={save}>
+        <section className="panel profile-form" aria-label="账号资料">
           <label htmlFor="profile-username">用户名</label>
-          <input
-            id="profile-username"
-            value={user.username}
-            readOnly
-            aria-describedby="username-help"
-          />
-          <p className="muted field-help" id="username-help">
-            仅自己可见，用于登录，不能修改。
-          </p>
+          <input id="profile-username" value={user.username} readOnly />
           <label htmlFor="profile-nickname">昵称</label>
-          <input
-            id="profile-nickname"
-            autoComplete="nickname"
-            value={nickname}
-            required
-            maxLength={160}
-            disabled={busy}
-            aria-describedby="nickname-help nickname-count"
-            aria-invalid={!valid}
-            onChange={(event) => {
-              setNickname(event.target.value)
-              setSaved(false)
-            }}
-          />
-          <div className="nickname-help-row">
-            <p className="muted field-help" id="nickname-help">
-              1–40 个字符，支持中文和表情，允许重名。
-            </p>
-            <span className={valid ? 'muted' : 'field-error'} id="nickname-count">
-              {length} / 40
-            </span>
-          </div>
-          {!valid && (
-            <p className="field-error" role="alert">
-              昵称不能为空或超过 40 个字符，不能包含换行或控制字符。
-            </p>
-          )}
-          <button className="button primary" disabled={busy || !valid || !changed}>
-            {busy ? <LoaderCircle size={17} className="spin" /> : <Check size={17} />}
-            {busy ? '正在保存…' : '保存昵称'}
-          </button>
-          <p className="profile-save-status" role="status">
-            {saved ? '昵称已保存。' : ''}
+          <input id="profile-nickname" value={user.nickname} readOnly />
+          <p className="muted">
+            前往账号中心修改昵称、管理密码与登录设备。返回本页时会自动刷新资料。
           </p>
-        </form>
+          <a
+            className="button primary"
+            href="/api/v1/auth/account/profile"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            管理 OurTaiko 账号 <ArrowUpRight size={17} />
+          </a>
+        </section>
       </div>
     </>
   )

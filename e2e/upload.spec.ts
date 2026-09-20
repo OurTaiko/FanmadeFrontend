@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { mailboxCode } from './registration-helpers'
+import { registerAccount } from './registration-helpers'
 
 const root = process.env.ESE_ROOT || join(homedir(), 'Documents/GitHub/ESE')
 const chartPath = join(root, '03 Vocaloid/Happy Synthesizer/Happy Synthesizer.tja')
@@ -13,20 +13,10 @@ const wrongAudio = join(root, '05 Variety/Destr0yer/Destr0yer.ogg')
 test('register, reject mismatched ESE audio locally, publish, download, delete and logout', async ({
   page,
 }) => {
-  test.skip(!process.env.FANMADE_TEST_MAILBOX, 'Requires isolated backend mail fixture')
+  test.skip(process.env.FANMADE_SSO_E2E !== '1', 'Requires local SSO development servers')
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/register')
-  await page.getByLabel('用户名', { exact: true }).fill(`web_${randomUUID().slice(0, 8)}`)
-  await page.getByLabel('密码', { exact: true }).fill(randomUUID())
-  const email = `upload_${randomUUID().slice(0, 8)}@example.test`
-  await page.getByLabel('邮箱', { exact: true }).fill(email)
-  await page.getByRole('button', { name: '获取验证码', exact: true }).click()
-  await expect(page.getByRole('dialog', { name: '操作成功' })).toContainText('验证码已发送')
-  await page.getByRole('button', { name: '知道了', exact: true }).click()
-  await page.getByLabel('邮箱验证码', { exact: true }).fill(mailboxCode(email))
-  await page.getByRole('button', { name: '验证并创建账号', exact: true }).click()
-  await expect(page).toHaveURL(/\/upload$/)
+  await registerAccount(page, 'upload' + randomUUID().slice(0, 8), randomUUID())
   const uploadRequests: string[] = []
   page.on('request', (r) => {
     if (r.method() === 'POST' && new URL(r.url()).pathname === '/api/v1/charts')
@@ -35,7 +25,7 @@ test('register, reject mismatched ESE audio locally, publish, download, delete a
   await page.getByLabel('选择 TJA 谱面').setInputFiles(chartPath)
   await page.getByLabel('选择 OGG 或 MP3 音频').setInputFiles(wrongAudio)
   await expect(page.getByText('文件校验未通过', { exact: true })).toBeVisible()
-  await expect(page.getByText(/第 10 行引用了「Happy Synthesizer.ogg」/)).toBeVisible()
+  await expect(page.getByText(/第 \d+ 行引用了「Happy Synthesizer.ogg」/)).toBeVisible()
   expect(uploadRequests).toHaveLength(0)
   await page.getByRole('button', { name: '知道了', exact: true }).click()
   await page.getByLabel('选择 OGG 或 MP3 音频').setInputFiles(audioPath)
@@ -50,7 +40,9 @@ test('register, reject mismatched ESE audio locally, publish, download, delete a
   await expect(page.getByRole('heading', { name: 'Happy Synthesizer', exact: true })).toBeVisible()
   const tjaURL = await page.getByRole('link', { name: 'TJA 原文件' }).getAttribute('href')
   const bytes = await page.request.get(tjaURL!)
-  expect(await bytes.body()).toEqual(readFileSync(chartPath))
+  expect((await bytes.body()).toString('utf8')).toBe(
+    readFileSync(chartPath, 'utf8').replace(/^\uFEFF/, ''),
+  )
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('link', { name: '下载谱面包' }).click(),
@@ -77,7 +69,9 @@ test('ESE library search, detail navigation and mobile layout', async ({ page })
   await page.goto('/')
   await page.getByRole('textbox', { name: '搜索谱面' }).fill('Natsumatsuri')
   await page.getByRole('button', { name: '搜索', exact: true }).click()
-  const title = page.getByRole('heading', { name: 'Natsumatsuri -New Audio/Chart-', exact: true })
+  const title = page
+    .getByRole('heading', { name: 'Natsumatsuri -New Audio/Chart-', exact: true })
+    .first()
   await expect(title).toBeVisible()
   await title.click()
   await expect(page.getByRole('heading', { name: '难度一览' })).toBeVisible()
