@@ -29,11 +29,15 @@ Actions 的 **Deploy frontend → Run workflow** 中选择 `main` 手动重试�
 通过已信任的服务器控制台或 SSH 会话获取主机指纹：
 
 ```sh
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256
+ssh-keygen -lf /etc/ssh/ssh_host_ecdsa_key.pub -E sha256
 ```
 
-复制输出的第二列 `SHA256:...`。如果 sshd 使用其他类型的主机密钥，替换公钥路径。
-连接时必须通过这个指纹校验；主机密钥更换后需要更新 Secret。
+复制输出的第二列 `SHA256:...`。当前固定的 `drone-ssh 1.8.1` 与生产服务器协商使用
+ECDSA 主机密钥，已经用同版本客户端及本机可信 `known_hosts` 记录验证。
+同一台服务器的 RSA、ECDSA、Ed25519 密钥有不同指纹，不能互换；本机 OpenSSH
+登录成功也不表示它选择了与 CI 相同的密钥类型。升级 SSH 客户端或调整服务器密钥后，
+需重新确认实际协商的类型，再通过可信控制台或已信任的 SSH 会话获取对应公钥指纹。
+连接时必须通过指纹校验，不要通过留空 Secret 绕过检查。
 密码只用于 SSH 认证，不传给构建命令，不写入仓库、前端环境文件或构建产物。
 连接参数见 [SSH Action 官方说明](https://github.com/appleboy/ssh-action#-connection-settings)。
 
