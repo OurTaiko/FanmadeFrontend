@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { CheckCircle2, CircleAlert, Info, X } from 'lucide-react'
+import type { ReactNode, RefObject } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import {
+  CheckCircleIcon as CheckCircle2,
+  WarningCircleIcon as CircleAlert,
+  InfoIcon as Info,
+  XIcon as X,
+} from '@phosphor-icons/react'
 import { NotificationContext, useNotification } from './notification-context'
 import type { Notification, NoticeKind } from './notification-context'
 
@@ -12,6 +25,8 @@ export function Modal({
   onDismiss,
   busy = false,
   alert = false,
+  className,
+  initialFocus,
 }: {
   title: string
   children: ReactNode
@@ -19,62 +34,64 @@ export function Modal({
   onDismiss: () => void
   busy?: boolean
   alert?: boolean
+  className?: string
+  initialFocus?: RefObject<HTMLElement | null>
 }) {
-  const ref = useRef<HTMLDialogElement>(null)
-  const id = useId()
-  useEffect(() => {
-    const node = ref.current!
-    const previous = document.activeElement as HTMLElement | null
-    node.showModal()
-    return () => {
-      node.close()
-      if (previous?.isConnected && previous !== document.body) {
-        previous.focus({ preventScroll: true })
-      } else {
-        // Async submit buttons may lose focus while disabled. Keep keyboard
-        // focus in the underlying editor when dismissing its error message.
-        document
-          .querySelector<HTMLElement>('dialog[open]:not(.feedback-dialog) input:not(:disabled)')
-          ?.focus({ preventScroll: true })
-      }
-    }
-  }, [])
-  return createPortal(
-    <dialog
-      ref={ref}
-      className="feedback-dialog"
-      role={alert ? 'alertdialog' : 'dialog'}
-      aria-labelledby={`${id}-title`}
-      aria-describedby={`${id}-message`}
-      onCancel={(event) => {
-        event.preventDefault()
-        if (!busy) onDismiss()
+  const descriptionId = useId()
+  const [previousFocus] = useState(() => document.activeElement as HTMLElement | null)
+  return (
+    <Dialog
+      open
+      disablePointerDismissal
+      onOpenChange={(open, details) => {
+        if (busy) {
+          details.cancel()
+          return
+        }
+        if (!open) onDismiss()
       }}
     >
-      <header>
-        <h2 id={`${id}-title`}>{title}</h2>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label="关闭提示"
-          disabled={busy}
-          onClick={onDismiss}
-        >
-          <X size={20} />
-        </button>
-      </header>
-      <div id={`${id}-message`} className="feedback-message">
-        {children}
-      </div>
-      <footer>
-        {actions ?? (
-          <button type="button" className="button primary" onClick={onDismiss}>
-            知道了
-          </button>
+      <DialogContent
+        aria-describedby={descriptionId}
+        role={alert ? 'alertdialog' : 'dialog'}
+        showCloseButton={false}
+        initialFocus={initialFocus}
+        finalFocus={() => {
+          if (previousFocus?.isConnected && !previousFocus.matches(':disabled'))
+            return previousFocus
+          return document.querySelector<HTMLElement>(
+            '[data-slot="dialog-content"] input:not(:disabled)',
+          )
+        }}
+        className={cn('max-h-[85svh] overflow-y-auto', className)}
+      >
+        <DialogHeader className="flex-row items-center justify-between gap-4">
+          <DialogTitle>{title}</DialogTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="关闭提示"
+            disabled={busy}
+            onClick={onDismiss}
+          >
+            <X />
+          </Button>
+        </DialogHeader>
+        <div id={descriptionId} className="space-y-4 text-sm leading-relaxed wrap-anywhere">
+          {children}
+        </div>
+        {actions !== null && (
+          <DialogFooter>
+            {actions ?? (
+              <Button type="button" onClick={onDismiss}>
+                知道了
+              </Button>
+            )}
+          </DialogFooter>
         )}
-      </footer>
-    </dialog>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -118,7 +135,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           alert={current.kind === 'error'}
           onDismiss={() => dismiss(current.id)}
         >
-          <div className={`feedback-content ${current.kind}`}>
+          <div className="flex items-start gap-3 [&>svg]:shrink-0 [&>svg]:text-muted-foreground">
             <Icon size={26} aria-hidden="true" />
             <div>{current.message}</div>
           </div>

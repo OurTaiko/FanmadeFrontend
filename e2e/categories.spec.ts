@@ -119,7 +119,7 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     ])
     for (const path of ['/', '/me/charts']) {
       await page.goto(path)
-      const card = page.locator(`.chart-card[href="/charts/${chart.id}"]`)
+      const card = page.locator(`[data-testid="chart-card"][href="/charts/${chart.id}"]`)
       await expect(card.getByRole('list', { name: '所属分类' })).toHaveText('Variety')
     }
     expect(errors).toEqual([])

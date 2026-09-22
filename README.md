@@ -119,7 +119,7 @@ pnpm exec playwright test e2e/courses.spec.ts
 
 操作错误、成功反馈、验证码发送结果、上传校验、未登录提醒、预览／排行榜错误统一使用弹窗，关闭后不在页面保留横幅。上传进度和删除确认也显示在弹窗中；上传规则和预览操作说明可通过按钮打开。表单标签、必要填写说明、加载状态和谱面／排行榜本身的数据仍保留。
 
-`NotificationProvider` 负责提示队列，`Notice` 绑定已有状态并在来源卸载时移除过期提示；主动操作使用 `useNotification().notify()`，保证重复失败仍能再次提示。原生 dialog 提供模态焦点约束，支持确认按钮、关闭按钮及 Esc，上传处理期间需使用“取消上传”。
+`NotificationProvider` 负责提示队列，`Notice` 绑定已有状态并在来源卸载时移除过期提示；主动操作使用 `useNotification().notify()`，保证重复失败仍能再次提示。shadcn Dialog 提供模态焦点约束，支持确认按钮、关闭按钮及 Esc，上传处理期间需使用“取消上传”。
 
 验证：`pnpm build`、`pnpm lint`、`pnpm test` 通过（71 项通过，1 项既有条件测试跳过）。Chrome 在隔离接口夹具下验证了错误弹窗、Esc 关闭、重复保存失败、编辑内容保留、保存成功、删除确认、MP3 文件不匹配／校验成功，以及关闭后继续填写不重复弹出。没有调用正式数据库或真实邮件接口。相关 E2E 断言已更新，并补充 `e2e/notifications.spec.ts`；本次未执行完整 Playwright 套件。
 
@@ -170,3 +170,23 @@ pnpm exec playwright test e2e/courses.spec.ts
 icon；也可单独运行 `pnpm icons`。生成文件已加入 `.gitignore`，
 `public/site.webmanifest` 仍作为配置提交。CI 和部署服务器只需正常执行
 `pnpm install --frozen-lockfile`、`pnpm build`，无需手动准备图标。
+
+## UI 与颜色主题
+
+界面使用 Tailwind CSS v4、shadcn/ui 的 `base-luma` 风格和 `b7W7rzjqi`
+预设（Taupe 基础色、红色主色、Inter 字体、Phosphor 图标）。`components.json`
+记录组件生成配置；继续添加组件可使用 `pnpm dlx shadcn@latest add <组件名>`。
+
+`src/styles.css` 仅保留 Tailwind 导入、预设颜色变量和基础层，页面布局与样式使用
+Tailwind 原子类。复用控件位于 `src/components/ui/`，音频播放器和选择器组合位于
+`src/components/`。谱面画布的背景、文字和边框读取主题变量，音符与分支保留音乐语义配色。
+
+顶部主题菜单支持浅色、深色与跟随系统，默认跟随系统；偏好保存在
+`localStorage` 的 `fanmade-theme`，并同步同源窗口。首屏脚本在 React 加载前应用主题。
+
+本地 `.env.local` 可设置 `VITE_API_TARGET=https://fanmade.ourtaiko.org`，Vite 将
+`/api` 转发到该站点。遇到 macOS 文件监听阻塞时，可设置 `VITE_USE_POLLING=true`
+并使用 `pnpm dev --configLoader runner` 启动。
+
+原生选择器与旧 CSS 类定位已在现有 E2E 用例中迁移到组件角色、选项值和稳定的
+`data-testid`；本次 UI 迁移未执行构建及运行测试。

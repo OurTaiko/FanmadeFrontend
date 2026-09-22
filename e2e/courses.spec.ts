@@ -1,3 +1,4 @@
+import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
 import type { Chart } from '../src/api'
 
@@ -85,7 +86,8 @@ test('five course filters and ordinary preview; unsupported cards and details st
     if (request.url().includes('/versions/')) assets.push(request.url())
   })
   await page.goto('/')
-  await expect(page.getByLabel('筛选难度').locator('option')).toHaveText([
+  await page.getByRole('combobox', { name: '筛选难度' }).click()
+  await expect(page.getByRole('option')).toHaveText([
     '全部难度',
     '简单',
     '普通',
@@ -93,7 +95,8 @@ test('five course filters and ordinary preview; unsupported cards and details st
     '魔王',
     '里谱',
   ])
-  await expect(page.locator('.chart-card')).toHaveCount(1)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('[data-testid="chart-card"]')).toHaveCount(1)
   await expect(page.getByText('不支持的Tower作品')).toHaveCount(0)
   await expect(page.getByText('不支持的Dan作品')).toHaveCount(0)
   for (const entry of unsupported) {
@@ -104,10 +107,12 @@ test('five course filters and ordinary preview; unsupported cards and details st
   }
   expect(assets).toEqual([])
   await page.goto(`/charts/${chart.id}`)
-  await expect(page.getByLabel('选择难度', { exact: true })).toHaveValue('Oni')
-  await expect(page.getByLabel('选择难度', { exact: true }).locator('option')).toHaveCount(5)
+  await expect(page.getByLabel('选择难度', { exact: true })).toHaveAttribute('data-value', 'Oni')
+  await page.getByRole('combobox', { name: '选择难度', exact: true }).click()
+  await expect(page.getByRole('option')).toHaveCount(5)
+  await page.keyboard.press('Escape')
   await expect(page.locator('canvas')).toBeVisible()
-  await page.getByLabel('选择难度', { exact: true }).selectOption('Edit')
+  await selectValue(page, '选择难度', 'Edit')
   await expect(page.locator('canvas')).toHaveAttribute('aria-label', 'Edit 难度交互谱面预览')
   expect(errors).toEqual([])
 })
