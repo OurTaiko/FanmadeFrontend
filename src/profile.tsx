@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Link } from 'react-router-dom'
 import { ArrowUpRightIcon as ArrowUpRight } from '@phosphor-icons/react'
 import { useSession } from './session-context'
-import { Notice } from './components'
+import { Notice } from './notifications'
 
 export function ProfilePage() {
   const session = useSession()

@@ -15,7 +15,7 @@ import type { RenderOptions } from '../TJARenderer/src/internal'
 import type { HitInfo } from '../TJARenderer/src/hit-testing'
 import type { BranchName, NoteLocation } from '../TJARenderer/src/primitives'
 import type { Chart } from './api'
-import { Notice } from './components'
+import { Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { parsePreviewTja } from './preview-tja'
 

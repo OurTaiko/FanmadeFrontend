@@ -20,17 +20,18 @@ import {
 } from '@phosphor-icons/react'
 import { api, resource } from './api'
 import type { Chart, Leaderboard } from './api'
-import { courseNames, Notice } from './components'
+import { courseNames, isSupportedCourse } from './courses'
+import { Notice } from './notifications'
 import { defaultDifficulty } from './chart-difficulty'
 import { useSession } from './session-context'
 import { maxTja } from './tja'
-import { isSupportedCourse } from './courses'
 
 const ChartPreview = lazy(() => import('./chart-preview'))
 
 const difficultyTabColors = {
   Easy: '[--difficulty-bg:var(--color-orange-100)] [--difficulty-fg:var(--color-orange-800)] dark:[--difficulty-bg:#493128] dark:[--difficulty-fg:#f7bb78]',
-  Normal: '[--difficulty-bg:var(--color-green-100)] [--difficulty-fg:var(--color-green-800)] dark:[--difficulty-bg:#263e32] dark:[--difficulty-fg:#93d5a6]',
+  Normal:
+    '[--difficulty-bg:var(--color-green-100)] [--difficulty-fg:var(--color-green-800)] dark:[--difficulty-bg:#263e32] dark:[--difficulty-fg:#93d5a6]',
   Hard: '[--difficulty-bg:var(--color-yellow-100)] [--difficulty-fg:var(--color-yellow-800)] dark:[--difficulty-bg:#393a21] dark:[--difficulty-fg:#d7d887]',
   Oni: '[--difficulty-bg:var(--color-purple-100)] [--difficulty-fg:var(--color-purple-800)] dark:[--difficulty-bg:#3f2948] dark:[--difficulty-fg:#deb0ed]',
   Edit: '[--difficulty-bg:var(--color-rose-100)] [--difficulty-fg:var(--color-rose-800)] dark:[--difficulty-bg:#462733] dark:[--difficulty-fg:#f19aae]',

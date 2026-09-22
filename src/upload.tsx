@@ -29,13 +29,13 @@ import { CoverPicker } from '@/components/cover-picker'
 import { CategoryPicker } from './categories'
 import { api, uploadChart } from './api'
 import type { Chart } from './api'
-import { Modal } from './notifications'
+import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
-import { courseNames, DifficultyBadges, Notice } from './components'
+import { courseNames, isSupportedCourse } from './courses'
+import { DifficultyBadges } from '@/components/difficulty-badges'
 import { useSession } from './session-context'
 import { isAudioFilename, prepareTja, validateFiles } from './tja'
 import type { PreparedTja } from './tja'
-import { isSupportedCourse } from './courses'
 
 function createRequestKey() {
   // getRandomValues remains available over LAN HTTP, unlike randomUUID.

@@ -22,13 +22,14 @@ import {
 } from '@phosphor-icons/react'
 import { api, jsonRequest, resource } from './api'
 import type { Chart, ChartList } from './api'
-import { ChartCard, DifficultyBadges, Notice, courseNames } from './components'
+import { ChartCard } from '@/components/chart-card'
+import { DifficultyBadges } from '@/components/difficulty-badges'
+import { courseNames, supportsChart } from './courses'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
-import { Modal } from './notifications'
+import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
-import { supportsChart } from './courses'
 import { CategoryLabels } from './categories'
 
 export function Library({ mine = false }: { mine?: boolean }) {
