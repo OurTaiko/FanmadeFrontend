@@ -147,6 +147,38 @@ test('optional cover upload, owner replacement, failure retention and immediate 
   await page
     .getByLabel('选择 JPG 或 PNG 封面')
     .setInputFiles({ name: 'replacement.jpg', mimeType: 'image/jpeg', buffer: jpg })
+  const dialog = page.getByRole('dialog', { name: '修改歌曲封面' })
+  const longName = '12dc1af5558a87267fdb57387c84f8e84ff9e971dc74c3ea8991e'.repeat(4) + '.jpg'
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 640, height: 720 },
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await picker.setInputFiles({ name: longName, mimeType: 'image/jpeg', buffer: jpg })
+    await page.getByAltText('待上传的封面预览').evaluate((img: HTMLImageElement) => img.decode())
+    await expect
+      .poll(() => dialog.evaluate((element) => element.scrollWidth - element.clientWidth))
+      .toBeLessThanOrEqual(1)
+    for (const name of ['关闭提示', '取消选择', '保存封面']) {
+      const button = dialog.getByRole('button', { name, exact: true })
+      await button.scrollIntoViewIfNeeded()
+      const frame = await dialog.boundingBox()
+      const bounds = await button.boundingBox()
+      expect(frame).not.toBeNull()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.x).toBeGreaterThanOrEqual(frame!.x)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(frame!.x + frame!.width)
+      await button.click({ trial: true })
+    }
+    await page.screenshot({ path: `/tmp/fanmade-cover-dialog-${viewport.width}.png` })
+    await dialog.getByRole('button', { name: '取消选择', exact: true }).click()
+    await expect(page.getByAltText('待上传的封面预览')).toHaveCount(0)
+    await expect(dialog.getByRole('button', { name: '保存封面', exact: true })).toBeDisabled()
+  }
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await picker.setInputFiles({ name: 'replacement.jpg', mimeType: 'image/jpeg', buffer: jpg })
   failSave = true
   await page.getByRole('button', { name: '保存封面', exact: true }).click()
   await expect(page.getByRole('alert')).toHaveText('封面暂时无法保存')

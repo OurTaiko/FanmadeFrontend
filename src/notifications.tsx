@@ -77,7 +77,7 @@ export function Modal({
             <X />
           </DialogClose>
         </DialogHeader>
-        <div id={descriptionId} className="space-y-4 text-sm leading-relaxed wrap-anywhere">
+        <div id={descriptionId} className="min-w-0 space-y-4 text-sm leading-relaxed wrap-anywhere">
           {children}
         </div>
         {actions !== null && (
