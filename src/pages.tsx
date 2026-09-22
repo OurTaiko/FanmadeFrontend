@@ -1,3 +1,4 @@
+import { DialogClose } from '@/components/ui/dialog'
 import { AudioPlayer } from '@/components/audio-player'
 import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
@@ -445,15 +446,12 @@ export function Detail() {
                   onDismiss={() => setConfirm(false)}
                   actions={
                     <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="default"
+                      <DialogClose
+                        render={<Button type="button" variant="outline" size="default" />}
                         disabled={busy}
-                        onClick={() => setConfirm(false)}
                       >
                         取消
-                      </Button>
+                      </DialogClose>
                       <Button
                         type="button"
                         variant="destructive"
