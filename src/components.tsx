@@ -4,6 +4,7 @@ import {
   FolderIcon as FolderHeart,
   UploadSimpleIcon as Upload,
   SignOutIcon as LogOut,
+  SignInIcon,
   UserIcon as UserRound,
   ListIcon as Menu,
   StarIcon,
@@ -158,7 +159,7 @@ export function Layout() {
             </span>
           </Link>
           <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="主要导航">
-            {links.map(({ to, label }) => (
+            {links.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -167,6 +168,7 @@ export function Layout() {
                   cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }))
                 }
               >
+                <Icon className="size-4 opacity-60" aria-hidden="true" />
                 {label}
               </NavLink>
             ))}
@@ -198,11 +200,12 @@ export function Layout() {
                     void session.logout().catch((e) => setError(e.message))
                   }}
                 >
-                  <LogOut />
+                  <LogOut className="size-4" aria-hidden="true" />
                 </Button>
               </>
             ) : (
               <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/login">
+                <SignInIcon className="size-4 opacity-60" aria-hidden="true" />
                 登录 / 注册
               </Link>
             )}
@@ -211,12 +214,12 @@ export function Layout() {
                 <DropdownMenuTrigger
                   render={<Button variant="ghost" size="icon" aria-label="打开导航" />}
                 >
-                  <Menu />
+                  <Menu className="size-4" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {links.map(({ to, label, icon: Icon }) => (
                     <DropdownMenuItem key={to} render={<Link to={to} />}>
-                      <Icon />
+                      <Icon className="size-4 opacity-60" aria-hidden="true" />
                       {label}
                     </DropdownMenuItem>
                   ))}
