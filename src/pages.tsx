@@ -35,6 +35,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
   const [data, setData] = useState<ChartList | null>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true)
+  const [searchPending, setSearchPending] = useState(false)
   const search = useCallback(
     (query: string) => {
       setParams(
@@ -106,7 +107,12 @@ export function Library({ mine = false }: { mine?: boolean }) {
         aria-label="搜索和筛选谱面"
         className="flex flex-col gap-3 sm:flex-row sm:items-center"
       >
-        <SearchInput key={mine ? 'mine' : 'all'} value={q} onSearch={search} />
+        <SearchInput
+          key={mine ? 'mine' : 'all'}
+          value={q}
+          onSearch={search}
+          onPendingChange={setSearchPending}
+        />
         <ChoiceSelect
           label="筛选难度"
           prefix={
@@ -125,7 +131,8 @@ export function Library({ mine = false }: { mine?: boolean }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2_span]:text-muted-foreground">
         <h2 className="text-base font-semibold">
-          {q ? `“${q}” 的搜索结果` : '最新发布'} <span>{data?.total ?? '—'}</span>
+          {q ? `“${q}” 的搜索结果` : '最新发布'}
+          {!searchPending && !loading && !error && data && <span>{data.total}</span>}
         </h2>
         <span className="text-sm text-muted-foreground">按发布时间排序</span>
       </div>
