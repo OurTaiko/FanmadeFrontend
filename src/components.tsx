@@ -204,7 +204,7 @@ export function Layout() {
                 </Button>
               </>
             ) : (
-              <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/login">
+              <Link className={buttonVariants({ variant: 'ghost', size: 'sm' })} to="/login">
                 <SignInIcon className="size-4 opacity-60" aria-hidden="true" />
                 登录 / 注册
               </Link>
