@@ -1,3 +1,6 @@
+import { chartText } from '@/chart-language'
+import { i18n } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import type { Chart } from '@/api/types'
@@ -9,6 +12,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { DifficultyBadges } from '@/components/difficulty-badges'
 
 export function ChartCard({ chart }: { chart: Chart }) {
+  const { t } = useTranslation()
+
   const [failedSource, setFailedSource] = useState('')
   const source = coverSource(chart)
   const hasCover = !!source && failedSource !== source
@@ -39,14 +44,17 @@ export function ChartCard({ chart }: { chart: Chart }) {
         <CardContent className="relative flex gap-4 pr-0 pl-6 h-full">
           <div className="flex flex-col flex-1 gap-5 min-w-0">
             <div className="space-y-0.5 min-w-0">
-              <h3 className="font-semibold text-lg truncate tracking-tight" title={chart.title}>
-                {chart.title}
+              <h3
+                className="font-semibold text-lg truncate tracking-tight"
+                title={chartText(chart, i18n.resolvedLanguage).title}
+              >
+                {chartText(chart, i18n.resolvedLanguage).title}
               </h3>
               <p
                 className="text-muted-foreground text-sm truncate"
-                title={chart.subtitle.replace(/^(--|\+\+)/, '')}
+                title={chartText(chart, i18n.resolvedLanguage).subtitle}
               >
-                {chart.subtitle.replace(/^(--|\+\+)/, '')}
+                {chartText(chart, i18n.resolvedLanguage).subtitle}
               </p>
             </div>
             <CategoryLabels ids={chart.categoryIds}>
@@ -54,10 +62,12 @@ export function ChartCard({ chart }: { chart: Chart }) {
                 <Badge
                   variant="outline"
                   className="gap-0 p-0 min-w-0 max-w-full"
-                  title={`谱师：${chart.maker || chart.uploader}`}
+                  title={t('messages.chartCreatorWithName', {
+                    name: chart.maker || chart.uploader,
+                  })}
                 >
                   <span className="flex items-center bg-muted px-2 border-r h-full text-muted-foreground shrink-0">
-                    谱师
+                    {t('messages.chartCreator')}
                   </span>
                   <span className="px-2 truncate">{chart.maker || chart.uploader}</span>
                 </Badge>

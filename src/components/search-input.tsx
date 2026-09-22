@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { MagnifyingGlassIcon, XIcon } from '@phosphor-icons/react'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,8 @@ export function SearchInput({
   onSearch: (query: string) => void
   onPendingChange: (pending: boolean) => void
 }) {
+  const { t } = useTranslation()
+
   const [query, setQuery] = useState(value)
   const [composing, setComposing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -42,8 +45,8 @@ export function SearchInput({
         ref={inputRef}
         className="pr-10 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
         type="search"
-        aria-label="搜索谱面"
-        placeholder="搜索曲名、谱师或上传者…"
+        aria-label={t('messages.searchCharts')}
+        placeholder={t('messages.searchSongsCreatorsOrUploaders')}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onCompositionStart={() => setComposing(true)}
@@ -58,7 +61,7 @@ export function SearchInput({
           variant="ghost"
           size="icon-xs"
           className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground"
-          aria-label="清空搜索"
+          aria-label={t('messages.clearSearch')}
           onClick={() => {
             setQuery('')
             setComposing(false)

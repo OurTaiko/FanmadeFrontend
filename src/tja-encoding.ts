@@ -1,9 +1,10 @@
+import { t } from './i18n'
 import { ValidationError } from './validation-error'
 
 const invalid = (): never => {
   throw new ValidationError(
     'TJA_ENCODING_INVALID',
-    '无法可靠识别 TJA 编码，或文件包含损坏字符。请用文本编辑器另存为 UTF-8 后重新选择。',
+    t('messages.cannotDetectTjaEncodingOrTheFileContainsDamagedCharactersSaveIt'),
   )
 }
 const clean = (text: string, strict = true) => {

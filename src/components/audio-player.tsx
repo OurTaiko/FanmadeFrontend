@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useRef, useState } from 'react'
 import {
   PauseIcon as Pause,
@@ -26,6 +27,8 @@ function AudioPlayerContent({
   label: string
   startAt?: number
 }) {
+  const { t } = useTranslation()
+
   const audio = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [duration, setDuration] = useState(0)
@@ -44,7 +47,7 @@ function AudioPlayerContent({
       setError('')
       await player.play()
     } catch {
-      setError('音频暂时无法播放，请重试。')
+      setError(t('messages.cannotPlayAudioRightNowPleaseRetry'))
     }
   }
   return (
@@ -67,7 +70,7 @@ function AudioPlayerContent({
         onEnded={() => setPlaying(false)}
         onError={() => {
           setPlaying(false)
-          setError('音频加载失败，请检查网络后重试。')
+          setError(t('messages.failedToLoadAudioCheckYourConnectionAndRetry'))
         }}
       />
       <div className="flex items-center gap-3">
@@ -75,14 +78,14 @@ function AudioPlayerContent({
           type="button"
           size="icon"
           variant="secondary"
-          aria-label={playing ? '暂停试听' : '播放试听'}
+          aria-label={playing ? t('messages.pauseAudio') : t('messages.playAudio')}
           onClick={() => void toggle()}
         >
           {playing ? <Pause /> : <Play />}
         </Button>
         <div className="min-w-0 flex-1 space-y-2">
           <Slider
-            aria-label={`${label}播放进度`}
+            aria-label={t('messages.playbackProgress', { label: label })}
             value={[position]}
             min={0}
             max={duration || 1}
@@ -103,7 +106,7 @@ function AudioPlayerContent({
           type="button"
           variant="ghost"
           size="icon"
-          aria-label={muted ? '取消静音' : '静音'}
+          aria-label={muted ? t('messages.unmute') : t('messages.mute')}
           onClick={() => {
             if (audio.current) audio.current.muted = !muted
             setMuted(!muted)
@@ -113,7 +116,7 @@ function AudioPlayerContent({
         </Button>
         <Slider
           className="hidden w-20! sm:block"
-          aria-label="音量"
+          aria-label={t('messages.volume')}
           value={[muted ? 0 : volume]}
           min={0}
           max={1}

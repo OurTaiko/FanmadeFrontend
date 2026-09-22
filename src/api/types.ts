@@ -5,6 +5,7 @@ export type User = {
   nickname: string
   emailVerified: boolean
   isAdmin: boolean
+  preferredLanguage?: string
 }
 export type Locale = 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useId, useRef, useState } from 'react'
 import { ImageIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,8 @@ export function CoverPicker({
   onChange: (file: File | null) => void
   disabled?: boolean
 }) {
+  const { t } = useTranslation()
+
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null)
@@ -26,18 +29,18 @@ export function CoverPicker({
   }, [file])
   return (
     <div className="min-w-0 space-y-4">
-      <Label htmlFor={id}>选择 JPG 或 PNG 封面</Label>
+      <Label htmlFor={id}>{t('messages.chooseJpgOrPngCover')}</Label>
       <p id={`${id}-help`} className="text-sm leading-6 text-muted-foreground">
-        可选，最大 8 MiB、1600 万像素。图片会按原比例缩小；首页会裁切展示，详情页保留完整封面。
+        {t('messages.optionalUpTo8MibAnd16MegapixelsImagesAreScaledProportionally')}
       </p>
       <div className="flex min-h-36 items-center justify-center overflow-hidden rounded-2xl bg-[#f5f5f7] p-4 dark:bg-muted">
         {file && preview?.file === file ? (
           <img
             src={preview.url}
-            alt="待上传的封面预览"
+            alt={t('messages.selectedCoverPreview')}
             className="max-h-52 max-w-full rounded-xl object-contain"
             onError={() => {
-              setError('封面无法读取，请选择有效的 JPG 或 PNG 图片。')
+              setError(t('messages.cannotReadCoverChooseAValidJpgOrPngImage'))
               onChange(null)
               if (input.current) input.current.value = ''
             }}
@@ -48,7 +51,7 @@ export function CoverPicker({
                 image.naturalWidth > 8192 ||
                 image.naturalHeight > 8192
               ) {
-                setError('封面不能超过 1600 万像素，且单边不能超过 8192 像素。')
+                setError(t('messages.coverMustNotExceed16MegapixelsOr8192PixelsOnEitherSide'))
                 onChange(null)
                 if (input.current) input.current.value = ''
               }
@@ -99,7 +102,7 @@ export function CoverPicker({
               if (input.current) input.current.value = ''
             }}
           >
-            取消选择
+            {t('messages.clearSelection')}
           </Button>
         </div>
       )}

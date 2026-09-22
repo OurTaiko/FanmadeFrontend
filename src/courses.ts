@@ -1,9 +1,20 @@
+import { t } from './i18n'
 export const courseNames = {
-  Easy: '简单',
-  Normal: '普通',
-  Hard: '困难',
-  Oni: '魔王',
-  Edit: '里谱',
+  get Easy() {
+    return t('messages.easy')
+  },
+  get Normal() {
+    return t('messages.normal')
+  },
+  get Hard() {
+    return t('messages.hard')
+  },
+  get Oni() {
+    return t('messages.oni')
+  },
+  get Edit() {
+    return t('messages.uraOni')
+  },
 } as const
 
 export type Course = keyof typeof courseNames

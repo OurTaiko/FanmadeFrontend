@@ -1,3 +1,5 @@
+import { apiErrorMessage } from './error-message'
+import { t } from '../i18n'
 import { endpoints } from './endpoints'
 import type { Chart } from './types'
 
@@ -13,10 +15,14 @@ export class ApiError extends Error {
 export async function api<T>(url: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(url, { credentials: 'include', ...init })
   const data = await response.json().catch(() => ({
-    message: response.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请稍后重试',
+    code: response.status === 413 ? 'FILE_TOO_LARGE' : 'SERVICE_UNAVAILABLE',
+    message:
+      response.status === 413
+        ? t('messages.fileExceedsTheUploadSizeLimit')
+        : t('messages.unexpectedServerResponsePleaseTryAgainLater'),
   }))
   if (!response.ok)
-    throw new ApiError(data.message || '请求失败', Number(response.headers.get('Retry-After')) || 0)
+    throw new ApiError(apiErrorMessage(data), Number(response.headers.get('Retry-After')) || 0)
   return data as T
 }
 export function jsonRequest(method: string, body: unknown, csrf = ''): RequestInit {
@@ -50,20 +56,28 @@ export function uploadChart(
       try {
         const data = JSON.parse(xhr.responseText)
         if (xhr.status >= 200 && xhr.status < 300) resolve(data)
-        else reject(new Error(data.message || '上传失败'))
+        else reject(new Error(apiErrorMessage(data)))
       } catch {
-        reject(new Error(xhr.status === 413 ? '文件超过上传大小限制' : '服务响应异常，请重试'))
+        reject(
+          new Error(
+            xhr.status === 413
+              ? t('messages.fileExceedsTheUploadSizeLimit')
+              : t('messages.unexpectedServerResponsePleaseRetry'),
+          ),
+        )
       }
     }
-    xhr.onerror = () => reject(new Error('网络连接中断，请重试；同一次请求不会重复保存'))
-    xhr.onabort = () => reject(new Error('已取消等待；若服务器已保存，重试会返回已保存的作品'))
-    xhr.ontimeout = () => reject(new Error('处理超时，请稍后重试'))
+    xhr.onerror = () =>
+      reject(new Error(t('messages.connectionLostRetryTheSameRequestWillNotSaveDuplicates')))
+    xhr.onabort = () =>
+      reject(new Error(t('messages.waitingCancelledIfSavedAlreadyRetryingReturnsTheSavedChart')))
+    xhr.ontimeout = () => reject(new Error(t('messages.requestTimedOutPleaseRetryLater')))
     xhr.timeout = 240000
     const abort = () => xhr.abort()
     signal.addEventListener('abort', abort, { once: true })
     xhr.onloadend = () => signal.removeEventListener('abort', abort)
     if (signal.aborted) {
-      reject(new Error('已取消上传'))
+      reject(new Error(t('messages.uploadCancelled')))
       return
     }
     xhr.send(form)

@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { parseTjaCourse } from './courses'
 import { parseTJA } from '../TJARenderer/src/tja-parser'
 import type { ParsedChart } from '../TJARenderer/src/tja-parser'
@@ -15,7 +16,7 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
     const line = raw.split('//', 1)[0].trim()
     if (!line) continue
     if (/^#START(?:\s|$)/i.test(line)) {
-      if (inBlock) throw new Error('TJA 谱面块未正确结束')
+      if (inBlock) throw new Error(t('messages.tjaChartBlockIsNotProperlyClosed'))
       const headers = { ...globalHeaders, ...courseHeaders }
       source.push(
         `COURSE:preview_${block}`,
@@ -24,7 +25,7 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       )
       inBlock = true
     } else if (/^#END\s*$/i.test(line)) {
-      if (!inBlock) throw new Error('TJA 谱面块缺少开始标记')
+      if (!inBlock) throw new Error(t('messages.tjaChartBlockIsMissingAStartMarker'))
       source.push('#END')
       inBlock = false
       block++
@@ -37,7 +38,7 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       const value = line.slice(separator + 1).trim()
       if (key === 'COURSE') {
         if (!parseTjaCourse(value))
-          throw new Error('谱面预览仅支持 Easy / Normal / Hard / Oni / Edit 难度')
+          throw new Error(t('messages.previewSupportsOnlyEasyNormalHardOniEdit'))
         hasCourse = true
         courseHeaders = {}
       } else {
@@ -45,12 +46,13 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       }
     }
   }
-  if (inBlock || block === 0) throw new Error('TJA 没有完整的谱面块')
+  if (inBlock || block === 0) throw new Error(t('messages.tjaHasNoCompleteChartBlocks'))
   const parsed = parseTJA(source.join('\n'))
   return Object.fromEntries(
     Array.from({ length: block }, (_, index) => {
       const chart = parsed[`preview_${index}`]
-      if (!chart?.bars.length) throw new Error(`第 ${index + 1} 个谱面块无法预览`)
+      if (!chart?.bars.length)
+        throw new Error(t('messages.chartBlockPreviewError', { block: index + 1 }))
       return [index, chart]
     }),
   )

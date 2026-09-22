@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { MoonIcon as Moon, SunIcon as Sun, MonitorIcon as Monitor } from '@phosphor-icons/react'
@@ -55,12 +56,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function ThemeToggle() {
+  const { t } = useTranslation()
+
   const { theme, setTheme } = useTheme()
   const Icon = theme === 'system' ? Monitor : theme === 'dark' ? Moon : Sun
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" aria-label="切换颜色主题" />}
+        render={<Button variant="ghost" size="icon" aria-label={t('messages.changeColorTheme')} />}
       >
         <Icon className="size-4" aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -68,15 +71,15 @@ export function ThemeToggle() {
         <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
           <DropdownMenuRadioItem value="light">
             <Sun />
-            浅色
+            {t('messages.light')}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
             <Moon />
-            深色
+            {t('messages.dark')}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
             <Monitor />
-            跟随系统
+            {t('messages.system')}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

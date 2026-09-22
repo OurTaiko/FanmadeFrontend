@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { parseTjaCourse } from './courses'
 import { normalizeTja } from './tja-encoding'
 import { ValidationError } from './validation-error'
@@ -16,6 +17,8 @@ export type Difficulty = {
 export type Metadata = {
   title: string
   subtitle: string
+  titleTranslations?: Partial<Record<'ja' | 'zh' | 'ko', string>>
+  subtitleTranslations?: Partial<Record<'ja' | 'zh' | 'ko', string>>
   maker: string
   bpm: number
   offset: number
@@ -33,7 +36,7 @@ async function validateAudioHeader(audio: File) {
   const header = new Uint8Array(await audio.slice(0, 10).arrayBuffer())
   if (/\.ogg$/i.test(audio.name)) {
     if (new TextDecoder().decode(header.slice(0, 4)) !== 'OggS')
-      fail('AUDIO_INVALID', '音频不是有效 Ogg 文件，请检查实际格式')
+      fail('AUDIO_INVALID', t('messages.audioIsNotAValidOggFileCheckItsFormat'))
     return
   }
   const id3 =
@@ -59,7 +62,7 @@ async function validateAudioHeader(audio: File) {
   )
     return
   // This is a lightweight signature check. The backend validates all frames and decodes the file.
-  fail('AUDIO_INVALID', '音频不是有效 MP3 文件，请检查实际格式，不要只修改扩展名')
+  fail('AUDIO_INVALID', t('messages.audioIsNotAValidMp3FileCheckTheFormatRenamingThe'))
 }
 
 export function safeFilename(s: string) {
@@ -88,18 +91,19 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     difficulties: [],
   }
   if (!data.length || data.length > maxTja)
-    fail('FILE_SIZE_INVALID', 'TJA 不能为空且不能超过 2 MiB')
-  if (!['utf-8', 'shift-jis'].includes(encoding)) fail('TJA_ENCODING_INVALID', '不支持此文本编码')
+    fail('FILE_SIZE_INVALID', t('messages.tjaMustNotBeEmptyOrExceed2Mib'))
+  if (!['utf-8', 'shift-jis'].includes(encoding))
+    fail('TJA_ENCODING_INVALID', t('messages.unsupportedTextEncoding'))
   let text = ''
   try {
     text = new TextDecoder(encoding === 'shift-jis' ? 'shift_jis' : 'utf-8', { fatal: true })
       .decode(data)
       .replace(/^\uFEFF/, '')
   } catch {
-    fail('TJA_ENCODING_INVALID', '无法解码文本，请转存为 UTF-8 后重新选择')
+    fail('TJA_ENCODING_INVALID', t('messages.cannotDecodeTextSaveAsUtf8AndSelectAgain'))
   }
   if (text.includes('\uFFFD') || text.includes('\u0000'))
-    fail('TJA_ENCODING_INVALID', '文本包含无法识别的字符')
+    fail('TJA_ENCODING_INVALID', t('messages.textContainsUnrecognizedCharacters'))
   let waveLine = 0,
     waves = 0,
     started = false,
@@ -110,14 +114,18 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
   const seen = new Set<string>()
   for (const [index, raw] of text.replace(/\r\n/g, '\n').split('\n').entries()) {
     const line = index + 1
-    if (bytes(raw) > 65536) fail('TJA_STRUCTURE_INVALID', '单行内容超过 64 KiB', line)
+    if (bytes(raw) > 65536) fail('TJA_STRUCTURE_INVALID', t('messages.aLineExceeds64Kib'), line)
     const s = raw.split('//', 1)[0].trim()
     if (!s) continue
     if (s.startsWith('#NEXTSONG'))
-      fail('TJA_RESOURCE_UNSUPPORTED', '示范版暂不支持切歌或额外资源', line)
+      fail(
+        'TJA_RESOURCE_UNSUPPORTED',
+        t('messages.songSwitchingAndAdditionalResourcesAreNotSupported'),
+        line,
+      )
     if (s.startsWith('#START')) {
       if (!['#START', '#START P1', '#START P2'].includes(s) || inBlock || level === 0)
-        fail('TJA_STRUCTURE_INVALID', '每个谱面需要 LEVEL:1–10 和独立的 #START / #END', line)
+        fail('TJA_STRUCTURE_INVALID', t('messages.eachChartNeedsLevel110AndItsOwnStartEnd'), line)
       started = true
       inBlock = true
       hasNotes = false
@@ -132,7 +140,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     }
     if (s === '#END') {
       if (!inBlock || !hasNotes)
-        fail('TJA_STRUCTURE_INVALID', '谱面块为空或 #END 没有对应的 #START', line)
+        fail('TJA_STRUCTURE_INVALID', t('messages.emptyChartBlockOrEndWithoutStart'), line)
       inBlock = false
       continue
     }
@@ -145,28 +153,29 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       value = s.slice(colon + 1).trim(),
       upper = key.toUpperCase()
     if (upper === 'WAVE') {
-      if (key !== 'WAVE') fail('TJA_WAVE_INVALID', '请使用大写 WAVE:', line)
+      if (key !== 'WAVE') fail('TJA_WAVE_INVALID', t('messages.useUppercaseWave'), line)
       waves++
-      if (waves > 1) fail('TJA_WAVE_DUPLICATE', '只能声明一次 WAVE', line)
-      if (started) fail('TJA_WAVE_SCOPE_INVALID', 'WAVE 必须位于第一个 #START 之前', line)
+      if (waves > 1) fail('TJA_WAVE_DUPLICATE', t('messages.waveCanOnlyBeDeclaredOnce'), line)
+      if (started)
+        fail('TJA_WAVE_SCOPE_INVALID', t('messages.waveMustAppearBeforeTheFirstStart'), line)
       waveLine = line
       m.wave = value
       continue
     }
     if (['LYRICS', 'BGIMAGE', 'BGMOVIE'].includes(upper) && value)
-      fail('TJA_RESOURCE_UNSUPPORTED', '仅接受 TJA 与单个 OGG 或 MP3 音频', line)
+      fail('TJA_RESOURCE_UNSUPPORTED', t('messages.onlyTjaWithASingleOggOrMp3IsAccepted'), line)
     if (upper === 'COURSE') {
       if (['tower', 'dan', '5', '6'].includes(value.toLowerCase()))
         fail(
           'TJA_COURSE_UNSUPPORTED',
-          '不支持塔（Tower）或段位（Dan）谱面，请移除这些谱面块后重新上传',
+          t('messages.towerAndDanChartsAreNotSupportedRemoveThoseBlocksAndUpload'),
           line,
         )
       const parsed = parseTjaCourse(value)
       if (!parsed || inBlock || key !== 'COURSE')
         fail(
           'TJA_STRUCTURE_INVALID',
-          '请使用大写 COURSE，难度需要 Easy / Normal / Hard / Oni / Edit（或 0–4）',
+          t('messages.useUppercaseCourseWithEasyNormalHardOniEditOr04'),
           line,
         )
       course = parsed!
@@ -176,15 +185,28 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     if (key === 'LEVEL') {
       const n = Number(value)
       if (!/^[+-]?[0-9]+$/.test(value) || !Number.isInteger(n) || n < 1 || n > 10 || inBlock)
-        fail('TJA_STRUCTURE_INVALID', 'LEVEL 必须是 1–10 的整数', line)
+        fail('TJA_STRUCTURE_INVALID', t('messages.levelMustBeAnIntegerFrom1To10'), line)
       level = n
+      continue
+    }
+    const localized = /^(TITLE|SUBTITLE)(JA|ZH|KO)$/.exec(key)
+    if (localized) {
+      if (started || seen.has(key))
+        fail('TJA_STRUCTURE_INVALID', t('messages.metadataScopeError', { field: key }), line)
+      if (bytes(value) > 500)
+        fail('TJA_STRUCTURE_INVALID', t('messages.metadataFieldIsTooLong'), line)
+      seen.add(key)
+      const field = localized[1] === 'TITLE' ? 'titleTranslations' : 'subtitleTranslations'
+      const language = localized[2].toLowerCase() as 'ja' | 'zh' | 'ko'
+      m[field] = { ...m[field], [language]: value }
       continue
     }
     if (['TITLE', 'SUBTITLE', 'MAKER', 'BPM', 'OFFSET', 'DEMOSTART'].includes(key)) {
       if (started || seen.has(key))
-        fail('TJA_STRUCTURE_INVALID', `${key} 必须在谱面开始前且只声明一次`, line)
+        fail('TJA_STRUCTURE_INVALID', t('messages.metadataScopeError', { field: key }), line)
       seen.add(key)
-      if (bytes(value) > 500) fail('TJA_STRUCTURE_INVALID', '元数据字段过长', line)
+      if (bytes(value) > 500)
+        fail('TJA_STRUCTURE_INVALID', t('messages.metadataFieldIsTooLong'), line)
       switch (key) {
         case 'TITLE':
           m.title = value
@@ -198,7 +220,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
         default: {
           const n = Number(value)
           if (!/^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/.test(value) || !Number.isFinite(n))
-            fail('TJA_STRUCTURE_INVALID', `${key} 必须为有限数字`, line)
+            fail('TJA_STRUCTURE_INVALID', t('messages.finiteNumberRequired', { field: key }), line)
           if (key === 'BPM') m.bpm = n
           if (key === 'OFFSET') m.offset = n
           if (key === 'DEMOSTART') m.demoStart = n
@@ -206,28 +228,41 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       }
     }
   }
-  if (!waves || !m.wave) fail('TJA_WAVE_MISSING', 'TJA 缺少非空的 WAVE 音频引用', waveLine)
+  if (!waves || !m.wave)
+    fail('TJA_WAVE_MISSING', t('messages.tjaNeedsANonemptyWaveAudioReference'), waveLine)
   if (!safeFilename(m.wave) || !isAudioFilename(m.wave))
-    fail('TJA_WAVE_PATH_INVALID', 'WAVE 必须为不带路径、引号的 .ogg 或 .mp3 文件名', waveLine)
-  if (!safeFilename(audioName)) fail('UPLOAD_FILENAME_INVALID', '上传文件名不能包含路径或特殊字符')
+    fail(
+      'TJA_WAVE_PATH_INVALID',
+      t('messages.waveMustBeAnOggOrMp3FilenameWithoutPathsOrQuotes'),
+      waveLine,
+    )
+  if (!safeFilename(audioName))
+    fail(
+      'UPLOAD_FILENAME_INVALID',
+      t('messages.uploadFilenamesCannotContainPathsOrSpecialCharacters'),
+    )
   if (m.wave.normalize('NFC') !== audioName.normalize('NFC'))
     throw new ValidationError(
       'TJA_AUDIO_MISMATCH',
-      `第 ${waveLine} 行引用了「${m.wave}」，但你选择的是「${audioName}」。请选择对应文件，或修改 TJA 的 WAVE 后重新选择。`,
+      t('messages.audioFilenameMismatch', {
+        line: waveLine,
+        expected: m.wave,
+        actual: audioName,
+      }),
       waveLine,
       m.wave,
       audioName,
     )
   if (!m.title || m.bpm <= 0 || inBlock || !m.difficulties.length)
-    fail('TJA_STRUCTURE_INVALID', '需要 TITLE、正数 BPM 和完整谱面块')
+    fail('TJA_STRUCTURE_INVALID', t('messages.titleAPositiveBpmAndCompleteChartBlocksAreRequired'))
   return m
 }
 export type PreparedTja = Metadata & { file: File; sourceEncoding: string }
 export async function prepareTja(tja: File, audioName: string): Promise<PreparedTja> {
   if (!safeFilename(tja.name) || !/\.tja$/i.test(tja.name) || !isAudioFilename(audioName))
-    fail('UPLOAD_FILES_INVALID', '请选择一个 .tja 谱面和一个 .ogg 或 .mp3 音频')
+    fail('UPLOAD_FILES_INVALID', t('messages.selectOneTjaChartAndOneOggOrMp3AudioFile'))
   if (!tja.size || tja.size > maxTja)
-    fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
+    fail('FILE_SIZE_INVALID', t('messages.filesMustNotBeEmptyTjaUpTo2MibAudioUp'))
   const normalized = await normalizeTja(new Uint8Array(await tja.arrayBuffer()), audioName)
   const metadata = parseTja(normalized.data, 'utf-8', audioName)
   return {
@@ -239,7 +274,7 @@ export async function prepareTja(tja: File, audioName: string): Promise<Prepared
 
 export async function validateFiles(tja: File, audio: File): Promise<PreparedTja> {
   if (!audio.size || audio.size > maxAudio)
-    fail('FILE_SIZE_INVALID', '文件不能为空；TJA 最大 2 MiB，音频最大 100 MiB')
+    fail('FILE_SIZE_INVALID', t('messages.filesMustNotBeEmptyTjaUpTo2MibAudioUp'))
   const prepared = await prepareTja(tja, audio.name)
   await validateAudioHeader(audio)
   return prepared

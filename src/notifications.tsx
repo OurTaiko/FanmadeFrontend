@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
@@ -38,6 +39,8 @@ export function Modal({
   className?: string
   initialFocus?: RefObject<HTMLElement | null>
 }) {
+  const { t } = useTranslation()
+
   const descriptionId = useId()
   const [previousFocus] = useState(() => document.activeElement as HTMLElement | null)
   return (
@@ -71,7 +74,7 @@ export function Modal({
           <DialogTitle>{title}</DialogTitle>
           <DialogClose
             render={<Button type="button" variant="ghost" size="icon-sm" />}
-            aria-label="关闭提示"
+            aria-label={t('messages.dismissNotification')}
             disabled={busy}
           >
             <X />
@@ -84,7 +87,7 @@ export function Modal({
           <DialogFooter>
             {actions ?? (
               <DialogClose render={<Button type="button" />} disabled={busy}>
-                知道了
+                {t('messages.gotIt')}
               </DialogClose>
             )}
           </DialogFooter>
@@ -95,6 +98,8 @@ export function Modal({
 }
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
+
   const [queue, setQueue] = useState<(Notification & { id: string })[]>([])
   const sequence = useRef(0)
   const dismiss = useCallback(
@@ -126,10 +131,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           title={
             current.title ||
             (current.kind === 'error'
-              ? '操作未完成'
+              ? t('messages.actionIncomplete')
               : current.kind === 'success'
-                ? '操作成功'
-                : '提示')
+                ? t('messages.success')
+                : t('messages.notice'))
           }
           alert={current.kind === 'error'}
           onDismiss={() => dismiss(current.id)}

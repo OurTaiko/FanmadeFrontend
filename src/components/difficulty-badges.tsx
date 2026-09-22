@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { StarIcon } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
 import type { Difficulty } from '@/tja'
@@ -20,6 +21,8 @@ export function DifficultyBadges({
   detailed?: boolean
   bookmarks?: boolean
 }) {
+  const { t } = useTranslation()
+
   const supported = difficulties.filter((d) => isSupportedCourse(d.course))
   const items = detailed
     ? supported
@@ -28,7 +31,10 @@ export function DifficultyBadges({
       )
   if (bookmarks)
     return (
-      <ul aria-label="谱面难度" className="flex flex-col self-start gap-2 w-24 shrink-0">
+      <ul
+        aria-label={t('messages.chartDifficulty')}
+        className="flex flex-col self-start gap-2 w-24 shrink-0"
+      >
         {items.map((d) => (
           <li
             key={d.blockIndex}
@@ -37,7 +43,7 @@ export function DifficultyBadges({
             <span>{isSupportedCourse(d.course) ? courseNames[d.course] : ''}</span>
             <span
               className="inline-flex items-center gap-0.5 tabular-nums"
-              aria-label={`${d.level} 星`}
+              aria-label={t('common.stars', { count: d.level })}
             >
               <StarIcon
                 weight="fill"
@@ -62,7 +68,7 @@ export function DifficultyBadges({
           {detailed && d.player ? ` ${d.player}` : ''}
           <span
             className="inline-flex items-center gap-1 tabular-nums"
-            aria-label={`${d.level} 星`}
+            aria-label={t('common.stars', { count: d.level })}
           >
             <StarIcon weight="fill" className="size-3" aria-hidden="true" />
             {d.level}

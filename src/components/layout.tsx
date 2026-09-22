@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import {
   CompassIcon as Compass,
@@ -24,13 +25,15 @@ import { ThemeToggle } from '@/theme'
 import pageBackground from '@/assets/page-background.webp'
 
 export function Layout() {
+  const { t } = useTranslation()
+
   const session = useSession()
   const [error, setError] = useState('')
   const links = [
-    { to: '/', label: '发现谱面', icon: Compass },
-    { to: '/me/charts', label: '我的作品', icon: FolderHeart },
-    ...(session.user ? [{ to: '/me/profile', label: '个人资料', icon: UserRound }] : []),
-    { to: '/upload', label: '发布谱面', icon: Upload },
+    { to: '/', label: t('messages.exploreCharts'), icon: Compass },
+    { to: '/me/charts', label: t('messages.myCharts'), icon: FolderHeart },
+    ...(session.user ? [{ to: '/me/profile', label: t('messages.profile'), icon: UserRound }] : []),
+    { to: '/upload', label: t('messages.publishChart'), icon: Upload },
   ]
   return (
     <div className="isolate relative bg-background min-h-svh text-foreground">
@@ -46,7 +49,7 @@ export function Layout() {
         className="sr-only focus:not-sr-only focus:top-2 focus:left-2 focus:z-50 focus:fixed focus:bg-primary focus:p-3 focus:rounded-lg focus:text-primary-foreground"
         href="#main"
       >
-        跳到主要内容
+        {t('messages.skipToMainContent')}
       </a>
       <header className="top-0 z-30 sticky bg-background/70 backdrop-blur-xl border-b">
         <div className="flex items-center gap-4 mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-16">
@@ -58,7 +61,10 @@ export function Layout() {
               Fanmade
             </span>
           </Link>
-          <nav className="hidden md:flex items-center gap-1 ml-4" aria-label="主要导航">
+          <nav
+            className="hidden md:flex items-center gap-1 ml-4"
+            aria-label={t('messages.mainNavigation')}
+          >
             {links.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -76,13 +82,13 @@ export function Layout() {
           <div className="flex items-center gap-2 ml-auto">
             <ThemeToggle />
             {session.loading ? (
-              <span className="text-muted-foreground text-xs">连接中…</span>
+              <span className="text-muted-foreground text-xs">{t('messages.connecting')}</span>
             ) : session.user ? (
               <>
                 <Link
                   className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring max-w-40"
                   to="/me/profile"
-                  aria-label="打开个人资料"
+                  aria-label={t('messages.openProfile')}
                 >
                   <Avatar>
                     <AvatarFallback>{Array.from(session.user.nickname ?? '')[0]}</AvatarFallback>
@@ -94,7 +100,7 @@ export function Layout() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="退出登录"
+                  aria-label={t('messages.signOut')}
                   onClick={() => {
                     setError('')
                     void session.logout().catch((e) => setError(e.message))
@@ -106,13 +112,15 @@ export function Layout() {
             ) : (
               <Link className={buttonVariants({ variant: 'ghost', size: 'sm' })} to="/login">
                 <SignInIcon className="opacity-60 size-4" aria-hidden="true" />
-                登录 / 注册
+                {t('messages.signInRegister')}
               </Link>
             )}
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={<Button variant="ghost" size="icon" aria-label="打开导航" />}
+                  render={
+                    <Button variant="ghost" size="icon" aria-label={t('messages.openNavigation')} />
+                  }
                 >
                   <Menu className="size-4" aria-hidden="true" />
                 </DropdownMenuTrigger>

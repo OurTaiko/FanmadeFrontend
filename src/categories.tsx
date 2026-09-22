@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -39,13 +40,15 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
 }
 
 export function CategoryLabels({ ids = [], children }: { ids?: string[]; children?: ReactNode }) {
+  const { t } = useTranslation()
+
   const { items } = useContext(CategoryContext)
   if (ids.length === 0 && !children) return null
   const uniqueIds = [...new Set(ids)]
   return (
     <ul
       className="flex min-w-0 flex-wrap items-center gap-2"
-      aria-label={children ? '谱面信息' : '所属分类'}
+      aria-label={children ? t('messages.chartInformation') : t('messages.categories')}
     >
       {children}
       {uniqueIds.map((id) => (
@@ -68,24 +71,28 @@ export function CategoryPicker({
   onChange: (ids: string[]) => void
   disabled?: boolean
 }) {
+  const { t } = useTranslation()
+
   const { items, error, retry } = useContext(CategoryContext)
   return (
     <fieldset
       className="min-w-0 space-y-3 [&>legend]:mb-2 [&>legend]:text-sm [&>legend]:font-medium"
       disabled={disabled}
     >
-      <legend>谱面分类</legend>
-      <p className="text-sm text-muted-foreground">可选择多个分类；未选择时归入 Variety。</p>
+      <legend>{t('messages.chartCategories')}</legend>
+      <p className="text-sm text-muted-foreground">
+        {t('messages.selectMultipleCategoriesDefaultsToVarietyIfNoneAreSelected')}
+      </p>
       {error ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
-          <span>分类加载失败：{error}</span>
+          <span>{t('messages.categoryLoadError', { message: error })}</span>
           <Button type="button" variant="outline" size="sm" onClick={retry}>
-            重试加载分类
+            {t('messages.reloadCategories')}
           </Button>
         </div>
       ) : items === null ? (
         <p role="status" className="text-sm text-muted-foreground">
-          正在加载分类…
+          {t('messages.loadingCategories')}
         </p>
       ) : (
         <div className="flex flex-wrap gap-x-6 gap-y-4">

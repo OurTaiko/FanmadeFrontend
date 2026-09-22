@@ -1,3 +1,6 @@
+import { chartText } from '@/chart-language'
+import { i18n } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { useState } from 'react'
 import { ImageIcon } from '@phosphor-icons/react'
@@ -16,6 +19,8 @@ export function ChartCover({
   chart: Chart
   onSaved: (coverHash: string) => void
 }) {
+  const { t } = useTranslation()
+
   const session = useSession()
   const [editing, setEditing] = useState(false)
   const [file, setFile] = useState<File | null>(null)
@@ -56,30 +61,34 @@ export function ChartCover({
         {available ? (
           <img
             src={source}
-            alt={`${chart.title}的封面`}
+            alt={t('messages.songCoverAlt', {
+              title: chartText(chart, i18n.resolvedLanguage).title,
+            })}
             className="size-full object-contain"
             onError={() => setFailedSource(source)}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
             <ImageIcon size={32} aria-hidden="true" />
-            <span>{source ? '封面暂时无法加载' : '暂无封面'}</span>
+            <span>
+              {source ? t('messages.coverTemporarilyUnavailable') : t('messages.noCover')}
+            </span>
           </div>
         )}
       </div>
       {session.user?.id === chart.ownerId && (
         <Button variant="outline" className="w-full" onClick={() => setEditing(true)}>
-          {source ? '修改封面' : '添加封面'}
+          {source ? t('messages.changeCover') : t('messages.addCover')}
         </Button>
       )}
       {editing && (
         <Modal
-          title="修改歌曲封面"
+          title={t('messages.changeSongCover')}
           busy={busy}
           onDismiss={close}
           actions={
             <Button disabled={!file || busy} onClick={() => void save()}>
-              {busy ? '正在保存…' : '保存封面'}
+              {busy ? t('messages.saving') : t('messages.saveCover')}
             </Button>
           }
         >
@@ -92,7 +101,7 @@ export function ChartCover({
             disabled={busy}
           />
           <p className="text-sm text-muted-foreground">
-            保存成功后替换当前封面，谱面、音频和成绩保持不变。
+            {t('messages.savingReplacesTheCoverChartsAudioAndScoresStayIntact')}
           </p>
           {error && (
             <p role="alert" className="text-sm text-destructive">

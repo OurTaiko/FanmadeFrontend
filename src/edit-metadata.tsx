@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -12,12 +14,13 @@ import type { Chart, Locale } from './api/types'
 import { useNotification } from './notification-context'
 import { Modal } from './notifications'
 
-const languages = [
-  { code: 'en', label: '英文', caption: '默认显示' },
-  { code: 'ja', label: '日文', caption: '日本語' },
-  { code: 'zh', label: '中文', caption: '中文' },
-  { code: 'ko', label: '韩文', caption: '한국어' },
-] as const
+const getLanguages = () =>
+  [
+    { code: 'en', label: t('messages.english'), caption: t('messages.originalField') },
+    { code: 'ja', label: t('messages.japanese'), caption: '日本語' },
+    { code: 'zh', label: t('messages.chinese'), caption: t('messages.chinese') },
+    { code: 'ko', label: t('messages.korean'), caption: '한국어' },
+  ] as const
 type Language = 'en' | Locale
 type Draft = Record<Language, { title: string; subtitle: string; restore: boolean }>
 type Patch = {
@@ -39,6 +42,9 @@ export function EditMetadata({
   onSaved: (chart: Chart) => void
   onDismiss: () => void
 }) {
+  const { t } = useTranslation()
+
+  const languages = getLanguages()
   const initial = (code: Language) => ({
     title: code === 'en' ? chart.title : (chart.titleTranslations[code] ?? ''),
     subtitle: code === 'en' ? chart.subtitle : (chart.subtitleTranslations[code] ?? ''),
@@ -87,13 +93,16 @@ export function EditMetadata({
             }))
         ) {
           setError(
-            `${label}${field === 'title' ? '歌名' : '副标题'}过长或含有无效字符，请缩短后重试。`,
+            t('messages.metadataValidationError', {
+              language: label,
+              field: field === 'title' ? t('messages.title') : t('messages.subtitle'),
+            }),
           )
           return
         }
         if (code === 'en') {
           if (!current.restore && field === 'title' && !text) {
-            setError('英文歌名不能为空。')
+            setError(t('messages.englishTitleIsRequired'))
             return
           }
           patch[field] = current.restore ? null : text
@@ -124,7 +133,7 @@ export function EditMetadata({
   }
   return (
     <Modal
-      title="编辑谱面信息"
+      title={t('messages.editChartInformation')}
       initialFocus={firstInput}
       busy={busy}
       onDismiss={onDismiss}
@@ -134,7 +143,7 @@ export function EditMetadata({
       <form onSubmit={submit} aria-busy={busy}>
         <div className="space-y-6">
           <p id="edit-metadata-hint" className="text-sm text-muted-foreground">
-            修改分类、名称和副标题。已保存的成绩不受影响，下载文件保留原内容。
+            {t('messages.editCategoriesTitlesAndSubtitlesSavedScoresAndDownloadContentsStayIntact')}
           </p>
           <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
           {languages.map(({ code, label, caption }) => (
@@ -149,7 +158,7 @@ export function EditMetadata({
               </legend>
               <div className="grid gap-4 sm:grid-cols-2 [&>label]:flex [&>label]:flex-col [&>label]:items-start [&>label]:gap-2">
                 <Label htmlFor={`edit-${code}-title`}>
-                  {label}歌名
+                  {t('messages.localizedTitle', { language: label })}
                   <Input
                     id={`edit-${code}-title`}
                     value={draft[code].title}
@@ -158,21 +167,25 @@ export function EditMetadata({
                     maxLength={500}
                     autoComplete="off"
                     ref={code === 'en' ? firstInput : undefined}
-                    placeholder={code === 'en' ? '默认英文歌名' : '未填写翻译'}
+                    placeholder={
+                      code === 'en'
+                        ? t('messages.originalEnglishTitle')
+                        : t('messages.noTranslation')
+                    }
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, [code]: { ...d[code], title: e.target.value } }))
                     }
                   />
                 </Label>
                 <Label htmlFor={`edit-${code}-subtitle`}>
-                  {label}副标题
+                  {t('messages.localizedSubtitle', { language: label })}
                   <Input
                     id={`edit-${code}-subtitle`}
                     value={draft[code].subtitle}
                     disabled={draft[code].restore}
                     maxLength={500}
                     autoComplete="off"
-                    placeholder="可留空"
+                    placeholder={t('messages.optional')}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, [code]: { ...d[code], subtitle: e.target.value } }))
                     }
@@ -182,10 +195,10 @@ export function EditMetadata({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&>small]:text-muted-foreground">
                 <small>
                   {draft[code].restore
-                    ? '保存后恢复文件中的名称和副标题'
+                    ? t('messages.restoreTheFileSTitleAndSubtitleWhenSaved')
                     : code === 'en'
-                      ? '英文歌名必填，副标题可清空'
-                      : '清空译名会恢复文件中的原值；副标题可清空'}
+                      ? t('messages.englishTitleIsRequiredSubtitleCanBeEmpty')
+                      : t('messages.clearingATranslatedTitleRestoresTheFileSValueSubtitleCanBe')}
                 </small>
                 <Button
                   type="button"
@@ -196,7 +209,9 @@ export function EditMetadata({
                   }
                 >
                   <RotateCcw size={13} />
-                  {draft[code].restore ? `撤销${label}恢复` : `恢复${label}原值`}
+                  {draft[code].restore
+                    ? t('messages.undoLanguageRestore', { language: label })
+                    : t('messages.restoreLanguage', { language: label })}
                 </Button>
               </div>
             </fieldset>
@@ -204,16 +219,20 @@ export function EditMetadata({
         </div>
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t pt-4 [&>span]:mr-auto">
           <span className="text-sm text-muted-foreground">
-            {busy ? '正在保存…' : changed ? '有尚未保存的修改' : '修改后即可保存'}
+            {busy
+              ? t('messages.saving')
+              : changed
+                ? t('messages.unsavedChanges')
+                : t('messages.makeChangesToSave')}
           </span>
           <DialogClose
             render={<Button type="button" variant="outline" size="default" />}
             disabled={busy}
           >
-            取消
+            {t('messages.cancel')}
           </DialogClose>
           <Button type="submit" variant="default" size="default" disabled={busy || !changed}>
-            {busy ? '保存中…' : '保存修改'}
+            {busy ? t('messages.saving2') : t('messages.saveChanges')}
           </Button>
         </footer>
       </form>

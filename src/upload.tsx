@@ -1,3 +1,6 @@
+import { chartText } from '@/chart-language'
+import { i18n } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { AudioPlayer } from '@/components/audio-player'
@@ -45,6 +48,8 @@ function createRequestKey() {
 }
 
 export function UpdatePage() {
+  const { t } = useTranslation()
+
   const { id } = useParams()
   const session = useSession()
   const [chart, setChart] = useState<Chart | null>(null)
@@ -53,10 +58,7 @@ export function UpdatePage() {
     const controller = new AbortController()
     setChart(null)
     setError('')
-    if (!id) {
-      setError('缺少歌曲 ID。')
-      return
-    }
+    if (!id) return
     api<Chart>(endpoints.chart(id), { signal: controller.signal })
       .then((loaded) => {
         if (!controller.signal.aborted) setChart(loaded)
@@ -66,14 +68,17 @@ export function UpdatePage() {
       })
     return () => controller.abort()
   }, [id])
+  if (!id) return <Notice>{t('messages.missingSongId')}</Notice>
   if (error) return <Notice>{error}</Notice>
-  if (!chart || session.loading) return <p role="status">正在加载歌曲…</p>
+  if (!chart || session.loading) return <p role="status">{t('messages.loadingSong')}</p>
   if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
-    return <p>只有上传者或管理员可以更新歌曲。</p>
+    return <p>{t('messages.onlyTheUploaderOrAnAdministratorCanUpdateThisSong')}</p>
   return <UploadPage key={chart.versionId} existing={chart} />
 }
 
 export function UploadPage({ existing }: { existing?: Chart }) {
+  const { t } = useTranslation()
+
   const { notify } = useNotification()
   const session = useSession(),
     navigate = useNavigate()
@@ -145,7 +150,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       tracks = files.filter((f) => isAudioFilename(f.name))
     reset()
     if (charts.length > 1 || tracks.length > 1 || charts.length + tracks.length !== files.length) {
-      notify('请拖入一个 TJA 和一个 OGG 或 MP3 音频，不接受额外文件', 'error')
+      notify(t('messages.dropOneTjaAndOneOggOrMp3NoAdditionalFiles'), 'error')
       return
     }
     if (charts[0]) setTja(charts[0])
@@ -195,7 +200,12 @@ export function UploadPage({ existing }: { existing?: Chart }) {
         existing?.id,
       )
       navigate(`/charts/${chart.id}`)
-      notify(existing ? '歌曲已更新，全部旧谱面和旧成绩已删除。' : '谱面已发布。', 'success')
+      notify(
+        existing
+          ? t('messages.songUpdatedAllPreviousChartsAndScoresHaveBeenDeleted')
+          : t('messages.chartPublished'),
+        'success',
+      )
     } catch (e) {
       if (!abort.signal.aborted) notify((e as Error).message, 'error')
     } finally {
@@ -208,34 +218,32 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {existing ? '更新歌曲与谱面' : '发布你的谱面'}
+            {existing ? t('messages.updateSongAndCharts') : t('messages.publishYourChart')}
           </h1>
           <p>
             {existing
-              ? `正在更新「${existing.title}」。选择完整的新 TJA，可同时更换音频。`
-              : '准备好 TJA 和对应的 OGG 或 MP3 音频，支持简单、普通、困难、魔王和里谱。'}
+              ? t('messages.replaceSongHint', {
+                  title: chartText(existing, i18n.resolvedLanguage).title,
+                })
+              : t('messages.prepareATjaAndMatchingOggOrMp3EasyNormalHardOni')}
           </p>
         </div>
       </div>
       {!session.loading && !session.user && (
-        <Notice kind="info" title="登录后即可发布">
-          你可以先选择文件检查谱面与音频是否匹配，发布前请通过右上角登录或注册。
+        <Notice kind="info" title={t('messages.signInToPublish')}>
+          {t('messages.youCanCheckYourFilesFirstSignInOrRegisterAtThe')}
         </Notice>
       )}
       {existing && (
         <Card
           className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-3 border-destructive/30 [&>h2]:text-destructive [&>p]:text-sm [&>p]:leading-relaxed"
-          aria-label="更新须知"
+          aria-label={t('messages.beforeUpdating')}
         >
-          <h2 className="text-base font-semibold">更新将清空全部旧成绩</h2>
-          <p>
-            新 TJA
-            将替换整首歌曲的谱面。所有玩家在这首歌上的成绩、排行榜记录和旧文件都会删除，即使某个难度没有变化也不继承成绩。
-          </p>
-          <p>
-            歌曲地址保留，名称和副标题以新 TJA
-            为准。未选择新音频时沿用当前音频。只有新文件校验并保存成功后才会删除旧数据。
-          </p>
+          <h2 className="text-base font-semibold">
+            {t('messages.updatingDeletesAllPreviousScores')}
+          </h2>
+          <p>{t('messages.theNewTjaReplacesEveryChartInThisSongAllPlayersScores')}</p>
+          <p>{t('messages.theSongUrlStaysTheSameTitlesComeFromTheNewTja')}</p>
         </Card>
       )}
       <form
@@ -245,9 +253,11 @@ export function UploadPage({ existing }: { existing?: Chart }) {
         <div>
           <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">选择文件</h2>
+              <h2 className="text-base font-semibold">{t('messages.chooseFiles')}</h2>
               <span className="text-sm text-muted-foreground">
-                {existing ? '新 TJA 必选，音频可沿用' : '两个文件，缺一不可'}
+                {existing
+                  ? t('messages.newTjaRequiredCurrentAudioCanBeKept')
+                  : t('messages.bothFilesAreRequired')}
               </span>
             </div>
             <div
@@ -256,8 +266,8 @@ export function UploadPage({ existing }: { existing?: Chart }) {
               onDrop={drop}
             >
               <Upload size={26} />
-              <strong>把谱面与音频拖到这里</strong>
-              <span>或点击下方选择文件</span>
+              <strong>{t('messages.dropChartAndAudioHere')}</strong>
+              <span>{t('messages.orChooseFilesBelow')}</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {(['tja', 'audio'] as const).map((kind) => {
@@ -269,25 +279,29 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                   >
                     {kind === 'tja' ? <FileMusic size={24} /> : <AudioLines size={24} />}
                     <span>
-                      <b>{kind === 'tja' ? 'TJA 谱面' : 'OGG / MP3 音频'}</b>
+                      <b>{kind === 'tja' ? t('messages.tjaChart') : t('messages.oggMp3Audio')}</b>
                       <small>
                         {file
                           ? file.name
                           : kind === 'tja'
-                            ? '.tja · 最大 2 MiB'
+                            ? t('messages.tjaUpTo2Mib')
                             : existing
-                              ? `沿用 ${existing.audioName}`
-                              : '.ogg / .mp3 · 最大 100 MiB'}
+                              ? t('messages.keepAudio', { filename: existing.audioName })
+                              : t('messages.oggMp3UpTo100Mib')}
                       </small>
                     </span>
                     {file ? (
                       <Check size={18} />
                     ) : (
-                      <span className="text-xs text-muted-foreground">选择</span>
+                      <span className="text-xs text-muted-foreground">{t('messages.choose')}</span>
                     )}
                     <Input
                       type="file"
-                      aria-label={kind === 'tja' ? '选择 TJA 谱面' : '选择 OGG 或 MP3 音频'}
+                      aria-label={
+                        kind === 'tja'
+                          ? t('messages.chooseTjaChart')
+                          : t('messages.chooseOggOrMp3Audio')
+                      }
                       accept={kind === 'tja' ? '.tja' : '.ogg,.mp3'}
                       disabled={busy}
                       onChange={(e) => choose(kind, e)}
@@ -307,20 +321,24 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                   setAudio(null)
                 }}
               >
-                沿用当前音频 {existing.audioName}
+                {t('messages.currentAudio', { filename: existing.audioName })}
               </Button>
             )}
-            {validationError && <Notice title="文件校验未通过">{validationError}</Notice>}
+            {validationError && (
+              <Notice title={t('messages.fileValidationFailed')}>{validationError}</Notice>
+            )}
             {metadata && (
-              <Notice
-                kind="success"
-                title="本地校验通过"
-              >{`已自动识别为 ${metadata.sourceEncoding}，上传文件统一使用 UTF-8。WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
+              <Notice kind="success" title={t('messages.localValidationPassed')}>
+                {t('messages.encodingDetected', {
+                  encoding: metadata.sourceEncoding,
+                  filename: metadata.wave,
+                })}
+              </Notice>
             )}
           </Card>
           {!existing && (
             <Card className="min-w-0 gap-4 rounded-2xl p-6 shadow-none ring-0">
-              <h2 className="text-base font-semibold">歌曲封面</h2>
+              <h2 className="text-base font-semibold">{t('messages.songCover')}</h2>
               <CoverPicker
                 file={cover}
                 disabled={busy}
@@ -343,17 +361,17 @@ export function UploadPage({ existing }: { existing?: Chart }) {
           </Card>
           {metadata && (
             <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
-              <h2 className="text-base font-semibold">难度与制作者</h2>
+              <h2 className="text-base font-semibold">{t('messages.difficultiesAndCreators')}</h2>
               <p className="text-sm text-muted-foreground">
                 {metadata.maker
-                  ? '已用谱面中的 MAKER 填入默认署名，你可以分别修改。'
-                  : '谱面未填写 MAKER，你可以分别填写各难度的制作者。'}
+                  ? t('messages.creatorNamesAreFilledFromMakerYouCanEditEachOne')
+                  : t('messages.noMakerWasSpecifiedEnterACreatorForEachDifficulty')}
               </p>
               <Table className="w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead scope="col">难度</TableHead>
-                    <TableHead scope="col">制作者</TableHead>
+                    <TableHead scope="col">{t('messages.difficulty')}</TableHead>
+                    <TableHead scope="col">{t('messages.creator')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -366,10 +384,14 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                       </TableHead>
                       <TableCell>
                         <Input
-                          aria-label={`${d.course}${d.player ? ` ${d.player}` : ''} 制作者 #${d.blockIndex + 1}`}
+                          aria-label={t('messages.difficultyCreator', {
+                            difficulty: d.course,
+                            player: d.player ? ` ${d.player}` : '',
+                            block: d.blockIndex + 1,
+                          })}
                           value={d.maker}
                           maxLength={500}
-                          placeholder="未填写"
+                          placeholder={t('messages.notSpecified')}
                           disabled={busy}
                           onChange={(e) => {
                             const maker = e.target.value
@@ -394,17 +416,19 @@ export function UploadPage({ existing }: { existing?: Chart }) {
           )}
           <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
             <h2 className="text-base font-semibold">
-              写下投稿说明
-              <span className="ml-2 text-xs font-normal text-muted-foreground">选填</span>
+              {t('messages.addADescription')}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {t('messages.optional2')}
+              </span>
             </h2>
             <Label className="sr-only" htmlFor="description">
-              投稿说明
+              {t('messages.submissionDescription')}
             </Label>
             <Textarea
               id="description"
               rows={5}
               maxLength={1000}
-              placeholder="介绍这份谱面的特色，或留下你想说的话…"
+              placeholder={t('messages.describeThisChartOrLeaveAMessage')}
               value={description}
               disabled={busy}
               onChange={(e) => {
@@ -423,35 +447,35 @@ export function UploadPage({ existing }: { existing?: Chart }) {
             className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">{existing ? '更新预览' : '投稿预览'}</h2>
+              <h2 className="text-base font-semibold">
+                {existing ? t('messages.updatePreview') : t('messages.submissionPreview')}
+              </h2>
             </div>
             {metadata ? (
               <>
                 <p className="text-sm text-muted-foreground">{metadata.bpm} BPM</p>
-                <h3 className="text-base font-medium">{metadata.title}</h3>
+                <h3 className="text-base font-medium">
+                  {chartText(metadata, i18n.resolvedLanguage).title}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  {metadata.subtitle.replace(/^(--|\+\+)/, '') || '太鼓谱面'}
+                  {chartText(metadata, i18n.resolvedLanguage).subtitle || t('messages.taikoChart')}
                 </p>
                 <DifficultyBadges difficulties={metadata.difficulties} />
-                {audioUrl && <AudioPlayer label="本地音频试听" src={audioUrl} />}
+                {audioUrl && <AudioPlayer label={t('messages.localAudioPreview')} src={audioUrl} />}
                 <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere mt-4">
-                  <dt>谱师</dt>
+                  <dt>{t('messages.chartCreator')}</dt>
                   <dd>
                     {[
                       ...new Set(metadata.difficulties.map((d) => d.maker.trim()).filter(Boolean)),
-                    ].join(' | ') || '未填写'}
+                    ].join(' | ') || t('messages.notSpecified')}
                   </dd>
-                  <dt>上传者</dt>
-                  <dd>{session.user?.nickname || '尚未登录'}</dd>
+                  <dt>{t('messages.uploader')}</dt>
+                  <dd>{session.user?.nickname || t('messages.notSignedIn')}</dd>
                 </dl>
               </>
             ) : (
               <div className="flex min-h-32 items-center justify-center text-center text-sm text-muted-foreground">
-                <p>
-                  谱面信息将在校验通过后
-                  <br />
-                  自动出现在这里
-                </p>
+                <p>{t('messages.chartInformationAppearsHereAfterValidation')}</p>
               </div>
             )}
             <div className="space-y-3 border-t pt-4 [&>p]:text-xs [&>p]:leading-relaxed [&>p]:text-muted-foreground">
@@ -464,17 +488,17 @@ export function UploadPage({ existing }: { existing?: Chart }) {
               >
                 {busy ? <LoaderCircle className="animate-spin" size={18} /> : <Upload size={18} />}{' '}
                 {busy
-                  ? '正在保存…'
+                  ? t('messages.saving')
                   : validating
-                    ? '正在校验…'
+                    ? t('messages.validating')
                     : existing
-                      ? '更新歌曲与谱面'
-                      : '发布谱面'}
+                      ? t('messages.updateSongAndCharts')
+                      : t('messages.publishChart')}
                 {!busy && <ArrowRight size={17} />}
               </Button>
               {busy && (
                 <Modal
-                  title={existing ? '正在更新歌曲' : '正在发布谱面'}
+                  title={existing ? t('messages.updatingSong') : t('messages.publishingChart')}
                   busy
                   onDismiss={() => {}}
                   actions={
@@ -484,22 +508,28 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                       size="default"
                       onClick={() => controller.current?.abort()}
                     >
-                      取消上传
+                      {t('messages.cancelUpload')}
                     </Button>
                   }
                 >
                   <div className="space-y-3" role="status">
-                    <Progress aria-label="文件上传进度" max={100} value={progress} />
+                    <Progress
+                      aria-label={t('messages.uploadProgress')}
+                      max={100}
+                      value={progress}
+                    />
                     <span>
-                      {progress < 100 ? `正在上传 ${progress}%` : '上传完成，正在校验并保存…'}
+                      {progress < 100
+                        ? t('messages.uploadProgressPercent', { progress: progress })
+                        : t('messages.uploadedValidatingAndSaving')}
                     </span>
                   </div>
                 </Modal>
               )}
               <p>
                 {existing
-                  ? '更新成功后，所有难度的成绩从零开始。'
-                  : '发布后，其他人可以浏览、试听并下载你的作品。'}
+                  ? t('messages.afterUpdatingScoresForEveryDifficultyStartOver')
+                  : t('messages.oncePublishedOthersCanBrowseListenToAndDownloadYourChart')}
               </p>
             </div>
           </Card>
@@ -510,39 +540,40 @@ export function UploadPage({ existing }: { existing?: Chart }) {
             className="w-full"
             onClick={() =>
               notify(
-                'TJA 中的 WAVE 文件名必须与所选音频一致，包括大小写。音频支持 OGG / MP3，最大 100 MiB；TJA 最大 2 MiB。服务器会再次校验文件。',
+                t('messages.waveInTheTjaMustExactlyMatchTheAudioFilenameIncludingCase'),
                 'info',
-                '上传规则',
+                t('messages.uploadRules'),
               )
             }
           >
-            查看上传规则
+            {t('messages.viewUploadRules')}
           </Button>
         </aside>
       </form>
       {confirming && existing && (
         <Modal
-          title="替换歌曲并清空全部旧成绩？"
+          title={t('messages.replaceSongAndDeleteAllPreviousScores')}
           alert
           onDismiss={() => setConfirming(false)}
           actions={
             <>
               <DialogClose render={<Button type="button" variant="outline" size="default" />}>
-                取消
+                {t('messages.cancel')}
               </DialogClose>
               <Button type="button" variant="default" size="default" onClick={() => void save()}>
-                确认替换并清空
+                {t('messages.replaceAndDelete')}
               </Button>
             </>
           }
         >
           <p>
-            「{existing.title}」将替换为「{metadata?.title}」，包含 {metadata?.difficulties.length}{' '}
-            个谱面块。
+            {t('upload.replacement', {
+              previous: chartText(existing, i18n.resolvedLanguage).title,
+              title: metadata ? chartText(metadata, i18n.resolvedLanguage).title : '',
+              count: metadata?.difficulties.length ?? 0,
+            })}
           </p>
-          <p>
-            这首歌所有玩家的旧成绩、旧谱面及旧文件都会永久删除，无法撤销。未改动的难度也会清空成绩。
-          </p>
+          <p>{t('messages.allPlayersPreviousScoresChartsAndFilesForThisSongWillBe')}</p>
         </Modal>
       )}
     </>

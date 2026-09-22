@@ -1,3 +1,7 @@
+import { chartText } from './chart-language'
+import { i18n } from './i18n'
+import { t } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { ChoiceSelect } from '@/components/choice-select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -19,7 +23,11 @@ import { Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { parsePreviewTja } from './preview-tja'
 
-const branchLabels = { normal: '普通分支', expert: '玄人分支', master: '达人分支' }
+const getBranchLabels = () => ({
+  normal: t('messages.normalBranch'),
+  expert: t('messages.expertBranch'),
+  master: t('messages.masterBranch'),
+})
 const zoomLevels = [4, 8, 12, 16, 24, 32, 48]
 const initialZoom = () => (window.matchMedia('(max-width: 600px)').matches ? 4 : 16)
 function sameNote(a: NoteLocation, b: NoteLocation) {
@@ -38,6 +46,10 @@ export default function ChartPreview({
   source: string
   course: string
 }) {
+  const { t } = useTranslation()
+
+  const branchLabels = getBranchLabels()
+  const { title, subtitle } = chartText(chart, i18n.resolvedLanguage)
   const blocks = chart.difficulties.filter((d) => d.course === course)
   const preferred =
     blocks.find((d) => d.cloudScoreEligible) ?? blocks.find((d) => d.player === 'P1') ?? blocks[0]
@@ -55,9 +67,12 @@ export default function ChartPreview({
     try {
       return { blocks: parsePreviewTja(source), error: '' }
     } catch (e) {
-      return { blocks: null, error: e instanceof Error ? e.message : 'TJA 解析失败' }
+      return {
+        blocks: null,
+        error: e instanceof Error ? e.message : t('messages.failedToParseTja'),
+      }
     }
-  }, [source])
+  }, [source, t])
   const root = parsed.blocks?.[blockIndex]
   const selectedChart = branch === 'all' ? root : (root?.branches?.[branch] ?? root)
   const currentChart = useMemo(
@@ -65,15 +80,15 @@ export default function ChartPreview({
       selectedChart
         ? {
             ...selectedChart,
-            title: chart.title,
-            subtitle: chart.subtitle,
+            title,
+            subtitle,
             course,
             level:
               chart.difficulties.find((d) => d.blockIndex === blockIndex)?.level ??
               selectedChart.level,
           }
         : null,
-    [selectedChart, chart.title, chart.subtitle, chart.difficulties, course, blockIndex],
+    [selectedChart, title, subtitle, chart.difficulties, course, blockIndex],
   )
 
   useEffect(() => {
@@ -124,7 +139,7 @@ export default function ChartPreview({
         view.invalidateLayout()
         view.render({ renderOptions: options, dpr: window.devicePixelRatio || 1 })
       } catch (e) {
-        setRenderError(e instanceof Error ? e.message : '谱面绘制失败')
+        setRenderError(e instanceof Error ? e.message : t('messages.failedToRenderChart'))
       }
     }
     render()
@@ -170,13 +185,13 @@ export default function ChartPreview({
       observer.disconnect()
       cancelAnimationFrame(frame)
     }
-  }, [currentChart, zoom, branch, root, reset])
+  }, [currentChart, zoom, branch, root, reset, t])
 
   const info = selected ?? hovered
   if (parsed.error || !root)
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
-        <Notice>{parsed.error || '此难度暂无可预览的谱面块'}</Notice>
+        <Notice>{parsed.error || t('messages.noPreviewableChartBlocksForThisDifficulty')}</Notice>
       </div>
     )
   const zoomIndex = zoomLevels.indexOf(zoom)
@@ -186,9 +201,9 @@ export default function ChartPreview({
         <div className="flex min-w-0 flex-wrap items-center gap-3 [&>label]:flex [&>label]:flex-wrap [&>label]:items-center [&>label]:gap-2">
           {blocks.length > 1 && (
             <Label>
-              谱面声部
+              {t('messages.chartPart')}
               <ChoiceSelect
-                label="谱面声部"
+                label={t('messages.chartPart')}
                 value={String(blockIndex)}
                 onValueChange={(value) => {
                   setBlockIndex(Number(value))
@@ -196,7 +211,7 @@ export default function ChartPreview({
                 }}
                 items={blocks.map((d) => ({
                   value: String(d.blockIndex),
-                  label: `${d.cloudScoreEligible ? '单人谱' : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
+                  label: `${d.cloudScoreEligible ? t('messages.single') : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
                 }))}
               />
             </Label>
@@ -204,13 +219,13 @@ export default function ChartPreview({
           {root.branches && (
             <Label>
               <GitBranch size={16} />
-              分支
+              {t('messages.branch')}
               <ChoiceSelect
-                label="选择分支"
+                label={t('messages.selectBranch')}
                 value={branch}
                 onValueChange={(value) => setBranch(value as typeof branch)}
                 items={[
-                  { value: 'all', label: '全部分支' },
+                  { value: 'all', label: t('messages.allBranches') },
                   ...Object.entries(branchLabels)
                     .filter(([key]) => root.branches?.[key as BranchName])
                     .map(([value, label]) => ({ value, label })),
@@ -223,26 +238,29 @@ export default function ChartPreview({
               type="button"
               variant="outline"
               size="default"
-              aria-label="放大谱面"
+              aria-label={t('messages.zoomIn')}
               disabled={zoomIndex === 0}
               onClick={() => setZoom(zoomLevels[zoomIndex - 1])}
             >
               <ZoomIn size={17} />
             </Button>
             <Label>
-              <span className="sr-only">每行拍数</span>
+              <span className="sr-only">{t('messages.beatsPerRow')}</span>
               <ChoiceSelect
-                label="每行拍数"
+                label={t('messages.beatsPerRow')}
                 value={String(zoom)}
                 onValueChange={(value) => setZoom(Number(value))}
-                items={zoomLevels.map((n) => ({ value: String(n), label: `${n} 拍 / 行` }))}
+                items={zoomLevels.map((n) => ({
+                  value: String(n),
+                  label: t('messages.beatsPerRowOption', { beats: n }),
+                }))}
               />
             </Label>
             <Button
               type="button"
               variant="outline"
               size="default"
-              aria-label="缩小谱面"
+              aria-label={t('messages.zoomOut')}
               disabled={zoomIndex === zoomLevels.length - 1}
               onClick={() => setZoom(zoomLevels[zoomIndex + 1])}
             >
@@ -259,7 +277,7 @@ export default function ChartPreview({
               }}
             >
               <RotateCcw size={16} />
-              重置
+              {t('messages.reset')}
             </Button>
             <Button
               type="button"
@@ -267,14 +285,14 @@ export default function ChartPreview({
               size="default"
               onClick={() =>
                 notify(
-                  '点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。',
+                  t('messages.clickANoteForDetailsClickTwoNotesToSelectARange'),
                   'info',
-                  '预览操作说明',
+                  t('messages.previewInstructions'),
                 )
               }
             >
               <MousePointerClick size={16} />
-              操作说明
+              {t('messages.instructions')}
             </Button>
           </div>
         </div>
@@ -285,9 +303,11 @@ export default function ChartPreview({
           aria-live="polite"
         >
           <div>
-            <span>小节 / 音符</span>
+            <span>{t('messages.measureNote')}</span>
             <strong>
-              {info ? `${info.location.barIndex + 1} / ${info.ordinal ?? '—'}` : '点击音符查看'}
+              {info
+                ? `${info.location.barIndex + 1} / ${info.ordinal ?? '—'}`
+                : t('messages.clickANote')}
             </strong>
           </div>
           <div>
@@ -295,11 +315,11 @@ export default function ChartPreview({
             <strong>{number(info?.bpm)}</strong>
           </div>
           <div>
-            <span>滚动倍率</span>
+            <span>{t('messages.scrollSpeed')}</span>
             <strong>{number(info?.scroll)}</strong>
           </div>
           <div>
-            <span>BPM × 倍率</span>
+            <span>{t('messages.bpmSpeed')}</span>
             <strong>
               {number(
                 info?.bpm !== undefined && info.scroll !== undefined
@@ -310,7 +330,7 @@ export default function ChartPreview({
           </div>
           {root.branches && (
             <div>
-              <span>分支</span>
+              <span>{t('messages.branch')}</span>
               <strong>{info?.location.branch ? branchLabels[info.location.branch] : '—'}</strong>
             </div>
           )}
@@ -322,10 +342,14 @@ export default function ChartPreview({
         className="max-h-[75svh] max-w-full overflow-auto overscroll-contain rounded-xl border bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring"
         tabIndex={0}
         role="region"
-        aria-label="可滚动谱面预览"
+        aria-label={t('messages.scrollableChartPreview')}
       >
-        <canvas className="block w-full" ref={canvasRef} aria-label={`${course} 难度交互谱面预览`}>
-          交互谱面预览，可下载 TJA 原文件查看完整谱面。
+        <canvas
+          className="block w-full"
+          ref={canvasRef}
+          aria-label={t('messages.interactiveChartPreview', { difficulty: course })}
+        >
+          {t('messages.interactiveChartPreviewDownloadTheOriginalTjaForTheFullChart')}
         </canvas>
       </div>
     </div>

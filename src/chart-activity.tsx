@@ -1,3 +1,5 @@
+import { formatLocale, i18n } from '@/i18n'
+import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
@@ -46,6 +48,8 @@ const difficultyTabClassName =
   'bg-transparent text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] hover:bg-transparent hover:text-[var(--difficulty-fg)] focus-visible:ring-[var(--difficulty-fg)] data-active:hover:bg-[var(--difficulty-bg)] data-active:bg-[var(--difficulty-bg)] data-active:text-[var(--difficulty-fg)] dark:bg-transparent dark:text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] dark:hover:bg-transparent dark:hover:text-[var(--difficulty-fg)] dark:data-active:hover:bg-[var(--difficulty-bg)] dark:data-active:bg-[var(--difficulty-bg)] dark:data-active:text-[var(--difficulty-fg)]'
 
 export function ChartActivity({ chart }: { chart: Chart }) {
+  const { t } = useTranslation()
+
   const [course, setCourse] = useState(() => defaultDifficulty(chart.difficulties))
   const [tab, setTab] = useState<'preview' | 'leaderboard'>('preview')
   const [source, setSource] = useState('')
@@ -64,15 +68,18 @@ export function ChartActivity({ chart }: { chart: Chart }) {
           signal: controller.signal,
           credentials: 'include',
         })
-        if (!response.ok) throw new Error(`谱面文件读取失败（HTTP ${response.status}）`)
+        if (!response.ok)
+          throw new Error(i18n.t('messages.chartHttpError', { status: response.status }))
         if (Number(response.headers.get('Content-Length')) > maxTja)
-          throw new Error('谱面超过预览大小限制')
+          throw new Error(i18n.t('messages.chartExceedsThePreviewSizeLimit'))
         const bytes = await response.arrayBuffer()
-        if (bytes.byteLength > maxTja) throw new Error('谱面超过预览大小限制')
+        if (bytes.byteLength > maxTja)
+          throw new Error(i18n.t('messages.chartExceedsThePreviewSizeLimit'))
         const text = new TextDecoder(encoding, { fatal: true }).decode(bytes)
         if (!controller.signal.aborted) setSource(text)
       } catch (e) {
-        if (!controller.signal.aborted) setError(e instanceof Error ? e.message : '谱面加载失败')
+        if (!controller.signal.aborted)
+          setError(e instanceof Error ? e.message : i18n.t('messages.failedToLoadChart'))
       }
     }
     void load()
@@ -84,19 +91,19 @@ export function ChartActivity({ chart }: { chart: Chart }) {
       value={tab}
       onValueChange={(value) => setTab(value as typeof tab)}
       className="min-w-0 gap-6"
-      aria-label="谱面预览与排行榜"
+      aria-label={t('messages.chartPreviewAndLeaderboard')}
       data-testid="chart-activity"
     >
       <section
         className="flex min-w-0 items-center justify-start gap-3 overflow-x-auto py-1"
-        aria-label="谱面内容与难度切换"
+        aria-label={t('messages.chartContentAndDifficultySelection')}
       >
         <Tabs
           value={course}
           onValueChange={(value) => setCourse(String(value))}
           className="shrink-0"
         >
-          <TabsList aria-label="选择难度" className={tabButtonGroupClassName}>
+          <TabsList aria-label={t('messages.selectDifficulty')} className={tabButtonGroupClassName}>
             {courses.map((value) => {
               const difficulty =
                 chart.difficulties.find((d) => d.course === value && d.cloudScoreEligible) ??
@@ -110,7 +117,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
                   {courseNames[value]}
                   <span
                     className="inline-flex items-center gap-1 tabular-nums"
-                    aria-label={`${difficulty.level} 星`}
+                    aria-label={t('common.stars', { count: difficulty.level })}
                   >
                     <StarIcon weight="fill" className="size-3" aria-hidden="true" />
                     {difficulty.level}
@@ -121,14 +128,14 @@ export function ChartActivity({ chart }: { chart: Chart }) {
           </TabsList>
         </Tabs>
         <Separator orientation="vertical" className="h-6 data-vertical:self-center" />
-        <TabsList aria-label="歌曲详情内容" className={tabButtonGroupClassName}>
+        <TabsList aria-label={t('messages.songDetails')} className={tabButtonGroupClassName}>
           <TabsTrigger value="preview" className={tabButtonClassName}>
             <FileMusic size={18} />
-            谱面预览
+            {t('messages.chartPreview')}
           </TabsTrigger>
           <TabsTrigger value="leaderboard" className={tabButtonClassName}>
             <Trophy size={18} />
-            排行榜
+            {t('messages.leaderboard')}
           </TabsTrigger>
         </TabsList>
       </section>
@@ -140,7 +147,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
                 <Notice>{error}</Notice>
                 <Button variant="outline" size="default" onClick={() => setAttempt((n) => n + 1)}>
                   <RotateCcw size={16} />
-                  重新加载
+                  {t('messages.reload')}
                 </Button>
               </div>
             ) : !source ? (
@@ -148,7 +155,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
                 className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center text-sm text-muted-foreground"
                 role="status"
               >
-                正在从服务器读取 TJA…
+                {t('messages.loadingTjaFromServer')}
               </p>
             ) : (
               <Suspense
@@ -157,7 +164,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
                     className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center text-sm text-muted-foreground"
                     role="status"
                   >
-                    正在加载谱面预览…
+                    {t('messages.loadingChartPreview')}
                   </p>
                 }
               >
@@ -174,6 +181,8 @@ export function ChartActivity({ chart }: { chart: Chart }) {
 }
 
 function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
+  const { t } = useTranslation()
+
   const [page, setPage] = useState(1)
   const [data, setData] = useState<Leaderboard | null>(null)
   const [error, setError] = useState('')
@@ -200,7 +209,7 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
       <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
         <Notice>{error}</Notice>
         <Button variant="outline" size="default" onClick={() => setAttempt((n) => n + 1)}>
-          重试
+          {t('messages.retry')}
         </Button>
       </div>
     )
@@ -210,14 +219,14 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
         className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center text-sm text-muted-foreground"
         role="status"
       >
-        正在加载排行榜…
+        {t('messages.loadingLeaderboard')}
       </p>
     )
   if (!data.supported)
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
-        <Notice kind="info" title="此难度为 DOUBLE 谱面">
-          双人谱面不记录云端成绩，暂无排行榜。
+        <Notice kind="info" title={t('messages.thisDifficultyUsesADoubleChart')}>
+          {t('messages.doubleChartsDoNotSaveCloudScoresAndHaveNoLeaderboard')}
         </Notice>
       </div>
     )
@@ -225,16 +234,16 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm [&>span]:text-muted-foreground">
-        <strong>{data.total} 位玩家</strong>
-        <span>当前版本 · 单人最高分 · 同分并列</span>
+        <strong>{t('common.playerCount', { count: data.total })}</strong>
+        <span>{t('messages.currentVersionSoloBestScoresTiesShareRanks')}</span>
       </div>
       {data.items.length === 0 ? (
         <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
           <h3 className="text-base font-medium">
-            {data.total ? '这一页没有成绩' : '还没有人上榜'}
+            {data.total ? t('messages.noScoresOnThisPage') : t('messages.noScoresYet')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            游玩此难度并提交成绩后，就能在这里看到排名。
+            {t('messages.playThisDifficultyAndSubmitAScoreToAppearHere')}
           </p>
         </div>
       ) : (
@@ -242,15 +251,26 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
           className="min-w-0 overflow-x-auto rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
           tabIndex={0}
           role="region"
-          aria-label="成绩排名表格"
+          aria-label={t('messages.scoreRankings')}
         >
           <Table>
             <TableCaption className="sr-only">
-              {isSupportedCourse(course) ? courseNames[course] : course} 难度排行榜
+              {t('messages.difficultyLeaderboard', {
+                difficulty: isSupportedCourse(course) ? courseNames[course] : course,
+              })}
             </TableCaption>
             <TableHeader>
               <TableRow>
-                {['排名', '玩家', '总分', '良', '可', '不可', '连打', '提交时间'].map((label) => (
+                {[
+                  t('messages.rank'),
+                  t('messages.player'),
+                  t('messages.score'),
+                  t('messages.good'),
+                  t('messages.ok'),
+                  t('messages.bad'),
+                  t('messages.drumroll'),
+                  t('messages.submitted'),
+                ].map((label) => (
                   <TableHead scope="col" key={label}>
                     {label}
                   </TableHead>
@@ -270,20 +290,30 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
                     {entry.nickname}
                     {entry.userId === user?.id && (
                       <span className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
-                        你
+                        {t('messages.you')}
                       </span>
                     )}
                   </TableHead>
                   <TableCell className="font-semibold tabular-nums">
-                    {entry.score.toLocaleString('zh-CN')}
+                    {entry.score.toLocaleString(formatLocale(i18n.resolvedLanguage))}
                   </TableCell>
-                  <TableCell>{entry.good.toLocaleString('zh-CN')}</TableCell>
-                  <TableCell>{entry.ok.toLocaleString('zh-CN')}</TableCell>
-                  <TableCell>{entry.bad.toLocaleString('zh-CN')}</TableCell>
-                  <TableCell>{entry.drumroll.toLocaleString('zh-CN')}</TableCell>
+                  <TableCell>
+                    {entry.good.toLocaleString(formatLocale(i18n.resolvedLanguage))}
+                  </TableCell>
+                  <TableCell>
+                    {entry.ok.toLocaleString(formatLocale(i18n.resolvedLanguage))}
+                  </TableCell>
+                  <TableCell>
+                    {entry.bad.toLocaleString(formatLocale(i18n.resolvedLanguage))}
+                  </TableCell>
+                  <TableCell>
+                    {entry.drumroll.toLocaleString(formatLocale(i18n.resolvedLanguage))}
+                  </TableCell>
                   <TableCell>
                     <time dateTime={entry.submittedAt}>
-                      {new Date(entry.submittedAt).toLocaleString('zh-CN')}
+                      {new Date(entry.submittedAt).toLocaleString(
+                        formatLocale(i18n.resolvedLanguage),
+                      )}
                     </time>
                   </TableCell>
                 </TableRow>
@@ -300,18 +330,16 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
             disabled={page <= 1}
             onClick={() => setPage((n) => n - 1)}
           >
-            上一页
+            {t('messages.previous')}
           </Button>
-          <span>
-            第 {page} / {pages} 页
-          </span>
+          <span>{t('messages.pagination', { page: page, pages: pages })}</span>
           <Button
             variant="outline"
             size="default"
             disabled={page >= pages || page >= 10000}
             onClick={() => setPage((n) => n + 1)}
           >
-            下一页
+            {t('messages.next')}
           </Button>
         </div>
       )}
