@@ -1,4 +1,5 @@
-import type { Chart } from './api'
+import { endpoints } from '@/api/endpoints'
+import type { Chart } from './api/types'
 
 export const maxCoverBytes = 8 * 1024 * 1024
 export function coverFileError(file: File): string {
@@ -7,7 +8,5 @@ export function coverFileError(file: File): string {
   return ''
 }
 export function coverSource(chart: Pick<Chart, 'id' | 'coverHash'>): string | undefined {
-  return chart.coverHash
-    ? `/api/v1/charts/${encodeURIComponent(chart.id)}/cover?v=${encodeURIComponent(chart.coverHash)}`
-    : undefined
+  return chart.coverHash ? endpoints.cover(chart.id, chart.coverHash) : undefined
 }

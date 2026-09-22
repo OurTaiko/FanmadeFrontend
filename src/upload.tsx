@@ -1,3 +1,4 @@
+import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { AudioPlayer } from '@/components/audio-player'
 import { Card } from '@/components/ui/card'
@@ -27,8 +28,8 @@ import {
 } from '@phosphor-icons/react'
 import { CoverPicker } from '@/components/cover-picker'
 import { CategoryPicker } from './categories'
-import { api, uploadChart } from './api'
-import type { Chart } from './api'
+import { api, uploadChart } from './api/client'
+import type { Chart } from './api/types'
 import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { courseNames, isSupportedCourse } from './courses'
@@ -52,7 +53,11 @@ export function UpdatePage() {
     const controller = new AbortController()
     setChart(null)
     setError('')
-    api<Chart>(`/charts/${id}`, { signal: controller.signal })
+    if (!id) {
+      setError('缺少歌曲 ID。')
+      return
+    }
+    api<Chart>(endpoints.chart(id), { signal: controller.signal })
       .then((loaded) => {
         if (!controller.signal.aborted) setChart(loaded)
       })

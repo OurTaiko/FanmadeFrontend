@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import type { Chart } from '../src/api'
+import type { Chart } from '../src/api/types'
 
 const audio = readFileSync('../backend/internal/audio/testdata/cbr.mp3')
 const source =

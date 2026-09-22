@@ -1,6 +1,6 @@
 import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
-import type { Chart } from '../src/api'
+import type { Chart } from '../src/api/types'
 
 // These browser tests use isolated API responses; no account or upload is persisted.
 const courses = ['Easy', 'Normal', 'Hard', 'Oni', 'Edit']

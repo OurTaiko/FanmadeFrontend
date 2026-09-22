@@ -1,3 +1,4 @@
+import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -6,8 +7,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react'
 import { CategoryPicker } from './categories'
-import { api, jsonRequest } from './api'
-import type { Chart, Locale } from './api'
+import { api, jsonRequest } from './api/client'
+import type { Chart, Locale } from './api/types'
 import { useNotification } from './notification-context'
 import { Modal } from './notifications'
 
@@ -109,7 +110,7 @@ export function EditMetadata({
     request.current = controller
     setBusy(true)
     try {
-      const updated = await api<Chart>(`/charts/${chart.id}`, {
+      const updated = await api<Chart>(endpoints.chart(chart.id), {
         ...jsonRequest('PATCH', patch, csrf),
         signal: controller.signal,
       })

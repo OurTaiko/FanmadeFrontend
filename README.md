@@ -70,11 +70,14 @@ PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.sp
 - `src/edit-metadata.tsx`：原生 dialog 编辑弹窗、局部保存、恢复原值与失败反馈。
 - `src/upload.tsx`：文件快照、本地校验和上传状态。
 - `src/tja.ts`：纯文本解析、资源名匹配。
-- `src/api.ts`：API 类型、JSON 请求和 XHR 进度。
+- `src/api/config.ts`：浏览器 API 基础路径，默认同域 `/api/v1`。
+- `src/api/endpoints.ts`：全部前端 API 地址，统一处理路径参数与查询参数编码。
+- `src/api/client.ts`：JSON 请求、错误处理和 XHR 上传进度；直接使用 endpoints 返回的地址。
+- `src/api/types.ts`：API 请求和响应共享类型。
 - `src/chart-activity.tsx`：详情难度选择、TJA 请求和排行榜分页。
 - `src/chart-preview.tsx`、`src/preview-tja.ts`：TJARenderer 交互画布及按谱面块分离的解析适配。
 - `src/session-context.ts`、`src/session.tsx`：会话上下文与 Provider，分离以支持热更新。
-- `src/components.tsx`、`src/styles.css`：公共界面与响应式样式。
+- `src/components/`、`src/styles.css`：公共界面与响应式样式。
 - `e2e/upload.spec.ts`：Playwright 真实浏览器测试。
 - `e2e/edit.spec.ts`：作者编辑、取消／焦点恢复、保存失败重试、移动端、恢复原值与权限入口测试。
 - `e2e/detail.spec.ts`：真实 ESE 预览、默认难度、手机布局、DOUBLE、音符点击、分支、排行榜分页与失败重试。
@@ -184,8 +187,16 @@ Tailwind 原子类。复用控件位于 `src/components/ui/`，音频播放器�
 顶部主题菜单支持浅色、深色与跟随系统，默认跟随系统；偏好保存在
 `localStorage` 的 `fanmade-theme`，并同步同源窗口。首屏脚本在 React 加载前应用主题。
 
-本地 `.env.local` 可设置 `VITE_API_TARGET=https://fanmade.ourtaiko.org`，Vite 将
-`/api` 转发到该站点。遇到 macOS 文件监听阻塞时，可设置 `VITE_USE_POLLING=true`
+开发后端地址在 `.env.development` 中配置为 `VITE_API_TARGET=http://127.0.0.1:8080`。
+浏览器请求 `http://127.0.0.1:5173/api/v1/...`，`vite.config.ts` 将 `/api` 转发给本地 Go 后端，
+路径保持不变。启动本地 SSO（8090）和 Go API（8080）后运行 `pnpm dev`；修改配置后重启 Vite。
+`.env.development.local` 或启动进程的同名环境变量可以覆盖开发配置，排查目标不符时检查这些覆盖项。
+生产环境仍由 OpenResty 代理同域 `/api`，不使用 Vite 开发代理。
+
+组件从 `@/api/endpoints` 导入地址，通过 `api(endpoints.chart(id))` 请求；
+封面、下载与账号跳转同样使用 endpoints，不在组件中拼接 API 路径。
+
+遇到 macOS 文件监听阻塞时，可设置 `VITE_USE_POLLING=true`
 并使用 `pnpm dev --configLoader runner` 启动。
 
 原生选择器与旧 CSS 类定位已在现有 E2E 用例中迁移到组件角色、选项值和稳定的

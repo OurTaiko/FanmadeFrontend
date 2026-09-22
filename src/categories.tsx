@@ -1,11 +1,12 @@
+import { endpoints } from '@/api/endpoints'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api } from './api'
-import type { Category } from './api'
+import { api } from './api/client'
+import type { Category } from './api/types'
 
 const CategoryContext = createContext<{
   items: Category[] | null
@@ -19,7 +20,7 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
-    api<{ items: Category[] }>('/categories', { signal: controller.signal })
+    api<{ items: Category[] }>(endpoints.categories, { signal: controller.signal })
       .then(({ items }) => {
         if (!controller.signal.aborted) setItems(items)
       })

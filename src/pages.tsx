@@ -1,3 +1,4 @@
+import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { ChartCover } from '@/components/chart-cover'
 import { AudioPlayer } from '@/components/audio-player'
@@ -20,8 +21,8 @@ import {
   ArrowSquareOutIcon,
   ClockIcon,
 } from '@phosphor-icons/react'
-import { api, jsonRequest, resource } from './api'
-import type { Chart, ChartList } from './api'
+import { api, jsonRequest } from './api/client'
+import type { Chart, ChartList } from './api/types'
 import { ChartCard } from '@/components/chart-card'
 import { DifficultyBadges } from '@/components/difficulty-badges'
 import { courseNames, supportsChart } from './courses'
@@ -62,10 +63,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
     const controller = new AbortController()
     setLoading(true)
     setError('')
-    api<ChartList>(
-      `${mine ? '/me/charts' : '/charts'}?${new URLSearchParams({ q, course, page: String(page) })}`,
-      { signal: controller.signal },
-    )
+    api<ChartList>(endpoints.chartList({ q, course, page }, mine), { signal: controller.signal })
       .then(setData)
       .catch((e) => {
         if (!controller.signal.aborted) setError(e.message)
@@ -220,13 +218,13 @@ export function Auth({ register = false }: { register?: boolean }) {
         {session.error && <Notice>{session.error}</Notice>}
         <a
           className={buttonVariants({ variant: 'default', size: 'default', className: 'w-full' })}
-          href={`/api/v1/auth/sso/login?returnTo=${encodeURIComponent(destination)}`}
+          href={endpoints.login(destination)}
         >
           前往账号中心登录 <ArrowRight size={17} />
         </a>
         <a
           className={buttonVariants({ variant: 'outline', size: 'default', className: 'w-full' })}
-          href="/api/v1/auth/account/register"
+          href={endpoints.accountRegister}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -262,7 +260,11 @@ export function Detail() {
     setSaved(false)
     setAudioOpen(false)
     setConfirm(false)
-    api<Chart>(`/charts/${id}`, { signal: controller.signal })
+    if (!id) {
+      setError('缺少歌曲 ID。')
+      return
+    }
+    api<Chart>(endpoints.chart(id), { signal: controller.signal })
       .then(setChart)
       .catch((e) => {
         if (!controller.signal.aborted) setError(e.message)
@@ -270,10 +272,11 @@ export function Detail() {
     return () => controller.abort()
   }, [id])
   const remove = async () => {
+    if (!chart) return
     setError('')
     setBusy(true)
     try {
-      await api(`/charts/${id}`, jsonRequest('DELETE', {}, session.csrfToken))
+      await api(endpoints.chart(chart.id), jsonRequest('DELETE', {}, session.csrfToken))
       setConfirm(false)
       navigate('/me/charts')
       notify('作品已删除。', 'success')
@@ -337,7 +340,7 @@ export function Detail() {
           <div className="flex flex-wrap gap-2">
             <a
               className={buttonVariants({ variant: 'default', size: 'default' })}
-              href={resource(chart, 'download')}
+              href={endpoints.resource(chart, 'download')}
             >
               <Download size={17} />
               下载谱面包
@@ -349,7 +352,7 @@ export function Detail() {
             <Button
               variant="outline"
               nativeButton={false}
-              render={<a href={resource(chart, 'tja')} />}
+              render={<a href={endpoints.resource(chart, 'tja')} />}
             >
               <ArrowSquareOutIcon size={17} aria-hidden="true" />
               源文件
@@ -473,7 +476,11 @@ export function Detail() {
           <p className="text-sm text-muted-foreground">
             {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
           </p>
-          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
+          <AudioPlayer
+            label="音频试听"
+            src={endpoints.resource(chart, 'audio')}
+            startAt={chart.demoStart}
+          />
         </Modal>
       )}
     </>

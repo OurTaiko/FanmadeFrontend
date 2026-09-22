@@ -1,3 +1,4 @@
+import { endpoints } from '@/api/endpoints'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -56,7 +57,7 @@ export function ProfilePage() {
           </p>
           <a
             className={buttonVariants({ variant: 'default', size: 'default' })}
-            href="/api/v1/auth/account/profile"
+            href={endpoints.accountProfile}
             target="_blank"
             rel="noopener noreferrer"
           >

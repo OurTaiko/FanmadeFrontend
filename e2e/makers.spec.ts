@@ -1,7 +1,7 @@
 import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import type { Chart } from '../src/api'
+import type { Chart } from '../src/api/types'
 
 const source =
   'TITLE:Maker test\nSUBTITLE:Subtitle\nMAKER:A\nBPM:120\nWAVE:cbr.mp3\n' +

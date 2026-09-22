@@ -1,6 +1,6 @@
 import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
-import type { Chart } from '../src/api'
+import type { Chart } from '../src/api/types'
 
 test('real ESE preview, default Oni, zoom, difficulty switching and public leaderboard', async ({
   page,

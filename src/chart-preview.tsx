@@ -14,7 +14,7 @@ import { createChartView, DEFAULT_RENDER_OPTIONS } from '../TJARenderer/src/inte
 import type { RenderOptions } from '../TJARenderer/src/internal'
 import type { HitInfo } from '../TJARenderer/src/hit-testing'
 import type { BranchName, NoteLocation } from '../TJARenderer/src/primitives'
-import type { Chart } from './api'
+import type { Chart } from './api/types'
 import { Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { parsePreviewTja } from './preview-tja'

@@ -1,10 +1,11 @@
+import { endpoints } from '@/api/endpoints'
 import { useState } from 'react'
 import { ImageIcon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { CoverPicker } from './cover-picker'
 import { Modal } from '../notifications'
-import { api } from '../api'
-import type { Chart } from '../api'
+import { api } from '../api/client'
+import type { Chart } from '../api/types'
 import { coverSource } from '../cover'
 import { useSession } from '../session-context'
 
@@ -35,14 +36,11 @@ export function ChartCover({
     try {
       const form = new FormData()
       form.append('cover', file)
-      const result = await api<{ coverHash: string }>(
-        `/charts/${encodeURIComponent(chart.id)}/cover`,
-        {
-          method: 'PUT',
-          headers: { 'X-CSRF-Token': session.csrfToken },
-          body: form,
-        },
-      )
+      const result = await api<{ coverHash: string }>(endpoints.cover(chart.id), {
+        method: 'PUT',
+        headers: { 'X-CSRF-Token': session.csrfToken },
+        body: form,
+      })
       onSaved(result.coverHash)
       setFailedSource('')
       close()

@@ -1,8 +1,9 @@
+import { endpoints } from '@/api/endpoints'
 import { useEffect, useRef, useState } from 'react'
 import { SessionContext } from './session-context'
 import type { ReactNode } from 'react'
-import { api, jsonRequest } from './api'
-import type { Session } from './api'
+import { api, jsonRequest } from './api/client'
+import type { Session } from './api/types'
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>({ user: null, csrfToken: '' })
   const [loading, setLoading] = useState(true),
@@ -16,7 +17,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const current = new AbortController()
       controller = current
       const startedAt = revision.current
-      api<Session>('/me', { signal: current.signal })
+      api<Session>(endpoints.me, { signal: current.signal })
         .then((next) => {
           if (!current.signal.aborted && startedAt === revision.current) {
             setSession(next)
@@ -40,7 +41,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
   const logout = async () => {
-    await api('/auth/logout', jsonRequest('POST', {}, session.csrfToken))
+    await api(endpoints.logout, jsonRequest('POST', {}, session.csrfToken))
     revision.current++
     setError('')
     setSession({ user: null, csrfToken: '' })

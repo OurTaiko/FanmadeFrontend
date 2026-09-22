@@ -1,3 +1,4 @@
+import { endpoints } from '@/api/endpoints'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
@@ -18,8 +19,8 @@ import {
   StarIcon,
   ArrowCounterClockwiseIcon as RotateCcw,
 } from '@phosphor-icons/react'
-import { api, resource } from './api'
-import type { Chart, Leaderboard } from './api'
+import { api } from './api/client'
+import type { Chart, Leaderboard } from './api/types'
 import { courseNames, isSupportedCourse } from './courses'
 import { Notice } from './notifications'
 import { defaultDifficulty } from './chart-difficulty'
@@ -59,7 +60,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
     setError('')
     async function load() {
       try {
-        const response = await fetch(resource({ id, versionId }, 'tja'), {
+        const response = await fetch(endpoints.resource({ id, versionId }, 'tja'), {
           signal: controller.signal,
           credentials: 'include',
         })
@@ -183,8 +184,9 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
     const controller = new AbortController()
     setData(null)
     setError('')
-    const query = new URLSearchParams({ difficulty: course, versionId, page: String(page) })
-    api<Leaderboard>(`/charts/${id}/leaderboard?${query}`, { signal: controller.signal })
+    api<Leaderboard>(endpoints.leaderboard(id, { difficulty: course, versionId, page }), {
+      signal: controller.signal,
+    })
       .then((response) => {
         if (!controller.signal.aborted) setData(response)
       })

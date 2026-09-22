@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
-import type { Chart } from '@/api'
+import type { Chart } from '@/api/types'
 import { coverSource } from '@/cover'
 import { CategoryLabels } from '@/categories'
 import { supportsChart } from '@/courses'

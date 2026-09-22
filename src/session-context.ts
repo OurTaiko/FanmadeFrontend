@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Session } from './api'
+import type { Session } from './api/types'
 export type SessionState = Session & {
   loading: boolean
   error: string
