@@ -182,101 +182,140 @@ export default function ChartPreview({
   const zoomIndex = zoomLevels.indexOf(zoom)
   return (
     <div className="min-w-0 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 [&>label]:flex [&>label]:flex-wrap [&>label]:items-center [&>label]:gap-2">
-        {blocks.length > 1 && (
-          <Label>
-            谱面声部
-            <ChoiceSelect
-              label="谱面声部"
-              value={String(blockIndex)}
-              onValueChange={(value) => {
-                setBlockIndex(Number(value))
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 [&>label]:flex [&>label]:flex-wrap [&>label]:items-center [&>label]:gap-2">
+          {blocks.length > 1 && (
+            <Label>
+              谱面声部
+              <ChoiceSelect
+                label="谱面声部"
+                value={String(blockIndex)}
+                onValueChange={(value) => {
+                  setBlockIndex(Number(value))
+                  setBranch('all')
+                }}
+                items={blocks.map((d) => ({
+                  value: String(d.blockIndex),
+                  label: `${d.cloudScoreEligible ? '单人谱' : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
+                }))}
+              />
+            </Label>
+          )}
+          {root.branches && (
+            <Label>
+              <GitBranch size={16} />
+              分支
+              <ChoiceSelect
+                label="选择分支"
+                value={branch}
+                onValueChange={(value) => setBranch(value as typeof branch)}
+                items={[
+                  { value: 'all', label: '全部分支' },
+                  ...Object.entries(branchLabels)
+                    .filter(([key]) => root.branches?.[key as BranchName])
+                    .map(([value, label]) => ({ value, label })),
+                ]}
+              />
+            </Label>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              aria-label="放大谱面"
+              disabled={zoomIndex === 0}
+              onClick={() => setZoom(zoomLevels[zoomIndex - 1])}
+            >
+              <ZoomIn size={17} />
+            </Button>
+            <Label>
+              <span className="sr-only">每行拍数</span>
+              <ChoiceSelect
+                label="每行拍数"
+                value={String(zoom)}
+                onValueChange={(value) => setZoom(Number(value))}
+                items={zoomLevels.map((n) => ({ value: String(n), label: `${n} 拍 / 行` }))}
+              />
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              aria-label="缩小谱面"
+              disabled={zoomIndex === zoomLevels.length - 1}
+              onClick={() => setZoom(zoomLevels[zoomIndex + 1])}
+            >
+              <ZoomOut size={17} />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              onClick={() => {
+                setZoom(initialZoom())
                 setBranch('all')
+                setReset((n) => n + 1)
               }}
-              items={blocks.map((d) => ({
-                value: String(d.blockIndex),
-                label: `${d.cloudScoreEligible ? '单人谱' : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
-              }))}
-            />
-          </Label>
-        )}
-        {root.branches && (
-          <Label>
-            <GitBranch size={16} />
-            分支
-            <ChoiceSelect
-              label="选择分支"
-              value={branch}
-              onValueChange={(value) => setBranch(value as typeof branch)}
-              items={[
-                { value: 'all', label: '全部分支' },
-                ...Object.entries(branchLabels)
-                  .filter(([key]) => root.branches?.[key as BranchName])
-                  .map(([value, label]) => ({ value, label })),
-              ]}
-            />
-          </Label>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            aria-label="放大谱面"
-            disabled={zoomIndex === 0}
-            onClick={() => setZoom(zoomLevels[zoomIndex - 1])}
-          >
-            <ZoomIn size={17} />
-          </Button>
-          <Label>
-            <span className="sr-only">每行拍数</span>
-            <ChoiceSelect
-              label="每行拍数"
-              value={String(zoom)}
-              onValueChange={(value) => setZoom(Number(value))}
-              items={zoomLevels.map((n) => ({ value: String(n), label: `${n} 拍 / 行` }))}
-            />
-          </Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            aria-label="缩小谱面"
-            disabled={zoomIndex === zoomLevels.length - 1}
-            onClick={() => setZoom(zoomLevels[zoomIndex + 1])}
-          >
-            <ZoomOut size={17} />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="default"
-            onClick={() => {
-              setZoom(initialZoom())
-              setBranch('all')
-              setReset((n) => n + 1)
-            }}
-          >
-            <RotateCcw size={16} />
-            重置
-          </Button>
+            >
+              <RotateCcw size={16} />
+              重置
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              onClick={() =>
+                notify(
+                  '点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。',
+                  'info',
+                  '预览操作说明',
+                )
+              }
+            >
+              <MousePointerClick size={16} />
+              操作说明
+            </Button>
+          </div>
+        </div>
+        <div
+          className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-x-5 gap-y-2 text-right text-sm tabular-nums [&>div]:flex [&>div]:flex-col [&>div]:gap-1 [&_span]:text-xs [&_span]:text-muted-foreground"
+          role="status"
+          data-testid="preview-note-info"
+          aria-live="polite"
+        >
+          <div>
+            <span>小节 / 音符</span>
+            <strong>
+              {info ? `${info.location.barIndex + 1} / ${info.ordinal ?? '—'}` : '点击音符查看'}
+            </strong>
+          </div>
+          <div>
+            <span>BPM</span>
+            <strong>{number(info?.bpm)}</strong>
+          </div>
+          <div>
+            <span>滚动倍率</span>
+            <strong>{number(info?.scroll)}</strong>
+          </div>
+          <div>
+            <span>BPM × 倍率</span>
+            <strong>
+              {number(
+                info?.bpm !== undefined && info.scroll !== undefined
+                  ? info.bpm * info.scroll
+                  : undefined,
+              )}
+            </strong>
+          </div>
+          {root.branches && (
+            <div>
+              <span>分支</span>
+              <strong>{info?.location.branch ? branchLabels[info.location.branch] : '—'}</strong>
+            </div>
+          )}
         </div>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() =>
-          notify(
-            '点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。',
-            'info',
-            '预览操作说明',
-          )
-        }
-      >
-        <MousePointerClick size={16} />
-        操作说明
-      </Button>
       {renderError && <Notice>{renderError}</Notice>}
       <div
         ref={viewportRef}
@@ -288,43 +327,6 @@ export default function ChartPreview({
         <canvas className="block w-full" ref={canvasRef} aria-label={`${course} 难度交互谱面预览`}>
           交互谱面预览，可下载 TJA 原文件查看完整谱面。
         </canvas>
-      </div>
-      <div
-        className="grid grid-cols-2 gap-4 rounded-xl bg-muted/50 p-4 text-sm sm:grid-cols-4 [&>div]:flex [&>div]:flex-col [&>div]:gap-1 [&_span]:text-xs [&_span]:text-muted-foreground"
-        role="status"
-        data-testid="preview-note-info"
-        aria-live="polite"
-      >
-        <div>
-          <span>小节 / 音符</span>
-          <strong>
-            {info ? `${info.location.barIndex + 1} / ${info.ordinal ?? '—'}` : '点击音符查看'}
-          </strong>
-        </div>
-        <div>
-          <span>BPM</span>
-          <strong>{number(info?.bpm)}</strong>
-        </div>
-        <div>
-          <span>滚动倍率</span>
-          <strong>{number(info?.scroll)}</strong>
-        </div>
-        <div>
-          <span>BPM × 倍率</span>
-          <strong>
-            {number(
-              info?.bpm !== undefined && info.scroll !== undefined
-                ? info.bpm * info.scroll
-                : undefined,
-            )}
-          </strong>
-        </div>
-        {root.branches && (
-          <div>
-            <span>分支</span>
-            <strong>{info?.location.branch ? branchLabels[info.location.branch] : '—'}</strong>
-          </div>
-        )}
       </div>
     </div>
   )

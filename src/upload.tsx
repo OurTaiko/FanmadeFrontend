@@ -1,9 +1,8 @@
-import { cn } from '@/lib/utils'
 import { AudioPlayer } from '@/components/audio-player'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableHeader,
@@ -16,9 +15,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Progress } from '@/components/ui/progress'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeftIcon as ArrowLeft,
   ArrowRightIcon as ArrowRight,
   WaveformIcon as AudioLines,
   FileAudioIcon as FileMusic,
@@ -61,47 +59,10 @@ export function UpdatePage() {
       })
     return () => controller.abort()
   }, [id])
-  if (error)
-    return (
-      <>
-        <Link
-          className={cn(
-            buttonVariants({
-              variant: 'outline',
-              size: 'sm',
-              className:
-                'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
-            }),
-          )}
-          to={`/charts/${id}`}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          返回歌曲
-        </Link>
-        <Notice>{error}</Notice>
-      </>
-    )
+  if (error) return <Notice>{error}</Notice>
   if (!chart || session.loading) return <p role="status">正在加载歌曲…</p>
   if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
-    return (
-      <div className="space-y-4">
-        <p>只有上传者或管理员可以更新歌曲。</p>
-        <Link
-          className={cn(
-            buttonVariants({
-              variant: 'outline',
-              size: 'sm',
-              className:
-                'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
-            }),
-          )}
-          to={`/charts/${id}`}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          返回歌曲
-        </Link>
-      </div>
-    )
+    return <p>只有上传者或管理员可以更新歌曲。</p>
   return <UploadPage key={chart.versionId} existing={chart} />
 }
 
@@ -235,20 +196,6 @@ export function UploadPage({ existing }: { existing?: Chart }) {
   }
   return (
     <>
-      <Link
-        className={cn(
-          buttonVariants({
-            variant: 'outline',
-            size: 'sm',
-            className:
-              'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
-          }),
-        )}
-        to={existing ? `/charts/${existing.id}` : '/'}
-      >
-        <ArrowLeft size={16} />
-        {existing ? '返回歌曲' : '返回发现'}
-      </Link>
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">

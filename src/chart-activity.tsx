@@ -1,7 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ChoiceSelect } from '@/components/choice-select'
+import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -16,6 +15,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   FileAudioIcon as FileMusic,
   TrophyIcon as Trophy,
+  StarIcon,
   ArrowCounterClockwiseIcon as RotateCcw,
 } from '@phosphor-icons/react'
 import { api, resource } from './api'
@@ -27,6 +27,21 @@ import { maxTja } from './tja'
 import { isSupportedCourse } from './courses'
 
 const ChartPreview = lazy(() => import('./chart-preview'))
+
+const difficultyTabColors = {
+  Easy: '[--difficulty-bg:var(--color-orange-100)] [--difficulty-fg:var(--color-orange-800)] dark:[--difficulty-bg:#493128] dark:[--difficulty-fg:#f7bb78]',
+  Normal: '[--difficulty-bg:var(--color-green-100)] [--difficulty-fg:var(--color-green-800)] dark:[--difficulty-bg:#263e32] dark:[--difficulty-fg:#93d5a6]',
+  Hard: '[--difficulty-bg:var(--color-yellow-100)] [--difficulty-fg:var(--color-yellow-800)] dark:[--difficulty-bg:#393a21] dark:[--difficulty-fg:#d7d887]',
+  Oni: '[--difficulty-bg:var(--color-purple-100)] [--difficulty-fg:var(--color-purple-800)] dark:[--difficulty-bg:#3f2948] dark:[--difficulty-fg:#deb0ed]',
+  Edit: '[--difficulty-bg:var(--color-rose-100)] [--difficulty-fg:var(--color-rose-800)] dark:[--difficulty-bg:#462733] dark:[--difficulty-fg:#f19aae]',
+}
+
+const tabButtonGroupClassName =
+  'shrink-0 gap-0 overflow-hidden rounded-full border border-border bg-transparent p-0'
+const tabButtonClassName =
+  'h-full rounded-none px-3 text-muted-foreground shadow-none not-first:border-l! not-first:border-l-border! hover:bg-muted/50 focus-visible:z-10 focus-visible:-ring-offset-2 data-active:bg-muted data-active:text-foreground dark:hover:bg-muted/50 dark:data-active:bg-muted after:hidden'
+const difficultyTabClassName =
+  'bg-transparent text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] hover:bg-transparent hover:text-[var(--difficulty-fg)] focus-visible:ring-[var(--difficulty-fg)] data-active:hover:bg-[var(--difficulty-bg)] data-active:bg-[var(--difficulty-bg)] data-active:text-[var(--difficulty-fg)] dark:bg-transparent dark:text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] dark:hover:bg-transparent dark:hover:text-[var(--difficulty-fg)] dark:data-active:hover:bg-[var(--difficulty-bg)] dark:data-active:bg-[var(--difficulty-bg)] dark:data-active:text-[var(--difficulty-fg)]'
 
 export function ChartActivity({ chart }: { chart: Chart }) {
   const [course, setCourse] = useState(() => defaultDifficulty(chart.difficulties))
@@ -63,62 +78,60 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   }, [id, versionId, encoding, attempt])
 
   return (
-    <Card
-      className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-5"
+    <Tabs
+      value={tab}
+      onValueChange={(value) => setTab(value as typeof tab)}
+      className="min-w-0 gap-6"
       aria-label="谱面预览与排行榜"
       data-testid="chart-activity"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold">谱面与成绩</h2>
-        </div>
-        <Label className="flex flex-wrap items-center gap-3 text-sm">
-          难度
-          <ChoiceSelect
-            label="选择难度"
-            value={course}
-            onValueChange={setCourse}
-            items={courses.map((value) => {
+      <section
+        className="flex min-w-0 items-center justify-start gap-3 overflow-x-auto py-1"
+        aria-label="谱面内容与难度切换"
+      >
+        <Tabs
+          value={course}
+          onValueChange={(value) => setCourse(String(value))}
+          className="shrink-0"
+        >
+          <TabsList aria-label="选择难度" className={tabButtonGroupClassName}>
+            {courses.map((value) => {
               const difficulty =
                 chart.difficulties.find((d) => d.course === value && d.cloudScoreEligible) ??
                 chart.difficulties.find((d) => d.course === value)!
-              return {
-                value,
-                label: `${courseNames[value] ?? value} · ${value} ★${difficulty.level}`,
-              }
+              return (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[value]}`}
+                >
+                  {courseNames[value]}
+                  <span
+                    className="inline-flex items-center gap-1 tabular-nums"
+                    aria-label={`${difficulty.level} 星`}
+                  >
+                    <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+                    {difficulty.level}
+                  </span>
+                </TabsTrigger>
+              )
             })}
-          />
-        </Label>
-      </div>
-      <dl
-        data-testid="difficulty-makers"
-        className="flex flex-wrap gap-6 text-sm [&>div]:flex [&>div]:gap-2 [&_dt]:text-muted-foreground"
-        aria-live="polite"
-      >
-        {chart.difficulties
-          .filter((d) => d.course === course)
-          .map((d) => (
-            <div key={d.blockIndex}>
-              <dt>
-                {isSupportedCourse(d.course) ? courseNames[d.course] : d.course}
-                {d.player ? ` ${d.player}` : ''} 谱师
-              </dt>
-              <dd>{d.maker || '未填写'}</dd>
-            </div>
-          ))}
-      </dl>
-      <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
-        <TabsList aria-label="歌曲详情内容">
-          <TabsTrigger value="preview">
+          </TabsList>
+        </Tabs>
+        <Separator orientation="vertical" className="h-6 data-vertical:self-center" />
+        <TabsList aria-label="歌曲详情内容" className={tabButtonGroupClassName}>
+          <TabsTrigger value="preview" className={tabButtonClassName}>
             <FileMusic size={18} />
             谱面预览
           </TabsTrigger>
-          <TabsTrigger value="leaderboard">
+          <TabsTrigger value="leaderboard" className={tabButtonClassName}>
             <Trophy size={18} />
             排行榜
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="preview" className="pt-4">
+      </section>
+      <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6">
+        <TabsContent value="preview">
           {tab === 'preview' &&
             (error ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
@@ -150,11 +163,11 @@ export function ChartActivity({ chart }: { chart: Chart }) {
               </Suspense>
             ))}
         </TabsContent>
-        <TabsContent value="leaderboard" className="pt-4">
+        <TabsContent value="leaderboard">
           {tab === 'leaderboard' && <ChartLeaderboard key={course} chart={chart} course={course} />}
         </TabsContent>
-      </Tabs>
-    </Card>
+      </Card>
+    </Tabs>
   )
 }
 
