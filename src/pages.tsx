@@ -15,9 +15,7 @@ import {
   TrashIcon as Trash2,
   UploadSimpleIcon as Upload,
   PencilSimpleIcon as Pencil,
-  ArticleIcon,
   HeadphonesIcon,
-  InfoIcon,
   ArrowSquareOutIcon,
   ClockIcon,
 } from '@phosphor-icons/react'
@@ -253,14 +251,14 @@ export function Detail() {
     [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [detailPanel, setDetailPanel] = useState<'description' | 'audio' | 'submission' | null>(null)
+  const [audioOpen, setAudioOpen] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
     setEditing(false)
     setSaved(false)
-    setDetailPanel(null)
+    setAudioOpen(false)
     setConfirm(false)
     api<Chart>(`/charts/${id}`, { signal: controller.signal })
       .then(setChart)
@@ -335,17 +333,9 @@ export function Detail() {
               <Download size={17} />
               下载谱面包
             </a>
-            <Button variant="outline" onClick={() => setDetailPanel('description')}>
-              <ArticleIcon size={17} aria-hidden="true" />
-              谱面介绍
-            </Button>
-            <Button variant="outline" onClick={() => setDetailPanel('audio')}>
+            <Button variant="outline" onClick={() => setAudioOpen(true)}>
               <HeadphonesIcon size={17} aria-hidden="true" />
               试听
-            </Button>
-            <Button variant="outline" onClick={() => setDetailPanel('submission')}>
-              <InfoIcon size={17} aria-hidden="true" />
-              投稿信息
             </Button>
             <Button
               variant="outline"
@@ -394,26 +384,23 @@ export function Detail() {
           }}
         />
       )}
-      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
-      {detailPanel === 'description' && (
-        <Modal title="谱面介绍" onDismiss={() => setDetailPanel(null)} actions={null}>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed wrap-anywhere">
+      <div className="chart-information grid gap-8 rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12 dark:bg-card">
+        <section aria-labelledby="chart-description-heading" className="min-w-0 space-y-6">
+          <h2 id="chart-description-heading" className="text-xl font-semibold tracking-tight">
+            谱面介绍
+          </h2>
+          <p className="max-w-[70ch] whitespace-pre-wrap text-sm leading-7 text-muted-foreground wrap-anywhere">
             {chart.description || '上传者还没有填写说明。'}
           </p>
-          <h3 className="text-base font-semibold">难度一览</h3>
-          <DifficultyBadges difficulties={chart.difficulties} detailed />
-        </Modal>
-      )}
-      {detailPanel === 'audio' && (
-        <Modal title="试听" onDismiss={() => setDetailPanel(null)} actions={null}>
-          <p className="text-sm text-muted-foreground">
-            {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
-          </p>
-          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
-        </Modal>
-      )}
-      {detailPanel === 'submission' && (
-        <Modal title="投稿信息" onDismiss={() => setDetailPanel(null)} actions={null}>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">难度一览</h3>
+            <DifficultyBadges difficulties={chart.difficulties} detailed />
+          </div>
+        </section>
+        <section aria-labelledby="chart-submission-heading" className="min-w-0 space-y-6">
+          <h2 id="chart-submission-heading" className="text-xl font-semibold tracking-tight">
+            投稿信息
+          </h2>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
             <dt>上传者</dt>
             <dd>{chart.uploader}</dd>
@@ -469,6 +456,15 @@ export function Detail() {
               )}
             </div>
           )}
+        </section>
+      </div>
+      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
+      {audioOpen && (
+        <Modal title="试听" onDismiss={() => setAudioOpen(false)} actions={null}>
+          <p className="text-sm text-muted-foreground">
+            {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
+          </p>
+          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
         </Modal>
       )}
     </>

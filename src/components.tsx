@@ -43,9 +43,11 @@ const difficultyColors = {
 export function DifficultyBadges({
   difficulties,
   detailed = false,
+  bookmarks = false,
 }: {
   difficulties: Difficulty[]
   detailed?: boolean
+  bookmarks?: boolean
 }) {
   const supported = difficulties.filter((d) => isSupportedCourse(d.course))
   const items = detailed
@@ -53,6 +55,30 @@ export function DifficultyBadges({
     : supported.filter(
         (d, index, all) => all.findIndex((other) => other.course === d.course) === index,
       )
+  if (bookmarks)
+    return (
+      <ul aria-label="谱面难度" className="flex w-24 shrink-0 flex-col gap-2 self-start">
+        {items.map((d) => (
+          <li
+            key={d.blockIndex}
+            className="flex min-h-8 items-center justify-between gap-1 bg-[#f5f5f7] py-2 pr-3 pl-5 text-xs font-medium text-[#424245] [clip-path:polygon(0_0,100%_0,100%_100%,0_100%,8px_50%)] dark:bg-muted dark:text-foreground"
+          >
+            <span>{isSupportedCourse(d.course) ? courseNames[d.course] : ''}</span>
+            <span
+              className="inline-flex items-center gap-0.5 tabular-nums"
+              aria-label={`${d.level} 星`}
+            >
+              <StarIcon
+                weight="fill"
+                className="size-3 text-[#0071e3] transition-transform duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none dark:text-blue-400"
+                aria-hidden="true"
+              />
+              {d.level}
+            </span>
+          </li>
+        ))}
+      </ul>
+    )
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((d) => (
@@ -80,43 +106,48 @@ export function ChartCard({ chart }: { chart: Chart }) {
   if (!supportsChart(chart.difficulties)) return null
   return (
     <Link
-      className="block min-w-0 rounded-4xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      className="chart-information group block min-w-0 rounded-2xl outline-none transition-transform duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-4 motion-reduce:transform-none motion-reduce:transition-none"
       data-testid="chart-card"
       to={`/charts/${chart.id}`}
     >
-      <Card size="sm" className="h-full shadow-none ring-border transition-colors hover:bg-muted/40">
-        <CardContent className="flex h-full flex-col gap-3">
-          <div className="min-w-0 space-y-0.5">
-            <h3 className="truncate text-lg font-semibold" title={chart.title}>
-              {chart.title}
-            </h3>
-            <p
-              className="truncate text-sm text-muted-foreground"
-              title={chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
-            >
-              {chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
-            </p>
-          </div>
-          <CategoryLabels ids={chart.categoryIds}>
-            <li className="min-w-0 max-w-full">
-              <Badge
-                variant="outline"
-                className="min-w-0 max-w-full gap-0 p-0"
-                title={`谱师：${chart.maker || chart.uploader}`}
+      <Card
+        size="sm"
+        className="h-full rounded-2xl bg-white py-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ring-0 dark:bg-card"
+      >
+        <CardContent className="flex h-full gap-4 pr-0 pl-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-5">
+            <div className="min-w-0 space-y-0.5">
+              <h3 className="truncate text-lg font-semibold tracking-tight" title={chart.title}>
+                {chart.title}
+              </h3>
+              <p
+                className="truncate text-sm text-muted-foreground"
+                title={chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
               >
-                <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
-                  谱师
-                </span>
-                <span className="truncate px-2">{chart.maker || chart.uploader}</span>
-              </Badge>
-            </li>
-            <li>
-              <Badge variant="outline" className="tabular-nums">
-                {chart.bpm} BPM
-              </Badge>
-            </li>
-          </CategoryLabels>
-          <DifficultyBadges difficulties={chart.difficulties} />
+                {chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
+              </p>
+            </div>
+            <CategoryLabels ids={chart.categoryIds}>
+              <li className="min-w-0 max-w-full">
+                <Badge
+                  variant="outline"
+                  className="min-w-0 max-w-full gap-0 p-0"
+                  title={`谱师：${chart.maker || chart.uploader}`}
+                >
+                  <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
+                    谱师
+                  </span>
+                  <span className="truncate px-2">{chart.maker || chart.uploader}</span>
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="outline" className="tabular-nums">
+                  {chart.bpm} BPM
+                </Badge>
+              </li>
+            </CategoryLabels>
+          </div>
+          <DifficultyBadges difficulties={chart.difficulties} bookmarks />
         </CardContent>
       </Card>
     </Link>
