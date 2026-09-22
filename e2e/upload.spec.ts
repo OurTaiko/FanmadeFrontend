@@ -49,7 +49,7 @@ test('register, reject mismatched ESE audio locally, publish, download, delete a
   ])
   expect(download.suggestedFilename()).toBe('Happy Synthesizer.zip')
   expect(await download.failure()).toBeNull()
-  const audio = page.getByLabel('音频试听')
+  const audio = page.getByRole('group', { name: '音频试听', exact: true }).locator('audio')
   await expect
     .poll(() => audio.evaluate((node: HTMLAudioElement) => node.readyState))
     .toBeGreaterThan(0)

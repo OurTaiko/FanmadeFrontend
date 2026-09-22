@@ -1,3 +1,4 @@
+import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
 import type { Chart } from '../src/api'
 
@@ -19,7 +20,7 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
     'aria-selected',
     'true',
   )
-  await expect(page.getByLabel('选择难度', { exact: true })).toHaveValue('Oni')
+  await expect(page.getByLabel('选择难度', { exact: true })).toHaveAttribute('data-value', 'Oni')
   const canvas = page.locator('canvas')
   await expect.poll(() => canvas.evaluate((c: HTMLCanvasElement) => c.height)).toBeGreaterThan(300)
   expect(
@@ -33,10 +34,10 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
   ).toBeGreaterThan(10)
   const fetched = files
   await page.getByRole('button', { name: '放大谱面', exact: true }).click()
-  await expect(page.getByLabel('每行拍数')).toHaveValue('12')
-  await page.getByLabel('选择难度', { exact: true }).selectOption('Edit')
+  await expect(page.getByLabel('每行拍数')).toHaveAttribute('data-value', '12')
+  await selectValue(page, '选择难度', 'Edit')
   await expect(canvas).toHaveAttribute('aria-label', 'Edit 难度交互谱面预览')
-  await page.getByLabel('选择难度', { exact: true }).selectOption('Oni')
+  await selectValue(page, '选择难度', 'Oni')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
   await expect(page.getByText('当前版本 · 单人最高分 · 同分并列')).toBeVisible()
   await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
@@ -44,8 +45,8 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
   expect(files).toBe(fetched)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
-  await expect(page.getByLabel('每行拍数')).toHaveValue('4')
-  await page.locator('.chart-activity').scrollIntoViewIfNeeded()
+  await expect(page.getByLabel('每行拍数')).toHaveAttribute('data-value', '4')
+  await page.locator('[data-testid="chart-activity"]').scrollIntoViewIfNeeded()
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     .toBe(true)
@@ -142,14 +143,14 @@ LEVEL:5
   await page.goto(`/charts/${chart.id}`)
   await expect(page.getByRole('alertdialog')).toContainText('HTTP 503')
   await page.getByRole('button', { name: '知道了', exact: true }).click()
-  await expect(page.getByLabel('选择难度', { exact: true })).toHaveValue('Edit')
+  await expect(page.getByLabel('选择难度', { exact: true })).toHaveAttribute('data-value', 'Edit')
   failTja = false
   await page.getByRole('button', { name: '重新加载', exact: true }).click()
   const canvas = page.locator('canvas')
   await expect(canvas).toBeVisible()
-  await page.getByLabel('选择分支').selectOption('master')
-  await expect(page.getByLabel('选择分支')).toHaveValue('master')
-  await page.getByLabel('选择分支').selectOption('all')
+  await selectValue(page, '选择分支', 'master')
+  await expect(page.getByLabel('选择分支')).toHaveAttribute('data-value', 'master')
+  await selectValue(page, '选择分支', 'all')
   // Use the renderer's layout API to locate a note, then trigger a real pointer click.
   const position = await page.evaluate(async (text) => {
     const adapterPath = '/src/preview-tja.ts'
@@ -167,8 +168,8 @@ LEVEL:5
   }, tja)
   expect(position).toBeTruthy()
   await canvas.click({ position })
-  await expect(page.locator('.preview-note-info')).toContainText('150')
-  await expect(page.locator('.preview-note-info')).not.toContainText('点击音符查看')
+  await expect(page.locator('[data-testid="preview-note-info"]')).toContainText('150')
+  await expect(page.locator('[data-testid="preview-note-info"]')).not.toContainText('点击音符查看')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
   await expect(page.getByRole('alertdialog')).toContainText('排行榜暂时不可用')
   await page.getByRole('button', { name: '知道了', exact: true }).click()
@@ -177,7 +178,7 @@ LEVEL:5
   await expect(page.getByRole('cell', { name: '900,000', exact: true })).toHaveCount(20)
   await page.getByRole('button', { name: '下一页' }).click()
   await expect(page.getByRole('rowheader', { name: 'player20', exact: true })).toBeVisible()
-  await page.getByLabel('选择难度', { exact: true }).selectOption('Hard')
+  await selectValue(page, '选择难度', 'Hard')
   await expect(page.getByText('第 1 / 2 页')).toBeVisible()
   await page.getByRole('tab', { name: '排行榜', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
@@ -192,9 +193,9 @@ test('real DOUBLE chart keeps P1 and P2 separate and has no leaderboard', async 
   const chart: Chart = list.items.find((c: Chart) => c.title === 'Aiai')
   await page.goto(`/charts/${chart.id}`)
   const side = page.getByLabel('谱面声部', { exact: true })
-  await expect(side).toHaveValue('0')
-  await side.selectOption('1')
-  await expect(side).toHaveValue('1')
+  await expect(side).toHaveAttribute('data-value', '0')
+  await selectValue(page, '谱面声部', '1')
+  await expect(side).toHaveAttribute('data-value', '1')
   await expect(page.locator('canvas')).toBeVisible()
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
   await expect(page.getByRole('heading', { name: '此难度为 DOUBLE 谱面' })).toBeVisible()

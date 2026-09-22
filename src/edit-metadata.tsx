@@ -1,10 +1,14 @@
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { RotateCcw, X } from 'lucide-react'
+import { ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react'
 import { CategoryPicker } from './categories'
 import { api, jsonRequest } from './api'
 import type { Chart, Locale } from './api'
 import { useNotification } from './notification-context'
+import { Modal } from './notifications'
 
 const languages = [
   { code: 'en', label: '英文', caption: '默认显示' },
@@ -50,23 +54,9 @@ export function EditMetadata({
   const [busy, setBusy] = useState(false)
   const { notify } = useNotification()
   const setError = (message: string) => notify(message, 'error')
-  const dialog = useRef<HTMLDialogElement>(null)
   const firstInput = useRef<HTMLInputElement>(null)
   const request = useRef<AbortController | null>(null)
-  useEffect(() => {
-    const node = dialog.current!
-    const previous = document.activeElement as HTMLElement | null
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    node.showModal()
-    firstInput.current?.focus({ preventScroll: true })
-    return () => {
-      request.current?.abort()
-      node.close()
-      document.body.style.overflow = overflow
-      previous?.focus()
-    }
-  }, [])
+  useEffect(() => () => request.current?.abort(), [])
 
   const changed =
     categoriesChanged ||
@@ -131,47 +121,34 @@ export function EditMetadata({
     }
   }
   return (
-    <dialog
-      ref={dialog}
-      className="metadata-dialog"
-      aria-labelledby="edit-metadata-title"
-      aria-describedby="edit-metadata-hint"
-      onCancel={(e) => {
-        e.preventDefault()
-        if (!busy) onDismiss()
-      }}
+    <Modal
+      title="编辑谱面信息"
+      initialFocus={firstInput}
+      busy={busy}
+      onDismiss={onDismiss}
+      actions={null}
+      className="sm:max-w-3xl"
     >
       <form onSubmit={submit} aria-busy={busy}>
-        <header className="metadata-dialog-header">
-          <div>
-            <div className="eyebrow">CHART INFORMATION</div>
-            <h2 id="edit-metadata-title">编辑谱面信息</h2>
-          </div>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="关闭编辑"
-            disabled={busy}
-            onClick={onDismiss}
-          >
-            <X size={20} />
-          </button>
-        </header>
-        <div className="metadata-dialog-content">
-          <p id="edit-metadata-hint" className="muted">
+        <div className="space-y-6">
+          <p id="edit-metadata-hint" className="text-sm text-muted-foreground">
             修改分类、名称和副标题。已保存的成绩不受影响，下载文件保留原内容。
           </p>
           <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
           {languages.map(({ code, label, caption }) => (
-            <fieldset key={code} className="metadata-language" disabled={busy}>
+            <fieldset
+              key={code}
+              className="min-w-0 space-y-4 rounded-2xl border p-4 [&>legend]:px-2 [&>legend]:font-medium [&>legend_span]:ml-2 [&>legend_span]:text-xs [&>legend_span]:text-muted-foreground"
+              disabled={busy}
+            >
               <legend>
                 {label}
                 <span>{caption}</span>
               </legend>
-              <div className="metadata-field-grid">
-                <label htmlFor={`edit-${code}-title`}>
+              <div className="grid gap-4 sm:grid-cols-2 [&>label]:flex [&>label]:flex-col [&>label]:items-start [&>label]:gap-2">
+                <Label htmlFor={`edit-${code}-title`}>
                   {label}歌名
-                  <input
+                  <Input
                     id={`edit-${code}-title`}
                     value={draft[code].title}
                     required={code === 'en' && !draft[code].restore}
@@ -184,10 +161,10 @@ export function EditMetadata({
                       setDraft((d) => ({ ...d, [code]: { ...d[code], title: e.target.value } }))
                     }
                   />
-                </label>
-                <label htmlFor={`edit-${code}-subtitle`}>
+                </Label>
+                <Label htmlFor={`edit-${code}-subtitle`}>
                   {label}副标题
-                  <input
+                  <Input
                     id={`edit-${code}-subtitle`}
                     value={draft[code].subtitle}
                     disabled={draft[code].restore}
@@ -198,9 +175,9 @@ export function EditMetadata({
                       setDraft((d) => ({ ...d, [code]: { ...d[code], subtitle: e.target.value } }))
                     }
                   />
-                </label>
+                </Label>
               </div>
-              <div className="metadata-restore-row">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&>small]:text-muted-foreground">
                 <small>
                   {draft[code].restore
                     ? '保存后恢复文件中的名称和副标题'
@@ -208,32 +185,39 @@ export function EditMetadata({
                       ? '英文歌名必填，副标题可清空'
                       : '清空译名会恢复文件中的原值；副标题可清空'}
                 </small>
-                <button
+                <Button
                   type="button"
-                  className="button ghost small"
+                  variant="ghost"
+                  size="sm"
                   onClick={() =>
                     setDraft((d) => ({ ...d, [code]: { ...d[code], restore: !d[code].restore } }))
                   }
                 >
                   <RotateCcw size={13} />
                   {draft[code].restore ? `撤销${label}恢复` : `恢复${label}原值`}
-                </button>
+                </Button>
               </div>
             </fieldset>
           ))}
         </div>
-        <footer className="metadata-dialog-footer">
-          <span className="muted">
+        <footer className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t pt-4 [&>span]:mr-auto">
+          <span className="text-sm text-muted-foreground">
             {busy ? '正在保存…' : changed ? '有尚未保存的修改' : '修改后即可保存'}
           </span>
-          <button type="button" className="button secondary" disabled={busy} onClick={onDismiss}>
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            disabled={busy}
+            onClick={onDismiss}
+          >
             取消
-          </button>
-          <button type="submit" className="button primary" disabled={busy || !changed}>
+          </Button>
+          <Button type="submit" variant="default" size="default" disabled={busy || !changed}>
             {busy ? '保存中…' : '保存修改'}
-          </button>
+          </Button>
         </footer>
       </form>
-    </dialog>
+    </Modal>
   )
 }

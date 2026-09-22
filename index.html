@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111318" />
+    <meta name="theme-color" content="white" />
+    <script>
+      ;(() => {
+        let theme = 'system'
+        try {
+          theme = localStorage.getItem('fanmade-theme') || 'system'
+        } catch {}
+        const dark =
+          theme === 'dark' ||
+          (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.classList.toggle('dark', dark)
+        document.documentElement.classList.add(dark ? 'scheme-dark' : 'scheme-light')
+      })()
+    </script>
     <meta name="description" content="OurTaiko Fanmade 太鼓自制谱社区" />
     <link rel="icon" href="%BASE_URL%favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%icons/icon-32.png" />

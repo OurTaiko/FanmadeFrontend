@@ -1,5 +1,15 @@
+import { ChoiceSelect } from '@/components/choice-select'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { GitBranch, MousePointerClick, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
+import {
+  GitBranchIcon as GitBranch,
+  CursorClickIcon as MousePointerClick,
+  ArrowCounterClockwiseIcon as RotateCcw,
+  MagnifyingGlassPlusIcon as ZoomIn,
+  MagnifyingGlassMinusIcon as ZoomOut,
+} from '@phosphor-icons/react'
+import { PALETTE } from '../TJARenderer/src/renderer'
 import { createChartView, DEFAULT_RENDER_OPTIONS } from '../TJARenderer/src/internal'
 import type { RenderOptions } from '../TJARenderer/src/internal'
 import type { HitInfo } from '../TJARenderer/src/hit-testing'
@@ -83,8 +93,34 @@ export default function ChartPreview({
       hoveredNote: null,
     }
     const view = createChartView(currentChart, canvas)
+    const previousPalette = structuredClone(PALETTE)
+    const applyPalette = () => {
+      const tokens = getComputedStyle(document.documentElement)
+      const color = (name: string) => tokens.getPropertyValue(`--${name}`).trim()
+      PALETTE.background = color('background')
+      PALETTE.text.primary = color('foreground')
+      PALETTE.text.secondary = color('muted-foreground')
+      PALETTE.text.label = color('foreground')
+      PALETTE.ui.barBorder = color('foreground')
+      PALETTE.ui.barVerticalLine = color('background')
+      PALETTE.ui.centerLine = color('border')
+      PALETTE.ui.gridLine = color('border')
+      PALETTE.ui.selectionBorder = color('primary')
+      PALETTE.ui.warning.background = color('muted')
+      PALETTE.ui.warning.text = color('destructive')
+      PALETTE.ui.streamWaiting.background = color('muted')
+      PALETTE.ui.streamWaiting.text = color('muted-foreground')
+      PALETTE.status.bpm = color('foreground')
+      PALETTE.status.hs = color('foreground')
+      PALETTE.status.line = color('muted-foreground')
+      for (const course of Object.keys(PALETTE.courses) as (keyof typeof PALETTE.courses)[]) {
+        PALETTE.courses[course] = color('primary')
+      }
+      // Note and branch colors carry musical meaning and keep the renderer's palette.
+    }
     const render = () => {
       try {
+        applyPalette()
         view.invalidateLayout()
         view.render({ renderOptions: options, dpr: window.devicePixelRatio || 1 })
       } catch (e) {
@@ -92,8 +128,13 @@ export default function ChartPreview({
       }
     }
     render()
+    const themeObserver = new MutationObserver(render)
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
     const removeHover = view.onNoteHovered(({ hit }) => {
-      canvas.style.cursor = hit ? 'pointer' : 'default'
+      canvas.classList.toggle('cursor-pointer', Boolean(hit))
       setHovered((previous) =>
         previous && hit && sameNote(previous.location, hit.location) ? previous : hit,
       )
@@ -124,6 +165,8 @@ export default function ChartPreview({
     return () => {
       removeHover()
       removeClick()
+      themeObserver.disconnect()
+      Object.assign(PALETTE, previousPalette)
       observer.disconnect()
       cancelAnimationFrame(frame)
     }
@@ -132,89 +175,82 @@ export default function ChartPreview({
   const info = selected ?? hovered
   if (parsed.error || !root)
     return (
-      <div className="activity-state">
+      <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
         <Notice>{parsed.error || '此难度暂无可预览的谱面块'}</Notice>
       </div>
     )
   const zoomIndex = zoomLevels.indexOf(zoom)
   return (
-    <div className="chart-preview">
-      <div className="preview-toolbar">
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 [&>label]:flex [&>label]:flex-wrap [&>label]:items-center [&>label]:gap-2">
         {blocks.length > 1 && (
-          <label>
+          <Label>
             谱面声部
-            <select
-              aria-label="谱面声部"
-              value={blockIndex}
-              onChange={(e) => {
-                setBlockIndex(Number(e.target.value))
+            <ChoiceSelect
+              label="谱面声部"
+              value={String(blockIndex)}
+              onValueChange={(value) => {
+                setBlockIndex(Number(value))
                 setBranch('all')
               }}
-            >
-              {blocks.map((d) => (
-                <option key={d.blockIndex} value={d.blockIndex}>
-                  {d.cloudScoreEligible ? '单人谱' : `DOUBLE ${d.player || ''}`} · ★{d.level}
-                </option>
-              ))}
-            </select>
-          </label>
+              items={blocks.map((d) => ({
+                value: String(d.blockIndex),
+                label: `${d.cloudScoreEligible ? '单人谱' : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
+              }))}
+            />
+          </Label>
         )}
         {root.branches && (
-          <label>
+          <Label>
             <GitBranch size={16} />
             分支
-            <select
-              aria-label="选择分支"
+            <ChoiceSelect
+              label="选择分支"
               value={branch}
-              onChange={(e) => setBranch(e.target.value as typeof branch)}
-            >
-              <option value="all">全部分支</option>
-              {Object.entries(branchLabels)
-                .filter(([key]) => root.branches?.[key as BranchName])
-                .map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-            </select>
-          </label>
+              onValueChange={(value) => setBranch(value as typeof branch)}
+              items={[
+                { value: 'all', label: '全部分支' },
+                ...Object.entries(branchLabels)
+                  .filter(([key]) => root.branches?.[key as BranchName])
+                  .map(([value, label]) => ({ value, label })),
+              ]}
+            />
+          </Label>
         )}
-        <div className="preview-zoom">
-          <button
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
             type="button"
-            className="button secondary"
+            variant="outline"
+            size="default"
             aria-label="放大谱面"
             disabled={zoomIndex === 0}
             onClick={() => setZoom(zoomLevels[zoomIndex - 1])}
           >
             <ZoomIn size={17} />
-          </button>
-          <label>
+          </Button>
+          <Label>
             <span className="sr-only">每行拍数</span>
-            <select
-              aria-label="每行拍数"
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-            >
-              {zoomLevels.map((n) => (
-                <option key={n} value={n}>
-                  {n} 拍 / 行
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
+            <ChoiceSelect
+              label="每行拍数"
+              value={String(zoom)}
+              onValueChange={(value) => setZoom(Number(value))}
+              items={zoomLevels.map((n) => ({ value: String(n), label: `${n} 拍 / 行` }))}
+            />
+          </Label>
+          <Button
             type="button"
-            className="button secondary"
+            variant="outline"
+            size="default"
             aria-label="缩小谱面"
             disabled={zoomIndex === zoomLevels.length - 1}
             onClick={() => setZoom(zoomLevels[zoomIndex + 1])}
           >
             <ZoomOut size={17} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="button ghost"
+            variant="ghost"
+            size="default"
             onClick={() => {
               setZoom(initialZoom())
               setBranch('all')
@@ -223,12 +259,13 @@ export default function ChartPreview({
           >
             <RotateCcw size={16} />
             重置
-          </button>
+          </Button>
         </div>
       </div>
-      <button
+      <Button
         type="button"
-        className="button ghost small"
+        variant="ghost"
+        size="sm"
         onClick={() =>
           notify(
             '点击音符查看信息，连续点击两个音符可选中区间；点击空白取消。',
@@ -239,20 +276,25 @@ export default function ChartPreview({
       >
         <MousePointerClick size={16} />
         操作说明
-      </button>
+      </Button>
       {renderError && <Notice>{renderError}</Notice>}
       <div
         ref={viewportRef}
-        className="preview-canvas-wrap"
+        className="max-h-[75svh] max-w-full overflow-auto overscroll-contain rounded-xl border bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring"
         tabIndex={0}
         role="region"
         aria-label="可滚动谱面预览"
       >
-        <canvas ref={canvasRef} aria-label={`${course} 难度交互谱面预览`}>
+        <canvas className="block w-full" ref={canvasRef} aria-label={`${course} 难度交互谱面预览`}>
           交互谱面预览，可下载 TJA 原文件查看完整谱面。
         </canvas>
       </div>
-      <div className="preview-note-info" role="status" aria-live="polite">
+      <div
+        className="grid grid-cols-2 gap-4 rounded-xl bg-muted/50 p-4 text-sm sm:grid-cols-4 [&>div]:flex [&>div]:flex-col [&>div]:gap-1 [&_span]:text-xs [&_span]:text-muted-foreground"
+        role="status"
+        data-testid="preview-note-info"
+        aria-live="polite"
+      >
         <div>
           <span>小节 / 音符</span>
           <strong>

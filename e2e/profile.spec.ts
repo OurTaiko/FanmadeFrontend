@@ -24,7 +24,7 @@ test('profile is managed in SSO and refreshed on return to Fanmade', async ({ pa
   )
   current = { ...base, user: { ...base.user, nickname: 'SSO 新昵称 🎵' } }
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await expect(page.locator('.account-nickname')).toHaveText('SSO 新昵称 🎵')
+  await expect(page.locator('[data-testid="account-nickname"]')).toHaveText('SSO 新昵称 🎵')
   await expect(page.getByLabel('昵称', { exact: true })).toHaveValue('SSO 新昵称 🎵')
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
