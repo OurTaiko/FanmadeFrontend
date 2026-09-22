@@ -164,7 +164,7 @@ for (const replaceAudio of [false, true]) {
     ])
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Replacement preview' })).toBeVisible()
-    await expect(page.locator('.detail-facts')).toContainText('A | B')
+    await expect(page.locator('[data-testid="detail-facts"]')).toContainText('A | B')
     expect(errors).toEqual([])
   })
 }

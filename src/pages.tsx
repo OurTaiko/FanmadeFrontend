@@ -1,23 +1,28 @@
-import { useEffect, useState } from 'react'
+import { DialogClose } from '@/components/ui/dialog'
+import { ChartCover } from '@/components/chart-cover'
+import { AudioPlayer } from '@/components/audio-player'
+import { ChoiceSelect } from '@/components/choice-select'
+import { buttonVariants, Button } from '@/components/ui/button'
+import { SearchInput } from '@/components/search-input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowLeft,
-  ArrowRight,
-  Download,
-  FileMusic,
-  Search,
-  SlidersHorizontal,
-  Trash2,
-  Upload,
-  Music2,
-  Clock3,
-  UserRound,
-  Disc3,
-  Pencil,
-} from 'lucide-react'
+  ArrowRightIcon as ArrowRight,
+  DownloadSimpleIcon as Download,
+  SlidersHorizontalIcon as SlidersHorizontal,
+  TrashIcon as Trash2,
+  UploadSimpleIcon as Upload,
+  PencilSimpleIcon as Pencil,
+  HeadphonesIcon,
+  ArrowSquareOutIcon,
+  ClockIcon,
+} from '@phosphor-icons/react'
 import { api, jsonRequest, resource } from './api'
 import type { Chart, ChartList } from './api'
-import { ChartCard, Cover, DifficultyBadges, Notice, courseNames } from './components'
+import { ChartCard, DifficultyBadges, Notice, courseNames } from './components'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
@@ -32,7 +37,22 @@ export function Library({ mine = false }: { mine?: boolean }) {
   const [data, setData] = useState<ChartList | null>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState(params.get('q') || '')
+  const [searchPending, setSearchPending] = useState(false)
+  const search = useCallback(
+    (query: string) => {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current)
+          if (query) next.set('q', query)
+          else next.delete('q')
+          next.set('page', '1')
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setParams],
+  )
   const q = params.get('q') || '',
     course = params.get('course') || '',
     page = Math.max(1, Number(params.get('page')) || 1)
@@ -56,12 +76,11 @@ export function Library({ mine = false }: { mine?: boolean }) {
   }, [mine, user, q, course, page])
   if (mine && !user)
     return (
-      <div className="empty">
-        <FolderIcon />
-        <h1>你的作品，从这里开始</h1>
+      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">你的作品，从这里开始</h1>
         <p>{authLoading ? '正在读取账号…' : '登录后查看并管理你发布的谱面。'}</p>
         {!authLoading && (
-          <Link className="button primary" to="/login">
+          <Link className={buttonVariants({ variant: 'default', size: 'default' })} to="/login">
             前往登录
             <ArrowRight size={16} />
           </Link>
@@ -71,108 +90,104 @@ export function Library({ mine = false }: { mine?: boolean }) {
   const update = (value: Record<string, string>) => setParams({ q, course, page: '1', ...value })
   return (
     <>
-      <div className="page-heading">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
-          <div className="eyebrow">{mine ? 'MY COLLECTION' : 'CHART EXPLORER'}</div>
-          <h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {mine ? '我的作品' : '发现好谱。'}
-            <span className="title-dot" />
           </h1>
           <p>
             {mine ? '管理你的投稿，把下一份灵感变成节拍。' : '寻找喜欢的节奏，听见谱师的灵感。'}
           </p>
         </div>
-        <Link className="button primary" to="/upload">
+        <Link className={buttonVariants({ variant: 'default', size: 'default' })} to="/upload">
           <Upload size={17} />
           发布谱面
         </Link>
       </div>
-      <form
-        className="filterbar"
-        onSubmit={(e) => {
-          e.preventDefault()
-          update({ q: query })
-        }}
+      <div
+        role="search"
+        aria-label="搜索和筛选谱面"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
       >
-        <div className="search-box">
-          <Search size={19} />
-          <input
-            aria-label="搜索谱面"
-            placeholder="搜索曲名、谱师或上传者…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button type="submit">搜索</button>
-        </div>
-        <label className="filter-select">
-          <SlidersHorizontal size={16} />
-          <select
-            aria-label="筛选难度"
-            value={course}
-            onChange={(e) => update({ course: e.target.value })}
-          >
-            <option value="">全部难度</option>
-            {Object.entries(courseNames).map(([key, name]) => (
-              <option key={key} value={key}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </form>
-      <div className="section-heading">
-        <h2>
-          {q ? `“${q}” 的搜索结果` : '最新发布'} <span>{data?.total ?? '—'}</span>
+        <SearchInput
+          key={mine ? 'mine' : 'all'}
+          value={q}
+          onSearch={search}
+          onPendingChange={setSearchPending}
+        />
+        <ChoiceSelect
+          label="筛选难度"
+          prefix={
+            <SlidersHorizontal
+              className="size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          }
+          value={course}
+          onValueChange={(value) => update({ course: value })}
+          items={[
+            { value: '', label: '全部难度' },
+            ...Object.entries(courseNames).map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2_span]:text-muted-foreground">
+        <h2 className="text-base font-semibold">
+          {q ? `“${q}” 的搜索结果` : '最新发布'}
+          {!searchPending && !loading && !error && data && <span>{data.total}</span>}
         </h2>
-        <span className="muted">按发布时间排序</span>
+        <span className="text-sm text-muted-foreground">按发布时间排序</span>
       </div>
       {error ? (
         <Notice>{error}</Notice>
       ) : loading ? (
-        <div className="chart-grid" aria-label="正在加载谱面">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="正在加载谱面">
           {[0, 1, 2].map((n) => (
-            <div className="skeleton-card" key={n} />
+            <Skeleton className="h-48 rounded-4xl" key={n} />
           ))}
         </div>
       ) : data?.items.length ? (
         <>
-          <div className="chart-grid">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {data.items.map((chart) => (
               <ChartCard key={chart.id} chart={chart} />
             ))}
           </div>
           {data.total > data.pageSize && (
-            <div className="pagination">
-              <button
-                className="button secondary"
+            <div className="flex flex-wrap items-center justify-center gap-4 py-4 text-sm">
+              <Button
+                variant="outline"
+                size="default"
                 disabled={page <= 1}
                 onClick={() => update({ page: String(page - 1) })}
               >
                 上一页
-              </button>
+              </Button>
               <span>
                 第 {page} / {Math.ceil(data.total / data.pageSize)} 页
               </span>
-              <button
-                className="button secondary"
+              <Button
+                variant="outline"
+                size="default"
                 disabled={page * data.pageSize >= data.total}
                 onClick={() => update({ page: String(page + 1) })}
               >
                 下一页
-              </button>
+              </Button>
             </div>
           )}
         </>
       ) : (
-        <div className="empty">
-          <Disc3 size={42} />
-          <h2>{q || course ? '还没有找到对应谱面' : '第一份节拍，等你来发布'}</h2>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
+          <h2 className="text-base font-semibold">
+            {q || course ? '还没有找到对应谱面' : '第一份节拍，等你来发布'}
+          </h2>
           <p>
             {q || course
               ? '换一个关键词或难度再试试。'
               : '选择一份 TJA 和它引用的 OGG 或 MP3，开始你的投稿。'}
           </p>
-          <Link to="/upload" className="button secondary">
+          <Link to="/upload" className={buttonVariants({ variant: 'outline', size: 'default' })}>
             发布谱面
             <ArrowRight size={16} />
           </Link>
@@ -181,45 +196,48 @@ export function Library({ mine = false }: { mine?: boolean }) {
     </>
   )
 }
-function FolderIcon() {
-  return <FileMusic size={42} />
-}
+
 export function Auth({ register = false }: { register?: boolean }) {
   const [params] = useSearchParams()
   const session = useSession()
   const destination = params.get('returnTo') || '/upload'
   return (
-    <div className="auth-wrap">
-      <div className="eyebrow">OURTAIKO ACCOUNT</div>
-      <h1>{register ? '加入这段节奏。' : '欢迎回来。'}</h1>
-      <p className="muted">一个 OurTaiko 账号，连接你的作品与游玩记录。</p>
-      <section className="panel auth-form" aria-label="账号中心登录">
-        <UserRound size={32} aria-hidden="true" />
-        <h2>{register ? '在账号中心创建账号' : '使用 OurTaiko 账号登录'}</h2>
+    <div className="mx-auto max-w-lg space-y-4 py-8">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        {register ? '加入这段节奏。' : '欢迎回来。'}
+      </h1>
+      <p className="text-sm text-muted-foreground">一个 OurTaiko 账号，连接你的作品与游玩记录。</p>
+      <Card
+        className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4 p-6 [&>p]:text-muted-foreground"
+        aria-label="账号中心登录"
+      >
+        <h2 className="text-base font-semibold">
+          {register ? '在账号中心创建账号' : '使用 OurTaiko 账号登录'}
+        </h2>
         <p>登录、昵称和密码由账号中心统一管理。完成登录后会自动返回这里。</p>
         {params.has('error') && <Notice>登录未完成或授权已过期，请重新登录。</Notice>}
         {session.error && <Notice>{session.error}</Notice>}
         <a
-          className="button primary full"
+          className={buttonVariants({ variant: 'default', size: 'default', className: 'w-full' })}
           href={`/api/v1/auth/sso/login?returnTo=${encodeURIComponent(destination)}`}
         >
           前往账号中心登录 <ArrowRight size={17} />
         </a>
         <a
-          className="button secondary full"
+          className={buttonVariants({ variant: 'outline', size: 'default', className: 'w-full' })}
           href="/api/v1/auth/account/register"
           target="_blank"
           rel="noopener noreferrer"
         >
           创建 OurTaiko 账号
         </a>
-        <p className="muted">注册会在新标签页打开。完成后回到此页登录。</p>
+        <p className="text-sm text-muted-foreground">注册会在新标签页打开。完成后回到此页登录。</p>
         {session.user && (
-          <Link className="button secondary" to="/upload">
+          <Link className={buttonVariants({ variant: 'outline', size: 'default' })} to="/upload">
             已登录，继续发布谱面
           </Link>
         )}
-      </section>
+      </Card>
     </div>
   )
 }
@@ -234,12 +252,15 @@ export function Detail() {
     [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [audioOpen, setAudioOpen] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
     setEditing(false)
     setSaved(false)
+    setAudioOpen(false)
+    setConfirm(false)
     api<Chart>(`/charts/${id}`, { signal: controller.signal })
       .then(setChart)
       .catch((e) => {
@@ -263,60 +284,87 @@ export function Detail() {
     }
   }
   if (!chart)
-    return (
-      <>
-        {error ? <Notice>{error}</Notice> : <p className="muted">正在加载谱面…</p>}
-        <Link className="back-link" to="/">
-          返回谱面列表
-        </Link>
-      </>
+    return error ? (
+      <Notice>{error}</Notice>
+    ) : (
+      <p className="text-sm text-muted-foreground">正在加载谱面…</p>
     )
   if (!supportsChart(chart.difficulties)) return <Notice>该谱面类型不受支持。</Notice>
   return (
     <>
-      <Link className="back-link" to="/">
-        <ArrowLeft size={16} />
-        全部谱面
-      </Link>
-      <div className="detail-hero">
-        <Cover chart={chart} large />
-        <div className="detail-intro">
-          <div className="eyebrow">FANMADE CHART</div>
-          <h1>{chart.title}</h1>
-          <p className="subtitle">{chart.subtitle.replace(/^(--|\+\+)/, '')}</p>
-          <CategoryLabels ids={chart.categoryIds} />
-          <div className="detail-facts">
-            <span>
-              <Music2 size={17} />
-              {chart.bpm} BPM
-            </span>
-            <span>
-              <Clock3 size={17} />
-              {Math.floor(chart.duration / 60)}:
-              {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
-            </span>
-            <span>
-              <UserRound size={17} />
-              {chart.maker || chart.uploader}
-            </span>
+      <div className="flex flex-col gap-6 py-2 sm:flex-row sm:items-start sm:gap-8">
+        <ChartCover
+          key={chart.id}
+          chart={chart}
+          onSaved={(coverHash) =>
+            setChart((current) => (current?.id === chart.id ? { ...current, coverHash } : current))
+          }
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{chart.title}</h1>
+          <p className="text-lg text-muted-foreground">
+            {chart.subtitle.replace(/^(--|\+\+)/, '')}
+          </p>
+          <div data-testid="detail-facts" className="[&_li]:flex [&_li]:items-center">
+            <CategoryLabels ids={chart.categoryIds}>
+              <li className="min-w-0 max-w-full">
+                <Badge
+                  variant="outline"
+                  className="min-w-0 max-w-full gap-0 p-0"
+                  title={`谱师：${chart.maker || chart.uploader}`}
+                >
+                  <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
+                    谱师
+                  </span>
+                  <span className="truncate px-2">{chart.maker || chart.uploader}</span>
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="outline" className="tabular-nums">
+                  {chart.bpm} BPM
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="outline" className="tabular-nums" title="歌曲时长">
+                  <ClockIcon className="size-3" aria-hidden="true" />
+                  {Math.floor(chart.duration / 60)}:
+                  {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
+                </Badge>
+              </li>
+            </CategoryLabels>
           </div>
-          <DifficultyBadges difficulties={chart.difficulties} />
-          <div className="detail-actions">
-            <a className="button primary" href={resource(chart, 'download')}>
+          <div className="flex flex-wrap gap-2">
+            <a
+              className={buttonVariants({ variant: 'default', size: 'default' })}
+              href={resource(chart, 'download')}
+            >
               <Download size={17} />
               下载谱面包
             </a>
-            <a className="button secondary" href={resource(chart, 'tja')}>
-              TJA 原文件
-            </a>
+            <Button variant="outline" onClick={() => setAudioOpen(true)}>
+              <HeadphonesIcon size={17} aria-hidden="true" />
+              试听
+            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<a href={resource(chart, 'tja')} />}
+            >
+              <ArrowSquareOutIcon size={17} aria-hidden="true" />
+              源文件
+            </Button>
             {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
-              <Link className="button secondary" to={`/charts/${chart.id}/update`}>
+              <Link
+                className={buttonVariants({ variant: 'outline', size: 'default' })}
+                to={`/charts/${chart.id}/update`}
+              >
                 更新歌曲与谱面
               </Link>
             )}
             {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
-              <button
-                className="button secondary"
+              <Button
+                variant="outline"
+                size="default"
                 onClick={() => {
                   setSaved(false)
                   setEditing(true)
@@ -324,7 +372,7 @@ export function Detail() {
               >
                 <Pencil size={16} />
                 编辑信息
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -344,33 +392,24 @@ export function Detail() {
           }}
         />
       )}
-      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
-      <div className="detail-columns">
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>听听这段节奏</h2>
-            <span className="muted">
-              {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
-            </span>
+      <div className="chart-information grid gap-8 rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12 dark:bg-card">
+        <section aria-labelledby="chart-description-heading" className="min-w-0 space-y-6">
+          <h2 id="chart-description-heading" className="text-xl font-semibold tracking-tight">
+            谱面介绍
+          </h2>
+          <p className="max-w-[70ch] whitespace-pre-wrap text-sm leading-7 text-muted-foreground wrap-anywhere">
+            {chart.description || '上传者还没有填写说明。'}
+          </p>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">难度一览</h3>
+            <DifficultyBadges difficulties={chart.difficulties} detailed />
           </div>
-          <audio
-            aria-label="音频试听"
-            controls
-            preload="metadata"
-            src={resource(chart, 'audio')}
-            onLoadedMetadata={(e) => {
-              const a = e.currentTarget
-              a.currentTime = Math.max(0, Math.min(chart.demoStart, a.duration - 1))
-            }}
-          />
-          <h2 className="section-spacer">关于这份谱面</h2>
-          <p className="description">{chart.description || '上传者还没有填写说明。'}</p>
-          <h2 className="section-spacer">难度一览</h2>
-          <DifficultyBadges difficulties={chart.difficulties} detailed />
         </section>
-        <aside className="panel">
-          <h2>投稿信息</h2>
-          <dl className="metadata">
+        <section aria-labelledby="chart-submission-heading" className="min-w-0 space-y-6">
+          <h2 id="chart-submission-heading" className="text-xl font-semibold tracking-tight">
+            投稿信息
+          </h2>
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
             <dt>上传者</dt>
             <dd>{chart.uploader}</dd>
             <dt>发布时间</dt>
@@ -385,11 +424,16 @@ export function Detail() {
             <dd>{chart.encoding.toUpperCase()}</dd>
           </dl>
           {session.user?.id === chart.ownerId && (
-            <div className="delete-area">
-              <button className="button ghost danger-text" onClick={() => setConfirm(true)}>
+            <div className="border-t pt-4">
+              <Button
+                variant="ghost"
+                size="default"
+                className="text-destructive"
+                onClick={() => setConfirm(true)}
+              >
                 <Trash2 size={15} />
                 删除作品
-              </button>
+              </Button>
               {confirm && (
                 <Modal
                   title="删除作品？"
@@ -397,22 +441,21 @@ export function Detail() {
                   onDismiss={() => setConfirm(false)}
                   actions={
                     <>
-                      <button
-                        type="button"
-                        className="button secondary"
+                      <DialogClose
+                        render={<Button type="button" variant="outline" size="default" />}
                         disabled={busy}
-                        onClick={() => setConfirm(false)}
                       >
                         取消
-                      </button>
-                      <button
+                      </DialogClose>
+                      <Button
                         type="button"
-                        className="button danger"
+                        variant="destructive"
+                        size="default"
                         disabled={busy}
                         onClick={remove}
                       >
                         {busy ? '删除中…' : '确认删除'}
-                      </button>
+                      </Button>
                     </>
                   }
                 >
@@ -421,8 +464,17 @@ export function Detail() {
               )}
             </div>
           )}
-        </aside>
+        </section>
       </div>
+      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
+      {audioOpen && (
+        <Modal title="试听" onDismiss={() => setAudioOpen(false)} actions={null}>
+          <p className="text-sm text-muted-foreground">
+            {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
+          </p>
+          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
+        </Modal>
+      )}
     </>
   )
 }

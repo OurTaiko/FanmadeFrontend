@@ -1,15 +1,31 @@
+import { DialogClose } from '@/components/ui/dialog'
+import { AudioPlayer } from '@/components/audio-player'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
+import { Progress } from '@/components/ui/progress'
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
-  ArrowRight,
-  AudioLines,
-  Check,
-  FileMusic,
-  LoaderCircle,
-  Upload,
-} from 'lucide-react'
+  ArrowRightIcon as ArrowRight,
+  WaveformIcon as AudioLines,
+  FileAudioIcon as FileMusic,
+  CheckIcon as Check,
+  CircleNotchIcon as LoaderCircle,
+  UploadSimpleIcon as Upload,
+} from '@phosphor-icons/react'
+import { CoverPicker } from '@/components/cover-picker'
 import { CategoryPicker } from './categories'
 import { api, uploadChart } from './api'
 import type { Chart } from './api'
@@ -45,20 +61,10 @@ export function UpdatePage() {
       })
     return () => controller.abort()
   }, [id])
-  if (error)
-    return (
-      <>
-        <Link to={`/charts/${id}`}>返回歌曲</Link>
-        <Notice>{error}</Notice>
-      </>
-    )
+  if (error) return <Notice>{error}</Notice>
   if (!chart || session.loading) return <p role="status">正在加载歌曲…</p>
   if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
-    return (
-      <p>
-        只有上传者或管理员可以更新歌曲。<Link to={`/charts/${id}`}>返回歌曲</Link>
-      </p>
-    )
+    return <p>只有上传者或管理员可以更新歌曲。</p>
   return <UploadPage key={chart.versionId} existing={chart} />
 }
 
@@ -68,6 +74,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
     navigate = useNavigate()
   const [tja, setTja] = useState<File | null>(null),
     [audio, setAudio] = useState<File | null>(null)
+  const [cover, setCover] = useState<File | null>(null)
   const [metadata, setMetadata] = useState<PreparedTja | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
@@ -160,6 +167,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       const form = new FormData()
       form.append('tja', prepared.file)
       if (audio) form.append('audio', audio)
+      if (cover && !existing) form.append('cover', cover)
       if (existing) {
         form.append('expectedVersionId', existing.versionId)
         form.append('confirmReset', 'true')
@@ -192,16 +200,10 @@ export function UploadPage({ existing }: { existing?: Chart }) {
   }
   return (
     <>
-      <Link className="back-link" to={existing ? `/charts/${existing.id}` : '/'}>
-        <ArrowLeft size={16} />
-        {existing ? '返回歌曲' : '返回发现'}
-      </Link>
-      <div className="page-heading">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
         <div>
-          <div className="eyebrow">{existing ? 'UPDATE YOUR CHART' : 'SHARE YOUR RHYTHM'}</div>
-          <h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {existing ? '更新歌曲与谱面' : '发布你的谱面'}
-            <span className="title-dot" />
           </h1>
           <p>
             {existing
@@ -216,8 +218,11 @@ export function UploadPage({ existing }: { existing?: Chart }) {
         </Notice>
       )}
       {existing && (
-        <section className="panel replacement-warning" aria-label="更新须知">
-          <h2>更新将清空全部旧成绩</h2>
+        <Card
+          className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-3 border-destructive/30 [&>h2]:text-destructive [&>p]:text-sm [&>p]:leading-relaxed"
+          aria-label="更新须知"
+        >
+          <h2 className="text-base font-semibold">更新将清空全部旧成绩</h2>
           <p>
             新 TJA
             将替换整首歌曲的谱面。所有玩家在这首歌上的成绩、排行榜记录和旧文件都会删除，即使某个难度没有变化也不继承成绩。
@@ -226,29 +231,37 @@ export function UploadPage({ existing }: { existing?: Chart }) {
             歌曲地址保留，名称和副标题以新 TJA
             为准。未选择新音频时沿用当前音频。只有新文件校验并保存成功后才会删除旧数据。
           </p>
-        </section>
+        </Card>
       )}
-      <form onSubmit={submit} className="upload-layout">
+      <form
+        onSubmit={submit}
+        className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] [&>div]:space-y-6 [&>aside]:space-y-3"
+      >
         <div>
-          <section className="panel upload-panel">
-            <div className="panel-heading">
-              <h2>
-                <span className="step">01</span>选择文件
-              </h2>
-              <span className="muted">
+          <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">选择文件</h2>
+              <span className="text-sm text-muted-foreground">
                 {existing ? '新 TJA 必选，音频可沿用' : '两个文件，缺一不可'}
               </span>
             </div>
-            <div className="file-drop" onDragOver={(e) => e.preventDefault()} onDrop={drop}>
+            <div
+              className="flex flex-col items-center gap-2 rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground [&>strong]:text-foreground"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={drop}
+            >
               <Upload size={26} />
               <strong>把谱面与音频拖到这里</strong>
               <span>或点击下方选择文件</span>
             </div>
-            <div className="file-inputs">
+            <div className="grid gap-4 sm:grid-cols-2">
               {(['tja', 'audio'] as const).map((kind) => {
                 const file = kind === 'tja' ? tja : audio
                 return (
-                  <label className={`file-picker ${file ? 'selected' : ''}`} key={kind}>
+                  <Label
+                    className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border p-4 [&>span]:w-full [&_small]:mt-1 [&_small]:block [&_small]:truncate [&_small]:text-muted-foreground"
+                    key={kind}
+                  >
                     {kind === 'tja' ? <FileMusic size={24} /> : <AudioLines size={24} />}
                     <span>
                       <b>{kind === 'tja' ? 'TJA 谱面' : 'OGG / MP3 音频'}</b>
@@ -262,22 +275,27 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                               : '.ogg / .mp3 · 最大 100 MiB'}
                       </small>
                     </span>
-                    {file ? <Check size={18} /> : <span className="choose-label">选择</span>}
-                    <input
+                    {file ? (
+                      <Check size={18} />
+                    ) : (
+                      <span className="text-xs text-muted-foreground">选择</span>
+                    )}
+                    <Input
                       type="file"
                       aria-label={kind === 'tja' ? '选择 TJA 谱面' : '选择 OGG 或 MP3 音频'}
                       accept={kind === 'tja' ? '.tja' : '.ogg,.mp3'}
                       disabled={busy}
                       onChange={(e) => choose(kind, e)}
                     />
-                  </label>
+                  </Label>
                 )
               })}
             </div>
             {existing && audio && (
-              <button
+              <Button
                 type="button"
-                className="button ghost"
+                variant="ghost"
+                size="default"
                 disabled={busy}
                 onClick={() => {
                   reset()
@@ -285,7 +303,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 }}
               >
                 沿用当前音频 {existing.audioName}
-              </button>
+              </Button>
             )}
             {validationError && <Notice title="文件校验未通过">{validationError}</Notice>}
             {metadata && (
@@ -294,8 +312,21 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 title="本地校验通过"
               >{`已自动识别为 ${metadata.sourceEncoding}，上传文件统一使用 UTF-8。WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
             )}
-          </section>
-          <section className="panel description-panel">
+          </Card>
+          {!existing && (
+            <Card className="min-w-0 gap-4 rounded-2xl p-6 shadow-none ring-0">
+              <h2 className="text-base font-semibold">歌曲封面</h2>
+              <CoverPicker
+                file={cover}
+                disabled={busy}
+                onChange={(file) => {
+                  setCover(file)
+                  requestKey.current = createRequestKey()
+                }}
+              />
+            </Card>
+          )}
+          <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
             <CategoryPicker
               value={categoryIds}
               disabled={busy}
@@ -304,32 +335,32 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 requestKey.current = createRequestKey()
               }}
             />
-          </section>
+          </Card>
           {metadata && (
-            <section className="panel maker-panel">
-              <h2>难度与制作者</h2>
-              <p className="muted">
+            <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
+              <h2 className="text-base font-semibold">难度与制作者</h2>
+              <p className="text-sm text-muted-foreground">
                 {metadata.maker
                   ? '已用谱面中的 MAKER 填入默认署名，你可以分别修改。'
                   : '谱面未填写 MAKER，你可以分别填写各难度的制作者。'}
               </p>
-              <table className="maker-table">
-                <thead>
-                  <tr>
-                    <th scope="col">难度</th>
-                    <th scope="col">制作者</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead scope="col">难度</TableHead>
+                    <TableHead scope="col">制作者</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {metadata.difficulties.map((d) => (
-                    <tr key={d.blockIndex}>
-                      <th scope="row">
+                    <TableRow key={d.blockIndex}>
+                      <TableHead scope="row">
                         {isSupportedCourse(d.course) ? courseNames[d.course] : d.course} ·{' '}
                         {d.course} ★{d.level}
                         {d.player && ` · ${d.player}`} <small>#{d.blockIndex + 1}</small>
-                      </th>
-                      <td>
-                        <input
+                      </TableHead>
+                      <TableCell>
+                        <Input
                           aria-label={`${d.course}${d.player ? ` ${d.player}` : ''} 制作者 #${d.blockIndex + 1}`}
                           value={d.maker}
                           maxLength={500}
@@ -349,21 +380,22 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                             requestKey.current = createRequestKey()
                           }}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </section>
+                </TableBody>
+              </Table>
+            </Card>
           )}
-          <section className="panel description-panel">
-            <h2>
-              <span className="step">02</span>写下投稿说明<span className="optional">选填</span>
+          <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
+            <h2 className="text-base font-semibold">
+              写下投稿说明
+              <span className="ml-2 text-xs font-normal text-muted-foreground">选填</span>
             </h2>
-            <label className="sr-only" htmlFor="description">
+            <Label className="sr-only" htmlFor="description">
               投稿说明
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id="description"
               rows={5}
               maxLength={1000}
@@ -375,28 +407,29 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 requestKey.current = createRequestKey()
               }}
             />
-            <span className="character-count">{description.length} / 1000</span>
-          </section>
+            <span className="text-right text-xs text-muted-foreground">
+              {description.length} / 1000
+            </span>
+          </Card>
         </div>
         <aside>
-          <section className="panel preview-panel">
-            <div className="panel-heading">
-              <h2>{existing ? '更新预览' : '投稿预览'}</h2>
-              <span className="preview-tag">PREVIEW</span>
+          <Card
+            data-testid="preview-panel"
+            className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">{existing ? '更新预览' : '投稿预览'}</h2>
             </div>
             {metadata ? (
               <>
-                <div className="preview-art">
-                  <AudioLines size={44} />
-                  <span>{metadata.bpm} BPM</span>
-                </div>
-                <h3>{metadata.title}</h3>
-                <p className="muted">{metadata.subtitle.replace(/^(--|\+\+)/, '') || '太鼓谱面'}</p>
+                <p className="text-sm text-muted-foreground">{metadata.bpm} BPM</p>
+                <h3 className="text-base font-medium">{metadata.title}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {metadata.subtitle.replace(/^(--|\+\+)/, '') || '太鼓谱面'}
+                </p>
                 <DifficultyBadges difficulties={metadata.difficulties} />
-                {audioUrl && (
-                  <audio controls aria-label="本地音频试听" src={audioUrl} preload="metadata" />
-                )}
-                <dl className="metadata compact">
+                {audioUrl && <AudioPlayer label="本地音频试听" src={audioUrl} />}
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere mt-4">
                   <dt>谱师</dt>
                   <dd>
                     {[
@@ -408,8 +441,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 </dl>
               </>
             ) : (
-              <div className="preview-empty">
-                <FileMusic size={40} />
+              <div className="flex min-h-32 items-center justify-center text-center text-sm text-muted-foreground">
                 <p>
                   谱面信息将在校验通过后
                   <br />
@@ -417,13 +449,15 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 </p>
               </div>
             )}
-            <div className="submit-area">
-              <button
+            <div className="space-y-3 border-t pt-4 [&>p]:text-xs [&>p]:leading-relaxed [&>p]:text-muted-foreground">
+              <Button
                 type="submit"
-                className="button primary full"
+                variant="default"
+                size="default"
+                className="w-full"
                 disabled={!metadata || validating || busy || !session.user}
               >
-                {busy ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}{' '}
+                {busy ? <LoaderCircle className="animate-spin" size={18} /> : <Upload size={18} />}{' '}
                 {busy
                   ? '正在保存…'
                   : validating
@@ -432,24 +466,25 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                       ? '更新歌曲与谱面'
                       : '发布谱面'}
                 {!busy && <ArrowRight size={17} />}
-              </button>
+              </Button>
               {busy && (
                 <Modal
                   title={existing ? '正在更新歌曲' : '正在发布谱面'}
                   busy
                   onDismiss={() => {}}
                   actions={
-                    <button
+                    <Button
                       type="button"
-                      className="button secondary"
+                      variant="outline"
+                      size="default"
                       onClick={() => controller.current?.abort()}
                     >
                       取消上传
-                    </button>
+                    </Button>
                   }
                 >
-                  <div className="upload-progress" role="status">
-                    <progress max={100} value={progress} />
+                  <div className="space-y-3" role="status">
+                    <Progress aria-label="文件上传进度" max={100} value={progress} />
                     <span>
                       {progress < 100 ? `正在上传 ${progress}%` : '上传完成，正在校验并保存…'}
                     </span>
@@ -462,10 +497,12 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                   : '发布后，其他人可以浏览、试听并下载你的作品。'}
               </p>
             </div>
-          </section>
-          <button
+          </Card>
+          <Button
             type="button"
-            className="button ghost full"
+            variant="ghost"
+            size="default"
+            className="w-full"
             onClick={() =>
               notify(
                 'TJA 中的 WAVE 文件名必须与所选音频一致，包括大小写。音频支持 OGG / MP3，最大 100 MiB；TJA 最大 2 MiB。服务器会再次校验文件。',
@@ -475,7 +512,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
             }
           >
             查看上传规则
-          </button>
+          </Button>
         </aside>
       </form>
       {confirming && existing && (
@@ -485,16 +522,12 @@ export function UploadPage({ existing }: { existing?: Chart }) {
           onDismiss={() => setConfirming(false)}
           actions={
             <>
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setConfirming(false)}
-              >
+              <DialogClose render={<Button type="button" variant="outline" size="default" />}>
                 取消
-              </button>
-              <button type="button" className="button primary" onClick={() => void save()}>
+              </DialogClose>
+              <Button type="button" variant="default" size="default" onClick={() => void save()}>
                 确认替换并清空
-              </button>
+              </Button>
             </>
           }
         >

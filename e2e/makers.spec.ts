@@ -1,3 +1,4 @@
+import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import type { Chart } from '../src/api'
@@ -89,7 +90,7 @@ test('upload maker defaults, individual edits, submitted mapping and per-difficu
   for (const [i, course] of ['Hard', 'Oni', 'Edit'].entries())
     await expect(page.getByLabel(`${course} 制作者 #${i + 1}`)).toHaveValue('A')
   await page.getByLabel('Oni 制作者 #2').fill('B')
-  await expect(page.locator('.preview-panel dd').first()).toHaveText('A | B')
+  await expect(page.locator('[data-testid="preview-panel"] dd').first()).toHaveText('A | B')
   await page.screenshot({ path: 'test-results/makers-upload-desktop.png', fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
   await expect
@@ -104,11 +105,11 @@ test('upload maker defaults, individual edits, submitted mapping and per-difficu
     { blockIndex: 1, maker: 'B' },
     { blockIndex: 2, maker: 'A' },
   ])
-  await expect(page.locator('.detail-facts')).toContainText('A | B')
-  await expect(page.locator('.difficulty-makers')).toHaveText('魔王 谱师B')
+  await expect(page.locator('[data-testid="detail-facts"]')).toContainText('A | B')
+  await expect(page.locator('[data-testid="difficulty-makers"]')).toHaveText('魔王 谱师B')
   for (const course of ['Hard', 'Edit']) {
-    await page.getByLabel('选择难度', { exact: true }).selectOption(course)
-    await expect(page.locator('.difficulty-makers dd')).toHaveText('A')
+    await selectValue(page, '选择难度', course)
+    await expect(page.locator('[data-testid="difficulty-makers"] dd')).toHaveText('A')
   }
   await page.screenshot({ path: 'test-results/makers-detail-mobile.png', fullPage: true })
   expect(errors).toEqual([])

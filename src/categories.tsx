@@ -1,3 +1,7 @@
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api } from './api'
@@ -33,14 +37,22 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function CategoryLabels({ ids = [] }: { ids?: string[] }) {
+export function CategoryLabels({ ids = [], children }: { ids?: string[]; children?: ReactNode }) {
   const { items } = useContext(CategoryContext)
-  if (ids.length === 0) return null
+  if (ids.length === 0 && !children) return null
   const uniqueIds = [...new Set(ids)]
   return (
-    <ul className="category-labels" aria-label="所属分类">
+    <ul
+      className="flex min-w-0 flex-wrap items-center gap-2"
+      aria-label={children ? '谱面信息' : '所属分类'}
+    >
+      {children}
       {uniqueIds.map((id) => (
-        <li key={id}>{items?.find((category) => category.id === id)?.title ?? id}</li>
+        <li key={id}>
+          <Badge variant="outline">
+            {items?.find((category) => category.id === id)?.title ?? id}
+          </Badge>
+        </li>
       ))}
     </ul>
   )
@@ -57,37 +69,40 @@ export function CategoryPicker({
 }) {
   const { items, error, retry } = useContext(CategoryContext)
   return (
-    <fieldset className="category-picker" disabled={disabled}>
+    <fieldset
+      className="min-w-0 space-y-3 [&>legend]:mb-2 [&>legend]:text-sm [&>legend]:font-medium"
+      disabled={disabled}
+    >
       <legend>谱面分类</legend>
-      <p className="muted">可选择多个分类；未选择时归入 Variety。</p>
+      <p className="text-sm text-muted-foreground">可选择多个分类；未选择时归入 Variety。</p>
       {error ? (
-        <div role="alert" className="category-error">
+        <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
           <span>分类加载失败：{error}</span>
-          <button type="button" className="button secondary small" onClick={retry}>
+          <Button type="button" variant="outline" size="sm" onClick={retry}>
             重试加载分类
-          </button>
+          </Button>
         </div>
       ) : items === null ? (
-        <p role="status" className="muted">
+        <p role="status" className="text-sm text-muted-foreground">
           正在加载分类…
         </p>
       ) : (
-        <div className="category-options">
+        <div className="flex flex-wrap gap-x-6 gap-y-4">
           {items.map((category) => (
-            <label key={category.id} className="category-option">
-              <input
-                type="checkbox"
+            <Label key={category.id} className="inline-flex items-center gap-2 text-sm">
+              <Checkbox
+                disabled={disabled}
                 checked={value.includes(category.id)}
-                onChange={(e) => {
+                onCheckedChange={(checked) => {
                   onChange(
-                    e.target.checked
+                    checked
                       ? [...value, category.id].sort()
                       : value.filter((id) => id !== category.id),
                   )
                 }}
               />
               <span>{category.title}</span>
-            </label>
+            </Label>
           ))}
         </div>
       )}
