@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   Select,
   SelectContent,
@@ -12,12 +13,14 @@ export function ChoiceSelect({
   onValueChange,
   items,
   disabled = false,
+  prefix,
 }: {
   label: string
   value: string
   onValueChange: (value: string) => void
   items: { value: string; label: string }[]
   disabled?: boolean
+  prefix?: ReactNode
 }) {
   return (
     <Select
@@ -29,9 +32,10 @@ export function ChoiceSelect({
       disabled={disabled}
     >
       <SelectTrigger aria-label={label} data-value={value} className="min-w-32 max-w-full">
+        {prefix}
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={prefix ? '[&_[data-slot=select-item]]:pl-8.5' : undefined}>
         {items.map((item) => (
           <SelectItem key={item.value} value={item.value} data-value={item.value}>
             {item.label}
