@@ -1,3 +1,4 @@
+import { DialogClose } from '@/components/ui/dialog'
 import { AudioPlayer } from '@/components/audio-player'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -505,14 +506,11 @@ export function UploadPage({ existing }: { existing?: Chart }) {
           onDismiss={() => setConfirming(false)}
           actions={
             <>
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                onClick={() => setConfirming(false)}
+              <DialogClose
+                render={<Button type="button" variant="outline" size="default" />}
               >
                 取消
-              </Button>
+              </DialogClose>
               <Button type="button" variant="default" size="default" onClick={() => void save()}>
                 确认替换并清空
               </Button>

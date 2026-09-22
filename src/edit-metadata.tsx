@@ -1,3 +1,4 @@
+import { DialogClose } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -204,15 +205,12 @@ export function EditMetadata({
           <span className="text-sm text-muted-foreground">
             {busy ? '正在保存…' : changed ? '有尚未保存的修改' : '修改后即可保存'}
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
+          <DialogClose
+            render={<Button type="button" variant="outline" size="default" />}
             disabled={busy}
-            onClick={onDismiss}
           >
             取消
-          </Button>
+          </DialogClose>
           <Button type="submit" variant="default" size="default" disabled={busy || !changed}>
             {busy ? '保存中…' : '保存修改'}
           </Button>

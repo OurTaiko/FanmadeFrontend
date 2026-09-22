@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -41,13 +42,14 @@ export function Modal({
   const [previousFocus] = useState(() => document.activeElement as HTMLElement | null)
   return (
     <Dialog
-      open
-      disablePointerDismissal
-      onOpenChange={(open, details) => {
+      defaultOpen
+      disablePointerDismissal={busy}
+      onOpenChange={(_open, details) => {
         if (busy) {
           details.cancel()
-          return
         }
+      }}
+      onOpenChangeComplete={(open) => {
         if (!open) onDismiss()
       }}
     >
@@ -67,16 +69,13 @@ export function Modal({
       >
         <DialogHeader className="flex-row items-center justify-between gap-4">
           <DialogTitle>{title}</DialogTitle>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
+          <DialogClose
+            render={<Button type="button" variant="ghost" size="icon-sm" />}
             aria-label="关闭提示"
             disabled={busy}
-            onClick={onDismiss}
           >
             <X />
-          </Button>
+          </DialogClose>
         </DialogHeader>
         <div id={descriptionId} className="space-y-4 text-sm leading-relaxed wrap-anywhere">
           {children}
@@ -84,9 +83,9 @@ export function Modal({
         {actions !== null && (
           <DialogFooter>
             {actions ?? (
-              <Button type="button" onClick={onDismiss}>
+              <DialogClose render={<Button type="button" />} disabled={busy}>
                 知道了
-              </Button>
+              </DialogClose>
             )}
           </DialogFooter>
         )}
