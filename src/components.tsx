@@ -6,6 +6,7 @@ import {
   SignOutIcon as LogOut,
   UserIcon as UserRound,
   ListIcon as Menu,
+  StarIcon,
 } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Notice } from './notifications'
@@ -30,6 +31,14 @@ import pageBackground from './assets/page-background.webp'
 export { courseNames } from './courses'
 export { Notice } from './notifications'
 
+const difficultyColors = {
+  Easy: 'bg-orange-100 text-orange-800 dark:bg-[#493128] dark:text-[#f7bb78]',
+  Normal: 'bg-green-100 text-green-800 dark:bg-[#263e32] dark:text-[#93d5a6]',
+  Hard: 'bg-yellow-100 text-yellow-800 dark:bg-[#393a21] dark:text-[#d7d887]',
+  Oni: 'bg-purple-100 text-purple-800 dark:bg-[#3f2948] dark:text-[#deb0ed]',
+  Edit: 'bg-rose-100 text-rose-800 dark:bg-[#462733] dark:text-[#f19aae]',
+}
+
 export function DifficultyBadges({
   difficulties,
   detailed = false,
@@ -46,10 +55,20 @@ export function DifficultyBadges({
   return (
     <div className="flex flex-wrap gap-2">
       {items.map((d) => (
-        <Badge variant="secondary" key={d.blockIndex}>
+        <Badge
+          variant="secondary"
+          className={isSupportedCourse(d.course) ? difficultyColors[d.course] : undefined}
+          key={d.blockIndex}
+        >
           {isSupportedCourse(d.course) ? courseNames[d.course] : ''}
           {detailed && d.player ? ` ${d.player}` : ''}
-          <span className="tabular-nums">★ {d.level}</span>
+          <span
+            className="inline-flex items-center gap-1 tabular-nums"
+            aria-label={`${d.level} 星`}
+          >
+            <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+            {d.level}
+          </span>
         </Badge>
       ))}
     </div>
@@ -64,20 +83,39 @@ export function ChartCard({ chart }: { chart: Chart }) {
       data-testid="chart-card"
       to={`/charts/${chart.id}`}
     >
-      <Card className="h-full shadow-none ring-border transition-colors hover:bg-muted/40">
-        <CardContent className="flex h-full flex-col gap-4">
-          <div className="space-y-1">
-            <h3 className="line-clamp-2 text-lg font-semibold wrap-anywhere">{chart.title}</h3>
-            <p className="line-clamp-1 text-sm text-muted-foreground">
+      <Card size="sm" className="h-full shadow-none ring-border transition-colors hover:bg-muted/40">
+        <CardContent className="flex h-full flex-col gap-3">
+          <div className="min-w-0 space-y-0.5">
+            <h3 className="truncate text-lg font-semibold" title={chart.title}>
+              {chart.title}
+            </h3>
+            <p
+              className="truncate text-sm text-muted-foreground"
+              title={chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
+            >
               {chart.subtitle.replace(/^(--|\+\+)/, '') || '太鼓自制谱'}
             </p>
           </div>
-          <CategoryLabels ids={chart.categoryIds} />
+          <CategoryLabels ids={chart.categoryIds}>
+            <li className="min-w-0 max-w-full">
+              <Badge
+                variant="outline"
+                className="min-w-0 max-w-full gap-0 p-0"
+                title={`谱师：${chart.maker || chart.uploader}`}
+              >
+                <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
+                  谱师
+                </span>
+                <span className="truncate px-2">{chart.maker || chart.uploader}</span>
+              </Badge>
+            </li>
+            <li>
+              <Badge variant="outline" className="tabular-nums">
+                {chart.bpm} BPM
+              </Badge>
+            </li>
+          </CategoryLabels>
           <DifficultyBadges difficulties={chart.difficulties} />
-          <div className="mt-auto flex items-center justify-between gap-4 border-t pt-4 text-xs text-muted-foreground">
-            <span className="shrink-0 tabular-nums">{chart.bpm} BPM</span>
-            <span className="truncate">{chart.maker || chart.uploader}</span>
-          </div>
         </CardContent>
       </Card>
     </Link>

@@ -37,12 +37,16 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function CategoryLabels({ ids = [] }: { ids?: string[] }) {
+export function CategoryLabels({ ids = [], children }: { ids?: string[]; children?: ReactNode }) {
   const { items } = useContext(CategoryContext)
-  if (ids.length === 0) return null
+  if (ids.length === 0 && !children) return null
   const uniqueIds = [...new Set(ids)]
   return (
-    <ul className="flex flex-wrap gap-2" aria-label="所属分类">
+    <ul
+      className="flex min-w-0 flex-wrap items-center gap-2"
+      aria-label={children ? '谱面信息' : '所属分类'}
+    >
+      {children}
       {uniqueIds.map((id) => (
         <li key={id}>
           <Badge variant="outline">
