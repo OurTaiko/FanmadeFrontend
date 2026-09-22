@@ -62,7 +62,7 @@ export function ThemeToggle() {
       <DropdownMenuTrigger
         render={<Button variant="ghost" size="icon" aria-label="切换颜色主题" />}
       >
-        <Icon />
+        <Icon className="size-4" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
