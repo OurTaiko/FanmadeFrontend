@@ -132,3 +132,19 @@
     @apply font-sans;
   }
 }
+
+/* Chart information surfaces follow UIDESIGN without changing other page themes. */
+.chart-information {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
+
+.chart-information [data-slot='badge'] {
+  background: #f5f5f7;
+  color: #424245;
+  border-color: transparent;
+}
+
+.dark .chart-information [data-slot='badge'] {
+  background: var(--muted);
+  color: var(--foreground);
+}
