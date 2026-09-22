@@ -13,7 +13,7 @@ export function ProfilePage() {
   if (session.loading) return <p role="status">正在读取个人资料…</p>
   if (!session.user)
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">登录后查看个人资料</h1>
         {session.error && <Notice>{session.error}</Notice>}
         <p>昵称和密码在 OurTaiko 账号中心管理。</p>

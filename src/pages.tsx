@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { AudioPlayer } from '@/components/audio-player'
 import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
@@ -74,7 +75,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
   }, [mine, user, q, course, page])
   if (mine && !user)
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">你的作品，从这里开始</h1>
         <p>{authLoading ? '正在读取账号…' : '登录后查看并管理你发布的谱面。'}</p>
         {!authLoading && (
@@ -176,7 +177,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
           )}
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
           <h2 className="text-base font-semibold">
             {q || course ? '还没有找到对应谱面' : '第一份节拍，等你来发布'}
           </h2>
@@ -286,19 +287,36 @@ export function Detail() {
         ) : (
           <p className="text-sm text-muted-foreground">正在加载谱面…</p>
         )}
-        <Link
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          to="/"
-        >
-          返回谱面列表
-        </Link>
+        {error && (
+          <Link
+            className={cn(
+              buttonVariants({
+                variant: 'outline',
+                size: 'sm',
+                className:
+                  'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
+              }),
+            )}
+            to="/"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            返回谱面列表
+          </Link>
+        )}
       </>
     )
   if (!supportsChart(chart.difficulties)) return <Notice>该谱面类型不受支持。</Notice>
   return (
     <>
       <Link
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className={cn(
+          buttonVariants({
+            variant: 'outline',
+            size: 'sm',
+            className:
+              'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
+          }),
+        )}
         to="/"
       >
         <ArrowLeft size={16} />

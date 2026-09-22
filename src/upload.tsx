@@ -1,8 +1,9 @@
+import { cn } from '@/lib/utils'
 import { AudioPlayer } from '@/components/audio-player'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Table,
   TableHeader,
@@ -63,16 +64,43 @@ export function UpdatePage() {
   if (error)
     return (
       <>
-        <Link to={`/charts/${id}`}>返回歌曲</Link>
+        <Link
+          className={cn(
+            buttonVariants({
+              variant: 'outline',
+              size: 'sm',
+              className:
+                'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
+            }),
+          )}
+          to={`/charts/${id}`}
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+          返回歌曲
+        </Link>
         <Notice>{error}</Notice>
       </>
     )
   if (!chart || session.loading) return <p role="status">正在加载歌曲…</p>
   if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
     return (
-      <p>
-        只有上传者或管理员可以更新歌曲。<Link to={`/charts/${id}`}>返回歌曲</Link>
-      </p>
+      <div className="space-y-4">
+        <p>只有上传者或管理员可以更新歌曲。</p>
+        <Link
+          className={cn(
+            buttonVariants({
+              variant: 'outline',
+              size: 'sm',
+              className:
+                'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
+            }),
+          )}
+          to={`/charts/${id}`}
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+          返回歌曲
+        </Link>
+      </div>
     )
   return <UploadPage key={chart.versionId} existing={chart} />
 }
@@ -208,7 +236,14 @@ export function UploadPage({ existing }: { existing?: Chart }) {
   return (
     <>
       <Link
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className={cn(
+          buttonVariants({
+            variant: 'outline',
+            size: 'sm',
+            className:
+              'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
+          }),
+        )}
         to={existing ? `/charts/${existing.id}` : '/'}
       >
         <ArrowLeft size={16} />
