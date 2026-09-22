@@ -1,17 +1,15 @@
 import { AudioPlayer } from '@/components/audio-player'
 import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { SearchInput } from '@/components/search-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeftIcon as ArrowLeft,
   ArrowRightIcon as ArrowRight,
   DownloadSimpleIcon as Download,
-  MagnifyingGlassIcon as Search,
   SlidersHorizontalIcon as SlidersHorizontal,
   TrashIcon as Trash2,
   UploadSimpleIcon as Upload,
@@ -37,7 +35,21 @@ export function Library({ mine = false }: { mine?: boolean }) {
   const [data, setData] = useState<ChartList | null>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState(params.get('q') || '')
+  const search = useCallback(
+    (query: string) => {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current)
+          if (query) next.set('q', query)
+          else next.delete('q')
+          next.set('page', '1')
+          return next
+        },
+        { replace: true },
+      )
+    },
+    [setParams],
+  )
   const q = params.get('q') || '',
     course = params.get('course') || '',
     page = Math.max(1, Number(params.get('page')) || 1)
@@ -89,36 +101,28 @@ export function Library({ mine = false }: { mine?: boolean }) {
           发布谱面
         </Link>
       </div>
-      <form
+      <div
+        role="search"
+        aria-label="搜索和筛选谱面"
         className="flex flex-col gap-3 sm:flex-row sm:items-center"
-        onSubmit={(e) => {
-          e.preventDefault()
-          update({ q: query })
-        }}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 [&>svg]:shrink-0 [&>svg]:text-muted-foreground">
-          <Search size={19} />
-          <Input
-            aria-label="搜索谱面"
-            placeholder="搜索曲名、谱师或上传者…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <Button type="submit">搜索</Button>
-        </div>
-        <Label className="flex shrink-0 items-center gap-2">
-          <SlidersHorizontal size={16} />
-          <ChoiceSelect
-            label="筛选难度"
-            value={course}
-            onValueChange={(value) => update({ course: value })}
-            items={[
-              { value: '', label: '全部难度' },
-              ...Object.entries(courseNames).map(([value, label]) => ({ value, label })),
-            ]}
-          />
-        </Label>
-      </form>
+        <SearchInput key={mine ? 'mine' : 'all'} value={q} onSearch={search} />
+        <ChoiceSelect
+          label="筛选难度"
+          prefix={
+            <SlidersHorizontal
+              className="size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          }
+          value={course}
+          onValueChange={(value) => update({ course: value })}
+          items={[
+            { value: '', label: '全部难度' },
+            ...Object.entries(courseNames).map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2_span]:text-muted-foreground">
         <h2 className="text-base font-semibold">
           {q ? `“${q}” 的搜索结果` : '最新发布'} <span>{data?.total ?? '—'}</span>

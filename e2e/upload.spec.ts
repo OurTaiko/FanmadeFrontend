@@ -67,8 +67,10 @@ test('register, reject mismatched ESE audio locally, publish, download, delete a
 test('ESE library search, detail navigation and mobile layout', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.getByRole('textbox', { name: '搜索谱面' }).fill('Natsumatsuri')
-  await page.getByRole('button', { name: '搜索', exact: true }).click()
+  await page.getByRole('searchbox', { name: '搜索谱面' }).fill('Natsumatsuri')
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('q'))
+    .toBe(await page.getByLabel('搜索谱面').inputValue())
   const title = page
     .getByRole('heading', { name: 'Natsumatsuri -New Audio/Chart-', exact: true })
     .first()
