@@ -1,23 +1,24 @@
-import { cn } from '@/lib/utils'
 import { AudioPlayer } from '@/components/audio-player'
 import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/search-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowLeftIcon as ArrowLeft,
   ArrowRightIcon as ArrowRight,
   DownloadSimpleIcon as Download,
   SlidersHorizontalIcon as SlidersHorizontal,
   TrashIcon as Trash2,
   UploadSimpleIcon as Upload,
-  MusicNoteIcon as Music2,
-  ClockIcon as Clock3,
-  UserIcon as UserRound,
   PencilSimpleIcon as Pencil,
+  ArticleIcon,
+  HeadphonesIcon,
+  InfoIcon,
+  ArrowSquareOutIcon,
+  ClockIcon,
 } from '@phosphor-icons/react'
 import { api, jsonRequest, resource } from './api'
 import type { Chart, ChartList } from './api'
@@ -251,12 +252,15 @@ export function Detail() {
     [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [detailPanel, setDetailPanel] = useState<'description' | 'audio' | 'submission' | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
     setEditing(false)
     setSaved(false)
+    setDetailPanel(null)
+    setConfirm(false)
     api<Chart>(`/charts/${id}`, { signal: controller.signal })
       .then(setChart)
       .catch((e) => {
@@ -280,74 +284,48 @@ export function Detail() {
     }
   }
   if (!chart)
-    return (
-      <>
-        {error ? (
-          <Notice>{error}</Notice>
-        ) : (
-          <p className="text-sm text-muted-foreground">正在加载谱面…</p>
-        )}
-        {error && (
-          <Link
-            className={cn(
-              buttonVariants({
-                variant: 'outline',
-                size: 'sm',
-                className:
-                  'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
-              }),
-            )}
-            to="/"
-          >
-            <ArrowLeft size={16} aria-hidden="true" />
-            返回谱面列表
-          </Link>
-        )}
-      </>
+    return error ? (
+      <Notice>{error}</Notice>
+    ) : (
+      <p className="text-sm text-muted-foreground">正在加载谱面…</p>
     )
   if (!supportsChart(chart.difficulties)) return <Notice>该谱面类型不受支持。</Notice>
   return (
     <>
-      <Link
-        className={cn(
-          buttonVariants({
-            variant: 'outline',
-            size: 'sm',
-            className:
-              'border-foreground/30 bg-transparent hover:border-foreground/60 hover:bg-transparent dark:hover:bg-transparent',
-          }),
-        )}
-        to="/"
-      >
-        <ArrowLeft size={16} />
-        全部谱面
-      </Link>
       <div className="py-2">
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{chart.title}</h1>
           <p className="text-lg text-muted-foreground">
             {chart.subtitle.replace(/^(--|\+\+)/, '')}
           </p>
-          <CategoryLabels ids={chart.categoryIds} />
-          <div
-            data-testid="detail-facts"
-            className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground [&>span]:inline-flex [&>span]:items-center [&>span]:gap-2"
-          >
-            <span>
-              <Music2 size={17} />
-              {chart.bpm} BPM
-            </span>
-            <span>
-              <Clock3 size={17} />
-              {Math.floor(chart.duration / 60)}:
-              {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
-            </span>
-            <span>
-              <UserRound size={17} />
-              {chart.maker || chart.uploader}
-            </span>
+          <div data-testid="detail-facts" className="[&_li]:flex [&_li]:items-center">
+            <CategoryLabels ids={chart.categoryIds}>
+              <li className="min-w-0 max-w-full">
+                <Badge
+                  variant="outline"
+                  className="min-w-0 max-w-full gap-0 p-0"
+                  title={`谱师：${chart.maker || chart.uploader}`}
+                >
+                  <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
+                    谱师
+                  </span>
+                  <span className="truncate px-2">{chart.maker || chart.uploader}</span>
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="outline" className="tabular-nums">
+                  {chart.bpm} BPM
+                </Badge>
+              </li>
+              <li>
+                <Badge variant="outline" className="tabular-nums" title="歌曲时长">
+                  <ClockIcon className="size-3" aria-hidden="true" />
+                  {Math.floor(chart.duration / 60)}:
+                  {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
+                </Badge>
+              </li>
+            </CategoryLabels>
           </div>
-          <DifficultyBadges difficulties={chart.difficulties} />
           <div className="flex flex-wrap gap-2">
             <a
               className={buttonVariants({ variant: 'default', size: 'default' })}
@@ -356,12 +334,26 @@ export function Detail() {
               <Download size={17} />
               下载谱面包
             </a>
-            <a
-              className={buttonVariants({ variant: 'outline', size: 'default' })}
-              href={resource(chart, 'tja')}
+            <Button variant="outline" onClick={() => setDetailPanel('description')}>
+              <ArticleIcon size={17} aria-hidden="true" />
+              谱面介绍
+            </Button>
+            <Button variant="outline" onClick={() => setDetailPanel('audio')}>
+              <HeadphonesIcon size={17} aria-hidden="true" />
+              试听
+            </Button>
+            <Button variant="outline" onClick={() => setDetailPanel('submission')}>
+              <InfoIcon size={17} aria-hidden="true" />
+              投稿信息
+            </Button>
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<a href={resource(chart, 'tja')} />}
             >
-              TJA 原文件
-            </a>
+              <ArrowSquareOutIcon size={17} aria-hidden="true" />
+              源文件
+            </Button>
             {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
               <Link
                 className={buttonVariants({ variant: 'outline', size: 'default' })}
@@ -402,24 +394,25 @@ export function Detail() {
         />
       )}
       <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-semibold">听听这段节奏</h2>
-            <span className="text-sm text-muted-foreground">
-              {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
-            </span>
-          </div>
-          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
-          <h2 className="mt-6 text-base font-semibold">关于这份谱面</h2>
+      {detailPanel === 'description' && (
+        <Modal title="谱面介绍" onDismiss={() => setDetailPanel(null)} actions={null}>
           <p className="whitespace-pre-wrap text-sm leading-relaxed wrap-anywhere">
             {chart.description || '上传者还没有填写说明。'}
           </p>
-          <h2 className="mt-6 text-base font-semibold">难度一览</h2>
+          <h3 className="text-base font-semibold">难度一览</h3>
           <DifficultyBadges difficulties={chart.difficulties} detailed />
-        </Card>
-        <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6">
-          <h2 className="text-base font-semibold">投稿信息</h2>
+        </Modal>
+      )}
+      {detailPanel === 'audio' && (
+        <Modal title="试听" onDismiss={() => setDetailPanel(null)} actions={null}>
+          <p className="text-sm text-muted-foreground">
+            {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
+          </p>
+          <AudioPlayer label="音频试听" src={resource(chart, 'audio')} startAt={chart.demoStart} />
+        </Modal>
+      )}
+      {detailPanel === 'submission' && (
+        <Modal title="投稿信息" onDismiss={() => setDetailPanel(null)} actions={null}>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
             <dt>上传者</dt>
             <dd>{chart.uploader}</dd>
@@ -478,8 +471,8 @@ export function Detail() {
               )}
             </div>
           )}
-        </Card>
-      </div>
+        </Modal>
+      )}
     </>
   )
 }
