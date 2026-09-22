@@ -15,6 +15,7 @@ export type Chart = Omit<Metadata, 'difficulties'> & {
     cloudScoreEligible: boolean
   })[]
   id: string
+  coverHash?: string
   categoryIds: string[]
   ownerId: string
   uploader: string

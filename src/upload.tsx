@@ -25,6 +25,7 @@ import {
   CircleNotchIcon as LoaderCircle,
   UploadSimpleIcon as Upload,
 } from '@phosphor-icons/react'
+import { CoverPicker } from '@/components/cover-picker'
 import { CategoryPicker } from './categories'
 import { api, uploadChart } from './api'
 import type { Chart } from './api'
@@ -73,6 +74,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
     navigate = useNavigate()
   const [tja, setTja] = useState<File | null>(null),
     [audio, setAudio] = useState<File | null>(null)
+  const [cover, setCover] = useState<File | null>(null)
   const [metadata, setMetadata] = useState<PreparedTja | null>(null),
     [validating, setValidating] = useState(false),
     [validationError, setValidationError] = useState('')
@@ -165,6 +167,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       const form = new FormData()
       form.append('tja', prepared.file)
       if (audio) form.append('audio', audio)
+      if (cover && !existing) form.append('cover', cover)
       if (existing) {
         form.append('expectedVersionId', existing.versionId)
         form.append('confirmReset', 'true')
@@ -310,6 +313,19 @@ export function UploadPage({ existing }: { existing?: Chart }) {
               >{`已自动识别为 ${metadata.sourceEncoding}，上传文件统一使用 UTF-8。WAVE: ${metadata.wave} 与所选音频一致。`}</Notice>
             )}
           </Card>
+          {!existing && (
+            <Card className="min-w-0 gap-4 rounded-2xl p-6 shadow-none ring-0">
+              <h2 className="text-base font-semibold">歌曲封面</h2>
+              <CoverPicker
+                file={cover}
+                disabled={busy}
+                onChange={(file) => {
+                  setCover(file)
+                  requestKey.current = createRequestKey()
+                }}
+              />
+            </Card>
+          )}
           <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">
             <CategoryPicker
               value={categoryIds}
@@ -506,9 +522,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
           onDismiss={() => setConfirming(false)}
           actions={
             <>
-              <DialogClose
-                render={<Button type="button" variant="outline" size="default" />}
-              >
+              <DialogClose render={<Button type="button" variant="outline" size="default" />}>
                 取消
               </DialogClose>
               <Button type="button" variant="default" size="default" onClick={() => void save()}>
