@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from './theme'
+import pageBackground from './assets/page-background.webp'
 export { courseNames } from './courses'
 export { Notice } from './notifications'
 
@@ -93,17 +94,30 @@ export function Layout() {
     { to: '/upload', label: '发布谱面', icon: Upload },
   ]
   return (
-    <div className="min-h-svh bg-background text-foreground">
+    <div className="relative isolate min-h-svh bg-background text-foreground">
+      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
+        <img
+          src={pageBackground}
+          alt=""
+          className="absolute inset-0 size-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-linear-to-b from-background/55 via-background/75 to-background/95 dark:from-background/80 dark:via-background/90 dark:to-background/95" />
+      </div>
       <a
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-primary focus:p-3 focus:text-primary-foreground"
         href="#main"
       >
         跳到主要内容
       </a>
-      <header className="sticky top-0 z-30 border-b bg-background">
+      <header className="sticky top-0 z-30 border-b bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-          <Link className="shrink-0 text-base font-semibold tracking-tight" to="/">
-            OurTaiko <span className="hidden text-muted-foreground sm:inline">Fanmade</span>
+          <Link className="flex shrink-0 items-baseline gap-2 tracking-tight" to="/">
+            <span className="bg-linear-to-r from-red-500 via-red-400 to-orange-400 bg-clip-text text-lg font-bold text-transparent">
+              OurTaiko
+            </span>
+            <span className="hidden text-base font-normal text-muted-foreground sm:inline">
+              Fanmade
+            </span>
           </Link>
           <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="主要导航">
             {links.map(({ to, label }) => (
