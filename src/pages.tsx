@@ -1,4 +1,5 @@
 import { DialogClose } from '@/components/ui/dialog'
+import { ChartCover } from '@/components/chart-cover'
 import { AudioPlayer } from '@/components/audio-player'
 import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
@@ -291,8 +292,15 @@ export function Detail() {
   if (!supportsChart(chart.difficulties)) return <Notice>该谱面类型不受支持。</Notice>
   return (
     <>
-      <div className="py-2">
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-6 py-2 sm:flex-row sm:items-start sm:gap-8">
+        <ChartCover
+          key={chart.id}
+          chart={chart}
+          onSaved={(coverHash) =>
+            setChart((current) => (current?.id === chart.id ? { ...current, coverHash } : current))
+          }
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{chart.title}</h1>
           <p className="text-lg text-muted-foreground">
             {chart.subtitle.replace(/^(--|\+\+)/, '')}

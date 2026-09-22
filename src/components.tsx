@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Notice } from './notifications'
 import { useSession } from './session-context'
 import type { Chart } from './api'
+import { coverSource } from './cover'
 import { CategoryLabels } from './categories'
 import type { Difficulty } from './tja'
 import { courseNames, isSupportedCourse, supportsChart } from './courses'
@@ -103,6 +104,9 @@ export function DifficultyBadges({
 }
 
 export function ChartCard({ chart }: { chart: Chart }) {
+  const [failedSource, setFailedSource] = useState('')
+  const source = coverSource(chart)
+  const hasCover = !!source && failedSource !== source
   if (!supportsChart(chart.difficulties)) return null
   return (
     <Link
@@ -112,9 +116,22 @@ export function ChartCard({ chart }: { chart: Chart }) {
     >
       <Card
         size="sm"
-        className="h-full rounded-2xl bg-white py-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ring-0 dark:bg-card"
+        className="relative isolate h-full rounded-2xl bg-white py-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ring-0 dark:bg-card"
       >
-        <CardContent className="flex h-full gap-4 pr-0 pl-6">
+        {hasCover && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <img
+              src={source}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
+              onError={() => setFailedSource(source)}
+            />
+            <div className="absolute inset-0 bg-white/80 dark:bg-black/75" />
+          </div>
+        )}
+        <CardContent className="relative flex h-full gap-4 pr-0 pl-6">
           <div className="flex min-w-0 flex-1 flex-col gap-5">
             <div className="min-w-0 space-y-0.5">
               <h3 className="truncate text-lg font-semibold tracking-tight" title={chart.title}>

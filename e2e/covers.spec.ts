@@ -1,0 +1,195 @@
+import { expect, test } from '@playwright/test'
+import sharp from 'sharp'
+import type { Chart } from '../src/api'
+
+const id = 'cover-fixture'
+const source =
+  'TITLE:Cover test\nBPM:120\nWAVE:music.ogg\n' +
+  ['Easy', 'Normal', 'Hard', 'Oni', 'Edit']
+    .map((course, index) => `COURSE:${course}\nLEVEL:${index + 6}\n#START\n1000,\n#END\n`)
+    .join('')
+const makeChart = (): Chart => ({
+  id,
+  versionId: 'version',
+  ownerId: 'owner',
+  uploader: '测试上传者',
+  title: 'Cover test',
+  subtitle: '封面与节奏',
+  maker: '测试谱师',
+  bpm: 120,
+  offset: 0,
+  demoStart: 0,
+  wave: 'music.ogg',
+  description: '谱面介绍始终可见。',
+  createdAt: '2026-09-22T12:00:00Z',
+  duration: 100,
+  encoding: 'utf-8',
+  tjaName: 'chart.tja',
+  audioName: 'music.ogg',
+  tjaHash: 'a'.repeat(64),
+  audioHash: 'b'.repeat(64),
+  audioSize: 100,
+  categoryIds: ['variety'],
+  titleTranslations: {},
+  subtitleTranslations: {},
+  difficulties: ['Easy', 'Normal', 'Hard', 'Oni', 'Edit'].map((course, blockIndex) => ({
+    course,
+    blockIndex,
+    level: blockIndex + 6,
+    player: '',
+    maker: '测试谱师',
+    style: 'Single',
+    cloudScoreEligible: true,
+  })),
+})
+const artwork = Buffer.from(
+  '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#0071e3"/><circle cx="560" cy="220" r="190" fill="#ffb68b"/><circle cx="580" cy="210" r="95" fill="#fff"/><path d="M0 440L800 270V600H0Z" fill="#194368"/></svg>',
+)
+
+test('optional cover upload, owner replacement, failure retention and immediate refresh', async ({
+  page,
+}) => {
+  const png = await sharp(artwork).png().toBuffer()
+  const jpg = await sharp(artwork).jpeg().toBuffer()
+  const webp = await sharp(artwork).webp().toBuffer()
+  let chart = makeChart()
+  let currentUser: string | null = 'owner'
+  let failSave = false
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname
+    if (path === '/api/v1/me')
+      return route.fulfill({
+        json: {
+          user: currentUser
+            ? {
+                id: currentUser,
+                nickname: '测试上传者',
+                username: 'tester',
+                isAdmin: currentUser === 'admin',
+                emailVerified: true,
+              }
+            : null,
+          csrfToken: 'fixture',
+        },
+      })
+    if (path === '/api/v1/categories')
+      return route.fulfill({
+        json: { items: [{ id: 'variety', title: 'Variety', genre: 'VARIETY' }] },
+      })
+    if (path === `/api/v1/charts/${id}/cover` && request.method() === 'PUT') {
+      expect(request.headers()['x-csrf-token']).toBe('fixture')
+      const form = await new Response(request.postDataBuffer(), {
+        headers: { 'Content-Type': request.headers()['content-type'] },
+      }).formData()
+      expect((form.get('cover') as File).name).toBe('replacement.jpg')
+      expect(Buffer.from(await (form.get('cover') as File).arrayBuffer())).toEqual(jpg)
+      if (failSave) return route.fulfill({ status: 503, json: { message: '封面暂时无法保存' } })
+      chart = { ...chart, coverHash: 'new-cover' }
+      return route.fulfill({ json: { coverHash: chart.coverHash } })
+    }
+    if (path === `/api/v1/charts/${id}/cover`)
+      return route.fulfill({ contentType: 'image/webp', body: webp })
+    if (path === '/api/v1/charts' && request.method() === 'POST') {
+      const form = await new Response(request.postDataBuffer(), {
+        headers: { 'Content-Type': request.headers()['content-type'] },
+      }).formData()
+      expect((form.get('cover') as File).name).toBe('cover.png')
+      expect(Buffer.from(await (form.get('cover') as File).arrayBuffer())).toEqual(png)
+      chart = { ...chart, coverHash: 'first-cover' }
+      return route.fulfill({ status: 201, json: chart })
+    }
+    if (path === '/api/v1/charts')
+      return route.fulfill({
+        json: {
+          items: [
+            chart,
+            { ...chart, id: 'coverless', title: '尚未添加封面', coverHash: undefined },
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 12,
+        },
+      })
+    if (path === `/api/v1/charts/${id}`) return route.fulfill({ json: chart })
+    if (path.endsWith('/tja')) return route.fulfill({ body: source })
+    return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 20 } })
+  })
+  await page.goto('/upload')
+  const picker = page.getByLabel('选择 JPG 或 PNG 封面')
+  await picker.setInputFiles({ name: 'bad.svg', mimeType: 'image/svg+xml', buffer: artwork })
+  await expect(page.getByText('封面仅支持 .jpg 或 .png 文件。')).toBeVisible()
+  await picker.setInputFiles({
+    name: 'too-large.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(8 * 1024 * 1024 + 1),
+  })
+  await expect(page.getByText('封面不能为空，且不能超过 8 MiB。')).toBeVisible()
+  await picker.setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: png })
+  await expect(page.getByAltText('待上传的封面预览')).toBeVisible()
+  await page
+    .getByLabel('选择 TJA 谱面')
+    .setInputFiles({ name: 'chart.tja', mimeType: 'text/plain', buffer: Buffer.from(source) })
+  await page.getByLabel('选择 OGG 或 MP3 音频').setInputFiles({
+    name: 'music.ogg',
+    mimeType: 'audio/ogg',
+    buffer: Buffer.from('OggS fixture'),
+  })
+  await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await page.getByRole('button', { name: '发布谱面', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '操作成功' })).toBeVisible()
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await expect(page.getByAltText('Cover test的封面')).toHaveAttribute('src', /first-cover/)
+  await page.getByRole('button', { name: '修改封面', exact: true }).click()
+  await page
+    .getByLabel('选择 JPG 或 PNG 封面')
+    .setInputFiles({ name: 'replacement.jpg', mimeType: 'image/jpeg', buffer: jpg })
+  failSave = true
+  await page.getByRole('button', { name: '保存封面', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveText('封面暂时无法保存')
+  await expect(page.getByAltText('Cover test的封面')).toHaveAttribute('src', /first-cover/)
+  failSave = false
+  await page.getByRole('button', { name: '保存封面', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '修改歌曲封面' })).toHaveCount(0)
+  await expect(page.getByAltText('Cover test的封面')).toHaveAttribute('src', /new-cover/)
+  for (const colorScheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.goto('/')
+      const card = page.getByTestId('chart-card').first()
+      await expect(card.locator('img')).toHaveAttribute('src', /new-cover/)
+      await expect(card.locator('img')).toBeVisible()
+      await card.locator('img').evaluate((img: HTMLImageElement) => img.decode())
+      await expect
+        .poll(() =>
+          card
+            .locator('img')
+            .evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0),
+        )
+        .toBe(true)
+      await expect(card.getByRole('list', { name: '谱面难度' }).locator('li')).toHaveCount(5)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      )
+      await page.screenshot({ path: `/tmp/fanmade-cover-library-${colorScheme}-${width}.png` })
+      await card.click()
+      await expect(page.getByAltText('Cover test的封面')).toBeVisible()
+      await expect(page.getByRole('region', { name: '谱面介绍', exact: true })).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      )
+      await page.screenshot({ path: `/tmp/fanmade-cover-detail-${colorScheme}-${width}.png` })
+    }
+  }
+  for (const user of [null, 'other', 'admin']) {
+    currentUser = user
+    await page.reload()
+    await expect(page.getByAltText('Cover test的封面')).toBeVisible()
+    await expect(page.getByRole('button', { name: '修改封面', exact: true })).toHaveCount(0)
+  }
+  expect(errors).toEqual([])
+})
