@@ -29,7 +29,7 @@ export function CoverPicker({
   }, [file])
   return (
     <div className="min-w-0 space-y-4">
-      <Label htmlFor={id}>{t('messages.chooseJpgOrPngCover')}</Label>
+      <Label htmlFor={id}>{t('messages.chooseJpgPngOrWebpCover')}</Label>
       <p id={`${id}-help`} className="text-sm leading-6 text-muted-foreground">
         {t('messages.optionalUpTo8MibAnd16MegapixelsImagesAreScaledProportionally')}
       </p>
@@ -40,7 +40,7 @@ export function CoverPicker({
             alt={t('messages.selectedCoverPreview')}
             className="max-h-52 max-w-full rounded-xl object-contain"
             onError={() => {
-              setError(t('messages.cannotReadCoverChooseAValidJpgOrPngImage'))
+              setError(t('messages.cannotReadCoverChooseAValidJpgPngOrWebpImage'))
               onChange(null)
               if (input.current) input.current.value = ''
             }}
@@ -65,7 +65,7 @@ export function CoverPicker({
         ref={input}
         id={id}
         type="file"
-        accept=".jpg,.png"
+        accept=".jpg,.png,.webp"
         disabled={disabled}
         aria-describedby={`${id}-help${error ? ` ${id}-error` : ''}`}
         aria-invalid={!!error}

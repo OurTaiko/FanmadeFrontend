@@ -4,7 +4,7 @@ import type { Chart } from './api/types'
 
 export const maxCoverBytes = 8 * 1024 * 1024
 export function coverFileError(file: File): string {
-  if (!/\.(jpg|png)$/i.test(file.name)) return t('messages.coversMustBeJpgOrPngFiles')
+  if (!/\.(jpg|png|webp)$/i.test(file.name)) return t('messages.coversMustBeJpgPngOrWebpFiles')
   if (!file.size || file.size > maxCoverBytes) return t('messages.coverMustNotBeEmptyOrExceed8Mib')
   return ''
 }
