@@ -65,7 +65,7 @@ export function CoverPicker({
         ref={input}
         id={id}
         type="file"
-        accept=".jpg,.png,.webp"
+        accept=".jpg,.jpeg,.png,.webp"
         disabled={disabled}
         aria-describedby={`${id}-help${error ? ` ${id}-error` : ''}`}
         aria-invalid={!!error}

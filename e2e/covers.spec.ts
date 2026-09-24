@@ -46,20 +46,22 @@ const artwork = Buffer.from(
   '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg"><rect width="800" height="600" fill="#0071e3"/><circle cx="560" cy="220" r="190" fill="#ffb68b"/><circle cx="580" cy="210" r="95" fill="#fff"/><path d="M0 440L800 270V600H0Z" fill="#194368"/></svg>',
 )
 
-for (const useWebP of [false, true]) {
-  test(`optional ${useWebP ? 'WebP' : 'PNG/JPG'} cover upload, owner replacement, failure retention and immediate refresh`, async ({
+for (const format of ['PNG/JPG', 'WebP', 'JPEG']) {
+  const useWebP = format === 'WebP'
+  const useJPEG = format === 'JPEG'
+  test(`optional ${format} cover upload, owner replacement, failure retention and immediate refresh`, async ({
     page,
   }) => {
     const png = await sharp(artwork).png().toBuffer()
     const jpg = await sharp(artwork).jpeg().toBuffer()
     const webp = await sharp(artwork).webp().toBuffer()
     const upload = {
-      name: useWebP ? 'cover.webp' : 'cover.png',
-      mimeType: useWebP ? 'image/webp' : 'image/png',
-      buffer: useWebP ? webp : png,
+      name: useWebP ? 'cover.webp' : useJPEG ? 'cover.jpeg' : 'cover.png',
+      mimeType: useWebP ? 'image/webp' : useJPEG ? 'image/jpeg' : 'image/png',
+      buffer: useWebP ? webp : useJPEG ? jpg : png,
     }
     const replacement = {
-      name: useWebP ? 'replacement.WEBP' : 'replacement.jpg',
+      name: useWebP ? 'replacement.WEBP' : useJPEG ? 'replacement.JPEG' : 'replacement.jpg',
       mimeType: useWebP ? 'image/webp' : 'image/jpeg',
       buffer: useWebP ? webp : jpg,
     }
@@ -131,9 +133,9 @@ for (const useWebP of [false, true]) {
       return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 20 } })
     })
     await page.goto('/upload')
-    const picker = page.getByLabel('选择 JPG、PNG 或 WebP 封面')
+    const picker = page.getByLabel('选择 JPG/JPEG、PNG 或 WebP 封面')
     await picker.setInputFiles({ name: 'bad.svg', mimeType: 'image/svg+xml', buffer: artwork })
-    await expect(page.getByText('封面仅支持 .jpg、.png 或 .webp 文件。')).toBeVisible()
+    await expect(page.getByText('封面仅支持 .jpg、.jpeg、.png 或 .webp 文件。')).toBeVisible()
     await picker.setInputFiles({
       name: 'too-large.png',
       mimeType: 'image/png',
@@ -157,7 +159,7 @@ for (const useWebP of [false, true]) {
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     await expect(page.getByAltText('Cover test的封面')).toHaveAttribute('src', /first-cover/)
     await page.getByRole('button', { name: '修改封面', exact: true }).click()
-    await page.getByLabel('选择 JPG、PNG 或 WebP 封面').setInputFiles(replacement)
+    await page.getByLabel('选择 JPG/JPEG、PNG 或 WebP 封面').setInputFiles(replacement)
     const dialog = page.getByRole('dialog', { name: '修改歌曲封面' })
     const longName = '12dc1af5558a87267fdb57387c84f8e84ff9e971dc74c3ea8991e'.repeat(4) + '.jpg'
     for (const viewport of [
