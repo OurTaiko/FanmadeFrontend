@@ -11,6 +11,9 @@ const chartPath = (id: string) => `${API_ROOT}/charts/${encodeURIComponent(id)}`
 
 export const endpoints = {
   me: `${API_ROOT}/me`,
+  users: (query: { q: string; sort: string; page: number }) =>
+    withQuery(`${API_ROOT}/users`, query),
+  user: (id: string) => `${API_ROOT}/users/${encodeURIComponent(id)}`,
   categories: `${API_ROOT}/categories`,
   uploadRules: `${API_ROOT}/upload-rules`,
   logout: `${API_ROOT}/auth/logout`,
@@ -18,7 +21,7 @@ export const endpoints = {
   accountRegister: `${API_ROOT}/auth/account/register`,
   accountProfile: `${API_ROOT}/auth/account/profile`,
   charts: `${API_ROOT}/charts`,
-  chartList: (query: { q: string; course: string; page: number }, mine = false) =>
+  chartList: (query: { q: string; course: string; page: number; owner?: string }, mine = false) =>
     withQuery(`${API_ROOT}${mine ? '/me/charts' : '/charts'}`, query),
   chart: chartPath,
   chartFiles: (id: string) => `${chartPath(id)}/files`,

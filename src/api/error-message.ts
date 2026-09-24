@@ -4,6 +4,7 @@ import type zh from '../locales/zh-Hans.json'
 type ErrorCode = keyof typeof zh.errors
 const aliases: Record<string, ErrorCode> = {
   CHART_NOT_FOUND: 'NOT_FOUND',
+  USER_NOT_FOUND: 'NOT_FOUND',
   RESOURCE_NOT_FOUND: 'NOT_FOUND',
   VERSION_NOT_FOUND: 'NOT_FOUND',
   CATEGORY_NOT_FOUND: 'NOT_FOUND',

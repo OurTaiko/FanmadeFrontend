@@ -13,6 +13,8 @@ import { UpdatePage, UploadPage } from './upload'
 import { NotificationProvider } from './notifications'
 import { CategoryProvider } from './categories'
 import { ProfilePage } from './profile'
+import { UsersPage } from './users'
+import { UserSpacePage } from './user-space'
 import './styles.css'
 import { ThemeProvider } from './theme'
 function App() {
@@ -31,6 +33,8 @@ function App() {
                     <Routes>
                       <Route element={<Layout />}>
                         <Route index element={<Library />} />
+                        <Route path="users" element={<UsersPage />} />
+                        <Route path="users/:id" element={<UserSpacePage />} />
                         <Route path="me/profile" element={<ProfilePage />} />
                         <Route path="me/charts" element={<Library mine />} />
                         <Route path="upload" element={<UploadPage />} />

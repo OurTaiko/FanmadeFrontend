@@ -213,3 +213,12 @@ Tailwind 原子类。复用控件位于 `src/components/ui/`，音频播放器�
 修改封面不改变谱面、音频或成绩，也不涉及游戏客户端。
 
 `pnpm exec playwright test e2e/covers.spec.ts` 使用隔离 API 响应验证上传、owner 权限入口、保存失败与重试、即时刷新，以及 320–1440px 的明暗主题布局；不写真实业务数据。
+
+
+## 用户广场与个人空间
+
+`/users` 展示在 Fanmade 登记过的用户，支持公开昵称搜索、分页、按最近活跃或首次登录排序。`/users/:id` 显示个人公开资料和本人的公开作品，支持作品搜索、难度筛选和分页；广场、作品详情上传者及排行榜昵称均可进入空间，账号资料页提供“我的个人空间”。自己的空间可返回账号管理，其他空间只读。
+
+数据来自后端 `GET /api/v1/users`、`GET /api/v1/users/{id}` 及 `/api/v1/charts?owner=...`，发布前须先升级 API 至 migration 020。前端不自行聚合成绩、不获取私密账号资料。成绩数仅指当前公开版本保存的记录，时间为空显示“暂无记录”；具体口径见后端 API/DATABASE 文档。四种语言与移动端均适配。
+
+浏览器回归：启动 Vite 后运行 `pnpm exec playwright test e2e/users.spec.ts e2e/profile.spec.ts`。常规用例使用隔离 HTTP 响应夹具，不写现有数据库。

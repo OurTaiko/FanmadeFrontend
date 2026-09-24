@@ -54,6 +54,12 @@ export function ProfilePage() {
           </Avatar>
           <h2 className="text-base font-semibold">{user.nickname}</h2>
           <p className="text-sm text-muted-foreground">{t('messages.theNameOthersSee')}</p>
+          <Link
+            to={`/users/${encodeURIComponent(user.id)}`}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {t('messages.myUserSpace')}
+          </Link>
         </Card>
         <Card
           className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4"

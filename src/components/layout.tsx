@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import {
   CompassIcon as Compass,
+  UsersIcon,
   FolderIcon as FolderHeart,
   UploadSimpleIcon as Upload,
   SignOutIcon as LogOut,
@@ -31,6 +32,7 @@ export function Layout() {
   const [error, setError] = useState('')
   const links = [
     { to: '/', label: t('messages.exploreCharts'), icon: Compass },
+    { to: '/users', label: t('messages.userSquare'), icon: UsersIcon },
     { to: '/me/charts', label: t('messages.myCharts'), icon: FolderHeart },
     ...(session.user ? [{ to: '/me/profile', label: t('messages.profile'), icon: UserRound }] : []),
     { to: '/upload', label: t('messages.publishChart'), icon: Upload },
@@ -62,7 +64,7 @@ export function Layout() {
             </span>
           </Link>
           <nav
-            className="hidden md:flex items-center gap-1 ml-4"
+            className="hidden xl:flex items-center gap-1 ml-4"
             aria-label={t('messages.mainNavigation')}
           >
             {links.map(({ to, label, icon: Icon }) => (
@@ -115,7 +117,7 @@ export function Layout() {
                 {t('messages.signInRegister')}
               </Link>
             )}
-            <div className="md:hidden">
+            <div className="xl:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={

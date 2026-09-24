@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatLocale, i18n } from '@/i18n'
 import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
@@ -287,7 +288,12 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
                     <span className="font-medium tabular-nums">#{entry.rank}</span>
                   </TableCell>
                   <TableHead scope="row">
-                    {entry.nickname}
+                    <Link
+                      className="text-primary hover:underline"
+                      to={`/users/${encodeURIComponent(entry.userId)}`}
+                    >
+                      {entry.nickname}
+                    </Link>
                     {entry.userId === user?.id && (
                       <span className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
                         {t('messages.you')}

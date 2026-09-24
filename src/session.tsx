@@ -1,10 +1,12 @@
 import { endpoints } from '@/api/endpoints'
+import { useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { SessionContext } from './session-context'
 import type { ReactNode } from 'react'
 import { api, jsonRequest } from './api/client'
 import type { Session } from './api/types'
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
   const [session, setSession] = useState<Session>({ user: null, csrfToken: '' })
   const [loading, setLoading] = useState(true),
     [error, setError] = useState('')
@@ -39,7 +41,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', refresh)
     }
-  }, [])
+  }, [pathname])
   const logout = async () => {
     await api(endpoints.logout, jsonRequest('POST', {}, session.csrfToken))
     revision.current++

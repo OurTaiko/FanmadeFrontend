@@ -37,7 +37,15 @@ import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { CategoryLabels } from './categories'
 
-export function Library({ mine = false }: { mine?: boolean }) {
+export function Library({
+  mine = false,
+  ownerId,
+  embedded = false,
+}: {
+  mine?: boolean
+  ownerId?: string
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
 
   const [params, setParams] = useSearchParams(),
@@ -63,13 +71,16 @@ export function Library({ mine = false }: { mine?: boolean }) {
   )
   const q = params.get('q') || '',
     course = params.get('course') || '',
+    owner = mine ? '' : ownerId || params.get('owner') || '',
     page = Math.max(1, Number(params.get('page')) || 1)
   useEffect(() => {
     if (mine && !user) return
     const controller = new AbortController()
     setLoading(true)
     setError('')
-    api<ChartList>(endpoints.chartList({ q, course, page }, mine), { signal: controller.signal })
+    api<ChartList>(endpoints.chartList({ q, course, page, ...(owner ? { owner } : {}) }, mine), {
+      signal: controller.signal,
+    })
       .then(setData)
       .catch((e) => {
         if (!controller.signal.aborted) setError(e.message)
@@ -78,7 +89,7 @@ export function Library({ mine = false }: { mine?: boolean }) {
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [mine, user, q, course, page])
+  }, [mine, user, q, course, page, owner])
   if (mine && !user)
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
@@ -98,25 +109,37 @@ export function Library({ mine = false }: { mine?: boolean }) {
         )}
       </div>
     )
-  const update = (value: Record<string, string>) => setParams({ q, course, page: '1', ...value })
+  const update = (value: Record<string, string>) =>
+    setParams({ q, course, ...(owner ? { owner } : {}), page: '1', ...value })
   return (
     <>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {mine ? t('messages.myCharts') : t('messages.discoverGreatCharts')}
-          </h1>
-          <p>
-            {mine
-              ? t('messages.manageYourChartsAndTurnInspirationIntoRhythm')
-              : t('messages.findYourRhythmAndDiscoverChartCreatorsIdeas')}
-          </p>
+      {!embedded && (
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center [&_p]:mt-2 [&_p]:text-sm [&_p]:text-muted-foreground">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {mine
+                ? t('messages.myCharts')
+                : owner
+                  ? t('messages.userPublishedCharts')
+                  : t('messages.discoverGreatCharts')}
+            </h1>
+            <p>
+              {mine
+                ? t('messages.manageYourChartsAndTurnInspirationIntoRhythm')
+                : t('messages.findYourRhythmAndDiscoverChartCreatorsIdeas')}
+            </p>
+          </div>
+          <Link className={buttonVariants({ variant: 'default', size: 'default' })} to="/upload">
+            <Upload size={17} />
+            {t('messages.publishChart')}
+          </Link>
         </div>
-        <Link className={buttonVariants({ variant: 'default', size: 'default' })} to="/upload">
-          <Upload size={17} />
-          {t('messages.publishChart')}
+      )}
+      {owner && !embedded && (
+        <Link to="/users" className="text-sm text-primary hover:underline">
+          {t('messages.backToUserSquare')}
         </Link>
-      </div>
+      )}
       <div
         role="search"
         aria-label={t('messages.searchAndFilterCharts')}
@@ -199,17 +222,25 @@ export function Library({ mine = false }: { mine?: boolean }) {
       ) : (
         <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
           <h2 className="text-base font-semibold">
-            {q || course ? t('messages.noMatchingCharts') : t('messages.beTheFirstToShareARhythm')}
+            {q || course
+              ? t('messages.noMatchingCharts')
+              : owner
+                ? t('messages.noPublishedChartsYet')
+                : t('messages.beTheFirstToShareARhythm')}
           </h2>
           <p>
             {q || course
               ? t('messages.tryAnotherKeywordOrDifficulty')
-              : t('messages.chooseATjaAndItsOggOrMp3AudioToGetStarted')}
+              : owner
+                ? t('messages.memberHasNoPublicCharts')
+                : t('messages.chooseATjaAndItsOggOrMp3AudioToGetStarted')}
           </p>
-          <Link to="/upload" className={buttonVariants({ variant: 'outline', size: 'default' })}>
-            {t('messages.publishChart')}
-            <ArrowRight size={16} />
-          </Link>
+          {!owner && (
+            <Link to="/upload" className={buttonVariants({ variant: 'outline', size: 'default' })}>
+              {t('messages.publishChart')}
+              <ArrowRight size={16} />
+            </Link>
+          )}
         </div>
       )}
     </>
@@ -453,7 +484,14 @@ export function Detail() {
           </h2>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
             <dt>{t('messages.uploader')}</dt>
-            <dd>{chart.uploader}</dd>
+            <dd>
+              <Link
+                className="text-primary hover:underline"
+                to={`/users/${encodeURIComponent(chart.ownerId)}`}
+              >
+                {chart.uploader}
+              </Link>
+            </dd>
             <dt>{t('messages.published')}</dt>
             <dd>
               {new Date(chart.createdAt).toLocaleDateString(formatLocale(i18n.resolvedLanguage))}

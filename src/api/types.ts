@@ -56,3 +56,21 @@ export type Leaderboard = {
   page: number
   pageSize: number
 }
+
+export type PublicUser = {
+  id: string
+  nickname: string | null
+  firstLoginAt: string | null
+  lastActiveAt: string | null
+  chartCount: number
+  scoreCount: number
+}
+export type UserDirectory = {
+  items: PublicUser[]
+  total: number
+  page: number
+  pageSize: number
+  profilesAvailable: boolean
+}
+
+export type UserSpace = { user: PublicUser; profilesAvailable: boolean }

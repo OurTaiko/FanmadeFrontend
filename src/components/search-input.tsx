@@ -8,7 +8,11 @@ export function SearchInput({
   value,
   onSearch,
   onPendingChange,
+  label,
+  placeholder,
 }: {
+  label?: string
+  placeholder?: string
   value: string
   onSearch: (query: string) => void
   onPendingChange: (pending: boolean) => void
@@ -45,8 +49,8 @@ export function SearchInput({
         ref={inputRef}
         className="pr-10 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
         type="search"
-        aria-label={t('messages.searchCharts')}
-        placeholder={t('messages.searchSongsCreatorsOrUploaders')}
+        aria-label={label ?? t('messages.searchCharts')}
+        placeholder={placeholder ?? t('messages.searchSongsCreatorsOrUploaders')}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onCompositionStart={() => setComposing(true)}
