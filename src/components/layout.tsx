@@ -47,12 +47,6 @@ export function Layout() {
         />
         <div className="absolute inset-0 bg-linear-to-b from-background/55 dark:from-background/80 via-background/75 dark:via-background/90 to-background/95 dark:to-background/95" />
       </div>
-      <a
-        className="sr-only focus:not-sr-only focus:top-2 focus:left-2 focus:z-50 focus:fixed focus:bg-primary focus:p-3 focus:rounded-lg focus:text-primary-foreground"
-        href="#main"
-      >
-        {t('messages.skipToMainContent')}
-      </a>
       <header className="top-0 z-30 sticky bg-background/70 backdrop-blur-xl border-b">
         <div className="flex items-center gap-4 mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl h-16">
           <Link className="flex items-baseline gap-2 tracking-tight shrink-0" to="/">

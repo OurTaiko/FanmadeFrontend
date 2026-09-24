@@ -29,6 +29,7 @@ export function Modal({
   alert = false,
   className,
   initialFocus,
+  finalFocus,
 }: {
   title: string
   children: ReactNode
@@ -38,6 +39,7 @@ export function Modal({
   alert?: boolean
   className?: string
   initialFocus?: RefObject<HTMLElement | null>
+  finalFocus?: RefObject<HTMLElement | null>
 }) {
   const { t } = useTranslation()
 
@@ -62,6 +64,8 @@ export function Modal({
         showCloseButton={false}
         initialFocus={initialFocus}
         finalFocus={() => {
+          if (finalFocus?.current?.isConnected && !finalFocus.current.matches(':disabled'))
+            return finalFocus.current
           if (previousFocus?.isConnected && !previousFocus.matches(':disabled'))
             return previousFocus
           return document.querySelector<HTMLElement>(

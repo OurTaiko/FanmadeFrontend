@@ -122,6 +122,55 @@ test('refreshes account language on focus, keeps edit draft and resets after log
   await expect(page.getByRole('heading', { name: '中文曲名', exact: true })).toBeVisible()
 })
 
+test('saving a translated title keeps the cover and returns focus to edit information', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await fixture(page, 'zh-hans')
+  let current = { ...chart, coverHash: 'existing-cover' }
+  await page.route('**/api/v1/charts/language-chart', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      const patch = route.request().postDataJSON()
+      expect(patch).toEqual({ titleTranslations: { zh: '保存后的译名' } })
+      current = {
+        ...current,
+        titleTranslations: { ...current.titleTranslations, ...patch.titleTranslations },
+      }
+    }
+    await route.fulfill({ json: current })
+  })
+  await page.route('**/api/v1/charts/language-chart/cover?*', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="red"/></svg>',
+    }),
+  )
+  await page.goto('/charts/language-chart')
+  const cover = page.locator('main img').first()
+  await expect.poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(40)
+  const source = await cover.getAttribute('src')
+  const edit = page.getByRole('button', { name: '编辑信息', exact: true })
+  await edit.click()
+  await page.getByLabel('中文歌名', { exact: true }).fill('保存后的译名')
+  await page.getByRole('button', { name: '保存修改', exact: true }).click()
+  const success = page.getByRole('dialog', { name: '操作成功' })
+  await expect(success).toContainText('谱面信息已保存。')
+  await success.getByRole('button', { name: '知道了', exact: true }).click()
+  await expect(success).toHaveCount(0)
+  await expect(edit).toBeFocused()
+  await expect(page.getByRole('heading', { name: '保存后的译名', exact: true })).toBeVisible()
+  await expect(cover).toHaveAttribute('src', source!)
+  await expect.poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(40)
+  await expect(page.getByText('暂无封面', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: '跳到主要内容', includeHidden: true })).toHaveCount(0)
+  await edit.click()
+  await expect(page.getByLabel('中文歌名', { exact: true })).toHaveValue('保存后的译名')
+  await page.keyboard.press('Escape')
+  await expect(edit).toBeFocused()
+  expect(errors).toEqual([])
+})
+
 for (const language of [undefined, 'invalid-language']) {
   test(`missing or unsupported preference falls back to Chinese: ${language}`, async ({ page }) => {
     await fixture(page, language)

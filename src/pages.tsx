@@ -12,7 +12,7 @@ import { SearchInput } from '@/components/search-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowRightIcon as ArrowRight,
@@ -317,6 +317,7 @@ export function Detail() {
     [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
+  const editButton = useRef<HTMLButtonElement>(null)
   const [audioOpen, setAudioOpen] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
@@ -436,6 +437,7 @@ export function Detail() {
             )}
             {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
               <Button
+                ref={editButton}
                 variant="outline"
                 size="default"
                 onClick={() => {
@@ -451,7 +453,15 @@ export function Detail() {
         </div>
       </div>
       {error && <Notice>{error}</Notice>}
-      {saved && <Notice kind="success">{t('messages.chartInformationSaved')}</Notice>}
+      {saved && (
+        <Modal
+          title={t('messages.success')}
+          finalFocus={editButton}
+          onDismiss={() => setSaved(false)}
+        >
+          {t('messages.chartInformationSaved')}
+        </Modal>
+      )}
       {editing && session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
         <EditMetadata
           key={chart.id}
