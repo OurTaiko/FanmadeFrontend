@@ -363,7 +363,20 @@
     "myUserSpace": "自分の公開スペース",
     "manageMyAccount": "アカウント管理",
     "publicMemberDetails": "ユーザーの公開情報",
-    "memberHasNoPublicCharts": "このユーザーの公開譜面はまだありません。"
+    "memberHasNoPublicCharts": "このユーザーの公開譜面はまだありません。",
+    "advancedSearch": "詳細検索",
+    "filterStars": "星の数",
+    "allStars": "すべての星の数",
+    "searchOrder": "表示順",
+    "defaultSearchOrder": "標準の順序",
+    "unfcFirst": "未フルコンボ優先",
+    "unperfectFirst": "未全良優先",
+    "searchKeywordScope": "曲名・サブタイトル・すべての翻訳名・譜面制作者を検索します。難易度と星の数は同じ譜面に対して適用されます。",
+    "guestSearchOrder": "ログインすると自分の成績に基づき未フルコンボ・未全良を優先できます。未ログイン時は標準の順序です。",
+    "activeSearchFilters": "選択中の条件",
+    "resetSearchFilters": "絞り込みをリセット",
+    "tryOtherSearchFilters": "キーワード・難易度・星の数を変更するか、絞り込みをリセットしてください。",
+    "searchChartKeywords": "曲名・サブタイトル・翻訳名・譜面制作者を検索…"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",

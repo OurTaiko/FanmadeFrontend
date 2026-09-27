@@ -363,7 +363,20 @@
     "myUserSpace": "My public space",
     "manageMyAccount": "Manage my account",
     "publicMemberDetails": "Public member details",
-    "memberHasNoPublicCharts": "This member has no public charts yet. Check back another time."
+    "memberHasNoPublicCharts": "This member has no public charts yet. Check back another time.",
+    "advancedSearch": "Advanced search",
+    "filterStars": "Stars",
+    "allStars": "All stars",
+    "searchOrder": "Display order",
+    "defaultSearchOrder": "Default order",
+    "unfcFirst": "Not full combo first",
+    "unperfectFirst": "Not all perfect first",
+    "searchKeywordScope": "Keywords match titles, subtitles, all translations and chart credits. Difficulty and stars match the same chart difficulty.",
+    "guestSearchOrder": "Sign in to prioritize charts you have not full-comboed or all-perfected. Guests use the default order.",
+    "activeSearchFilters": "Active filters",
+    "resetSearchFilters": "Reset filters",
+    "tryOtherSearchFilters": "Try other keywords, difficulties or stars, or reset the filters.",
+    "searchChartKeywords": "Search titles, subtitles, translations or chart creators…"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",

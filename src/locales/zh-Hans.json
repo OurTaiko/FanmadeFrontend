@@ -363,7 +363,20 @@
     "myUserSpace": "我的个人空间",
     "manageMyAccount": "管理我的账号",
     "publicMemberDetails": "用户公开资料",
-    "memberHasNoPublicCharts": "这位用户还没有公开作品，过段时间再来看看吧。"
+    "memberHasNoPublicCharts": "这位用户还没有公开作品，过段时间再来看看吧。",
+    "advancedSearch": "高级搜索",
+    "filterStars": "星级",
+    "allStars": "全部星级",
+    "searchOrder": "显示顺序",
+    "defaultSearchOrder": "默认顺序",
+    "unfcFirst": "未全连优先",
+    "unperfectFirst": "未全良优先",
+    "searchKeywordScope": "关键词匹配曲名、副标题、所有翻译名和谱师署名；难度与星级同时匹配同一份谱面。",
+    "guestSearchOrder": "登录后可按个人成绩优先显示未全连或未全良谱面；未登录时按默认顺序显示。",
+    "activeSearchFilters": "已选条件",
+    "resetSearchFilters": "重置筛选",
+    "tryOtherSearchFilters": "试试其他关键词、难度或星级，也可以重置筛选。",
+    "searchChartKeywords": "搜索曲名、副标题、翻译名或谱师…"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",

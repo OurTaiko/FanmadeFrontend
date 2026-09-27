@@ -21,8 +21,17 @@ export const endpoints = {
   accountRegister: `${API_ROOT}/auth/account/register`,
   accountProfile: `${API_ROOT}/auth/account/profile`,
   charts: `${API_ROOT}/charts`,
-  chartList: (query: { q: string; course: string; page: number; owner?: string }, mine = false) =>
-    withQuery(`${API_ROOT}${mine ? '/me/charts' : '/charts'}`, query),
+  chartList: (
+    query: {
+      q: string
+      course: string
+      level?: string
+      order?: string
+      page: number
+      owner?: string
+    },
+    mine = false,
+  ) => withQuery(`${API_ROOT}${mine ? '/me/charts' : '/charts'}`, query),
   chart: chartPath,
   chartFiles: (id: string) => `${chartPath(id)}/files`,
   cover: (id: string, version?: string) =>

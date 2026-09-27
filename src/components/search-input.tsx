@@ -50,7 +50,7 @@ export function SearchInput({
         className="pr-10 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
         type="search"
         aria-label={label ?? t('messages.searchCharts')}
-        placeholder={placeholder ?? t('messages.searchSongsCreatorsOrUploaders')}
+        placeholder={placeholder ?? t('messages.searchChartKeywords')}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onCompositionStart={() => setComposing(true)}

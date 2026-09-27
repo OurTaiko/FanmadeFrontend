@@ -6,9 +6,8 @@ import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { ChartCover } from '@/components/chart-cover'
 import { AudioPlayer } from '@/components/audio-player'
-import { ChoiceSelect } from '@/components/choice-select'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { SearchInput } from '@/components/search-input'
+import { ChartSearch } from '@/components/chart-search'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +16,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowRightIcon as ArrowRight,
   DownloadSimpleIcon as Download,
-  SlidersHorizontalIcon as SlidersHorizontal,
   TrashIcon as Trash2,
   UploadSimpleIcon as Upload,
   PencilSimpleIcon as Pencil,
@@ -29,7 +27,7 @@ import { api, jsonRequest } from './api/client'
 import type { Chart, ChartList } from './api/types'
 import { ChartCard } from '@/components/chart-card'
 import { DifficultyBadges } from '@/components/difficulty-badges'
-import { courseNames, supportsChart } from './courses'
+import { isSupportedCourse, supportsChart } from './courses'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
@@ -70,18 +68,25 @@ export function Library({
     [setParams],
   )
   const q = params.get('q') || '',
-    course = params.get('course') || '',
+    course = isSupportedCourse(params.get('course') || '') ? params.get('course')! : '',
+    level = /^(?:[1-9]|10)$/.test(params.get('level') || '') ? params.get('level')! : '',
+    order = ['unfc', 'unperfect'].includes(params.get('order') || '') ? params.get('order')! : '',
     owner = mine ? '' : ownerId || params.get('owner') || '',
-    page = Math.max(1, Number(params.get('page')) || 1)
+    page = Math.min(10000, Math.max(1, Math.floor(Number(params.get('page')) || 1)))
   useEffect(() => {
     if (mine && !user) return
     const controller = new AbortController()
     setLoading(true)
     setError('')
-    api<ChartList>(endpoints.chartList({ q, course, page, ...(owner ? { owner } : {}) }, mine), {
-      signal: controller.signal,
-    })
-      .then(setData)
+    api<ChartList>(
+      endpoints.chartList({ q, course, level, order, page, ...(owner ? { owner } : {}) }, mine),
+      {
+        signal: controller.signal,
+      },
+    )
+      .then((result) => {
+        if (!controller.signal.aborted) setData(result)
+      })
       .catch((e) => {
         if (!controller.signal.aborted) setError(e.message)
       })
@@ -89,7 +94,7 @@ export function Library({
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [mine, user, q, course, page, owner])
+  }, [mine, user, q, course, level, order, page, owner])
   if (mine && !user)
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
@@ -110,7 +115,15 @@ export function Library({
       </div>
     )
   const update = (value: Record<string, string>) =>
-    setParams({ q, course, ...(owner ? { owner } : {}), page: '1', ...value })
+    setParams((current) => {
+      const next = new URLSearchParams(current)
+      next.set('page', '1')
+      for (const [key, entry] of Object.entries(value)) {
+        if (entry) next.set(key, entry)
+        else next.delete(key)
+      }
+      return next
+    })
   return (
     <>
       {!embedded && (
@@ -140,39 +153,27 @@ export function Library({
           {t('messages.backToUserSquare')}
         </Link>
       )}
-      <div
-        role="search"
-        aria-label={t('messages.searchAndFilterCharts')}
-        className="flex flex-col gap-3 sm:flex-row sm:items-center"
-      >
-        <SearchInput
-          key={mine ? 'mine' : 'all'}
-          value={q}
-          onSearch={search}
-          onPendingChange={setSearchPending}
-        />
-        <ChoiceSelect
-          label={t('messages.filterDifficulty')}
-          prefix={
-            <SlidersHorizontal
-              className="size-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-          }
-          value={course}
-          onValueChange={(value) => update({ course: value })}
-          items={[
-            { value: '', label: t('messages.allDifficulties') },
-            ...Object.entries(courseNames).map(([value, label]) => ({ value, label })),
-          ]}
-        />
-      </div>
+      <ChartSearch
+        key={mine ? 'mine' : owner || 'all'}
+        query={q}
+        course={course}
+        level={level}
+        order={order}
+        signedIn={!!user}
+        onSearch={search}
+        onPendingChange={setSearchPending}
+        onChange={update}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2_span]:text-muted-foreground">
         <h2 className="text-base font-semibold">
           {q ? t('messages.searchResults', { query: q }) : t('messages.latestCharts')}
           {!searchPending && !loading && !error && data && <span>{data.total}</span>}
         </h2>
-        <span className="text-sm text-muted-foreground">{t('messages.sortedByPublishDate')}</span>
+        <span className="text-sm text-muted-foreground">
+          {user && order
+            ? t(order === 'unfc' ? 'messages.unfcFirst' : 'messages.unperfectFirst')
+            : t('messages.sortedByPublishDate')}
+        </span>
       </div>
       {error ? (
         <Notice>{error}</Notice>
@@ -222,15 +223,15 @@ export function Library({
       ) : (
         <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
           <h2 className="text-base font-semibold">
-            {q || course
+            {q || course || level
               ? t('messages.noMatchingCharts')
               : owner
                 ? t('messages.noPublishedChartsYet')
                 : t('messages.beTheFirstToShareARhythm')}
           </h2>
           <p>
-            {q || course
-              ? t('messages.tryAnotherKeywordOrDifficulty')
+            {q || course || level
+              ? t('messages.tryOtherSearchFilters')
               : owner
                 ? t('messages.memberHasNoPublicCharts')
                 : t('messages.chooseATjaAndItsOggOrMp3AudioToGetStarted')}
