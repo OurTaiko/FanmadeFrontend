@@ -9,6 +9,7 @@ import {
   SignInIcon,
   UserIcon as UserRound,
   ListIcon as Menu,
+  GameControllerIcon,
 } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Notice } from '@/notifications'
@@ -33,6 +34,7 @@ export function Layout() {
   const links = [
     { to: '/', label: t('messages.exploreCharts'), icon: Compass },
     { to: '/users', label: t('messages.userSquare'), icon: UsersIcon },
+    { to: '/player', label: t('messages.ourTaikoPlayer'), icon: GameControllerIcon },
     { to: '/me/charts', label: t('messages.myCharts'), icon: FolderHeart },
     ...(session.user ? [{ to: '/me/profile', label: t('messages.profile'), icon: UserRound }] : []),
     { to: '/upload', label: t('messages.publishChart'), icon: Upload },

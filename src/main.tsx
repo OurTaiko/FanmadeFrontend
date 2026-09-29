@@ -15,6 +15,7 @@ import { CategoryProvider } from './categories'
 import { ProfilePage } from './profile'
 import { UsersPage } from './users'
 import { UserSpacePage } from './user-space'
+import { PlayerPage } from './player'
 import './styles.css'
 import { ThemeProvider } from './theme'
 function App() {
@@ -35,6 +36,7 @@ function App() {
                         <Route index element={<Library />} />
                         <Route path="users" element={<UsersPage />} />
                         <Route path="users/:id" element={<UserSpacePage />} />
+                        <Route path="player" element={<PlayerPage />} />
                         <Route path="me/profile" element={<ProfilePage />} />
                         <Route path="me/charts" element={<Library mine />} />
                         <Route path="upload" element={<UploadPage />} />
