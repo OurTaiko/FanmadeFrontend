@@ -42,7 +42,7 @@ const chart: Chart = {
   })),
 }
 
-test('upload maker defaults, individual edits, submitted mapping and per-difficulty credits', async ({
+test('upload maker defaults, individual edits, submitted per-difficulty mapping and song credits', async ({
   page,
 }) => {
   const errors: string[] = []
@@ -104,14 +104,10 @@ test('upload maker defaults, individual edits, submitted mapping and per-difficu
     { blockIndex: 2, maker: 'A' },
   ])
   await expect(page.locator('[data-testid="detail-facts"]')).toContainText('A | B')
-  await expect(page.getByTitle('谱师：B', { exact: true })).toContainText('魔王')
   for (const [course, name] of [
     ['Hard', '困难'],
     ['Edit', '里谱'],
   ]) {
-    await expect(
-      page.getByTitle('谱师：A', { exact: true }).filter({ hasText: name }),
-    ).toBeVisible()
     await page.getByRole('tab', { name: `${name} 5 星`, exact: true }).click()
     await expect(page.locator('canvas')).toHaveAttribute('aria-label', `${course} 难度交互谱面预览`)
   }
