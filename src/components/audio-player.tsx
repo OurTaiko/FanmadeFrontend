@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   PauseIcon as Pause,
   PlayIcon as Play,
@@ -14,7 +14,15 @@ function time(seconds: number) {
   return `${Math.floor(safe / 60)}:${String(Math.floor(safe % 60)).padStart(2, '0')}`
 }
 
-export function AudioPlayer(props: { src: string; label: string; startAt?: number }) {
+type AudioPlayerProps = {
+  src: string
+  label: string
+  startAt?: number
+  endAt?: number
+  disabled?: boolean
+}
+
+export function AudioPlayer(props: AudioPlayerProps) {
   return <AudioPlayerContent key={props.src} {...props} />
 }
 
@@ -22,11 +30,9 @@ function AudioPlayerContent({
   src,
   label,
   startAt = 0,
-}: {
-  src: string
-  label: string
-  startAt?: number
-}) {
+  endAt,
+  disabled = false,
+}: AudioPlayerProps) {
   const { t } = useTranslation()
 
   const audio = useRef<HTMLAudioElement>(null)
@@ -36,15 +42,47 @@ function AudioPlayerContent({
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [error, setError] = useState('')
+  const range = endAt !== undefined
+  const rangeStart = Number.isFinite(startAt) ? Math.max(0, startAt) : 0
+  const rangeEnd = range ? Math.min(endAt, duration || endAt) : duration
+  const validRange =
+    !range ||
+    (Number.isFinite(startAt) && Number.isFinite(endAt) && startAt >= 0 && rangeEnd > startAt)
+  useEffect(() => {
+    const player = audio.current
+    if (!player || endAt === undefined) return
+    player.pause()
+    if (player.readyState >= 1 && Number.isFinite(startAt)) {
+      player.currentTime = Math.max(0, Math.min(startAt, player.duration))
+    }
+  }, [startAt, endAt])
+  useEffect(() => {
+    const player = audio.current
+    return () => {
+      player?.pause()
+    }
+  }, [])
+  useEffect(() => {
+    if (!range || !validRange || !playing) return
+    const timer = window.setInterval(() => {
+      const player = audio.current
+      if (player && player.currentTime >= rangeEnd) {
+        player.pause()
+        player.currentTime = rangeEnd
+      }
+    }, 25)
+    return () => window.clearInterval(timer)
+  }, [range, validRange, playing, rangeEnd])
   const toggle = async () => {
     const player = audio.current
-    if (!player) return
+    if (!player || disabled || !validRange) return
     if (!player.paused) {
       player.pause()
       return
     }
     try {
       setError('')
+      if (range) player.currentTime = rangeStart
       await player.play()
     } catch {
       setError(t('messages.cannotPlayAudioRightNowPleaseRetry'))
@@ -61,10 +99,18 @@ function AudioPlayerContent({
           const player = event.currentTarget
           if (!Number.isFinite(player.duration)) return
           setDuration(player.duration)
-          player.currentTime = Math.max(0, Math.min(startAt, player.duration - 1))
+          player.currentTime = Math.max(0, Math.min(rangeStart, player.duration))
           setPosition(player.currentTime)
         }}
-        onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
+        onSeeked={(event) => setPosition(event.currentTarget.currentTime)}
+        onTimeUpdate={(event) => {
+          const player = event.currentTarget
+          if (range && validRange && player.currentTime >= rangeEnd) {
+            player.pause()
+            if (player.currentTime > rangeEnd) player.currentTime = rangeEnd
+          }
+          setPosition(player.currentTime)
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
@@ -79,6 +125,7 @@ function AudioPlayerContent({
           size="icon"
           variant="secondary"
           aria-label={playing ? t('messages.pauseAudio') : t('messages.playAudio')}
+          disabled={disabled || !validRange || (range && !duration)}
           onClick={() => void toggle()}
         >
           {playing ? <Pause /> : <Play />}
@@ -86,11 +133,13 @@ function AudioPlayerContent({
         <div className="min-w-0 flex-1 space-y-2">
           <Slider
             aria-label={t('messages.playbackProgress', { label: label })}
-            value={[position]}
-            min={0}
-            max={duration || 1}
+            value={[
+              range && validRange ? Math.max(rangeStart, Math.min(position, rangeEnd)) : position,
+            ]}
+            min={range && validRange ? rangeStart : 0}
+            max={range && validRange ? rangeEnd : duration || 1}
             step={0.1}
-            disabled={!duration}
+            disabled={disabled || !duration || !validRange}
             onValueChange={(value) => {
               const next = typeof value === 'number' ? value : value[0]
               if (audio.current) audio.current.currentTime = next
@@ -99,7 +148,7 @@ function AudioPlayerContent({
           />
           <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
             <span>{time(position)}</span>
-            <span>{time(duration)}</span>
+            <span>{time(range && validRange ? rangeEnd : duration)}</span>
           </div>
         </div>
         <Button

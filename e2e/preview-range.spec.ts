@@ -55,7 +55,36 @@ test('owner edits preview range while player keeps full audio source', async ({ 
         body: 'TITLE:Preview test\nBPM:120\nCOURSE:Oni\nLEVEL:5\n#START\n1000,\n#END',
       })
     if (path.endsWith('/audio')) {
-      return route.fulfill({ status: 204 })
+      // A real PCM source exercises browser playback, seeking and range stopping.
+      const samples = 8000 * 100
+      const wav = Buffer.alloc(44 + samples * 2)
+      wav.write('RIFF', 0)
+      wav.writeUInt32LE(wav.length - 8, 4)
+      wav.write('WAVEfmt ', 8)
+      wav.writeUInt32LE(16, 16)
+      wav.writeUInt16LE(1, 20)
+      wav.writeUInt16LE(1, 22)
+      wav.writeUInt32LE(8000, 24)
+      wav.writeUInt32LE(16000, 28)
+      wav.writeUInt16LE(2, 32)
+      wav.writeUInt16LE(16, 34)
+      wav.write('data', 36)
+      wav.writeUInt32LE(samples * 2, 40)
+      const range = route
+        .request()
+        .headers()
+        .range?.match(/^bytes=(\d+)-(\d*)$/)
+      const start = range ? Number(range[1]) : 0
+      const end = range?.[2] ? Math.min(Number(range[2]), wav.length - 1) : wav.length - 1
+      return route.fulfill({
+        status: range ? 206 : 200,
+        contentType: 'audio/wav',
+        headers: {
+          'Accept-Ranges': 'bytes',
+          ...(range ? { 'Content-Range': `bytes ${start}-${end}/${wav.length}` } : {}),
+        },
+        body: wav.subarray(start, end + 1),
+      })
     }
     if (route.request().method() === 'PATCH') {
       const patch = route.request().postDataJSON()
@@ -83,7 +112,26 @@ test('owner edits preview range while player keeps full audio source', async ({ 
   await page.getByLabel('英文歌名', { exact: true }).fill('New title')
   await page.getByRole('tab', { name: '试听', exact: true }).click()
   await page.getByLabel('试听开始（秒）').fill('20.5')
+  await page.getByLabel('试听结束（秒）').fill('21.2')
+  const audio = page.locator('audio')
+  await expect(page.getByRole('button', { name: '播放试听', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: '播放试听', exact: true }).click()
+  await expect
+    .poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime))
+    .toBeGreaterThanOrEqual(20.5)
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.paused)).toBe(true)
+  expect(await audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(21.2, 1)
   await page.getByLabel('试听结束（秒）').fill('36')
+  await page.getByRole('button', { name: '播放试听', exact: true }).click()
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.paused)).toBe(false)
+  expect(await audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeLessThan(22)
+  await page.getByLabel('试听开始（秒）').fill('25')
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.paused)).toBe(true)
+  await page.getByRole('button', { name: '播放试听', exact: true }).click()
+  await expect
+    .poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime))
+    .toBeGreaterThanOrEqual(25)
+  await page.getByLabel('试听开始（秒）').fill('20.5')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
   await expect.poll(() => patches.length).toBe(1)
   expect(patches[0]).toEqual({

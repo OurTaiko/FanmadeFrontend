@@ -5,6 +5,7 @@ import { DialogClose } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
+import { AudioPlayer } from '@/components/audio-player'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
@@ -254,6 +255,13 @@ export function EditMetadata({
                   </Label>
                 </div>
                 <p className="text-sm text-muted-foreground">{t('messages.previewRangeHint')}</p>
+                <AudioPlayer
+                  label={t('messages.audioPreview')}
+                  src={endpoints.resource(chart, 'audio')}
+                  startAt={demoStart.trim() ? Number(demoStart) : NaN}
+                  endAt={demoEnd.trim() ? Number(demoEnd) : NaN}
+                  disabled={busy || Number(demoEnd) > 1215}
+                />
               </fieldset>
             </TabsContent>
             <TabsContent value="description" className="space-y-3 pt-3">
