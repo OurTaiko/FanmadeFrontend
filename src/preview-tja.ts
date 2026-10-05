@@ -5,18 +5,24 @@ import type { ParsedChart } from '../TJARenderer/src/tja-parser'
 
 // Isolate each #START block before rendering. This preserves Single / Double
 // blocks sharing a course and accepts numeric COURSE headers just like the API.
-export function parsePreviewTja(text: string): Record<number, ParsedChart> {
+export function parsePreviewTja(text: string): Record<string, ParsedChart> {
   const globalHeaders: Record<string, string> = {}
   let courseHeaders: Record<string, string> = {}
   let hasCourse = false
   let inBlock = false
   let block = 0
+  let course = 'Oni'
+  const keys: string[] = []
   const source: string[] = []
   for (const raw of text.replace(/^\uFEFF/, '').split(/\r\n|\r|\n/)) {
     const line = raw.split('//', 1)[0].trim()
     if (!line) continue
     if (/^#START(?:\s|$)/i.test(line)) {
       if (inBlock) throw new Error(t('messages.tjaChartBlockIsNotProperlyClosed'))
+      const player = /^#START\s+P([12])$/i.exec(line)?.[1]
+      const key = course + (player ? `_${player}p` : '')
+      if (keys.includes(key)) throw new Error(t('messages.duplicateCourse'))
+      keys.push(key)
       const headers = { ...globalHeaders, ...courseHeaders }
       source.push(
         `COURSE:preview_${block}`,
@@ -39,6 +45,7 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       if (key === 'COURSE') {
         if (!parseTjaCourse(value))
           throw new Error(t('messages.previewSupportsOnlyEasyNormalHardOniEdit'))
+        course = parseTjaCourse(value)!
         hasCourse = true
         courseHeaders = {}
       } else {
@@ -53,7 +60,7 @@ export function parsePreviewTja(text: string): Record<number, ParsedChart> {
       const chart = parsed[`preview_${index}`]
       if (!chart?.bars.length)
         throw new Error(t('messages.chartBlockPreviewError', { block: index + 1 }))
-      return [index, chart]
+      return [keys[index], chart]
     }),
   )
 }

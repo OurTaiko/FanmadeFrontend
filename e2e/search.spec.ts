@@ -23,14 +23,13 @@ const chart: Chart = {
   audioSize: 100,
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: ['Easy', 'Normal', 'Hard', 'Oni', 'Edit'].map((course, blockIndex) => ({
     course,
-    blockIndex,
+
     level: 5,
-    player: '',
+
     maker: '',
-    style: 'Single',
-    cloudScoreEligible: true,
   })),
 }
 

@@ -39,7 +39,7 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
   await expect(canvas).toHaveAttribute('aria-label', 'Edit 难度交互谱面预览')
   await selectValue(page, '选择难度', 'Oni')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
-  await expect(page.getByText('单人最高分 · 同分并列')).toBeVisible()
+  await expect(page.getByText('个人最高分 · 同分并列')).toBeVisible()
   await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
   await expect(canvas).toBeVisible()
   expect(files).toBe(fetched)
@@ -63,24 +63,19 @@ test('fallback Edit, branching and click inspection; leaderboard pagination and 
   const chart: Chart = {
     ...base,
     title: 'Preview test',
+    isSingle: true,
     difficulties: [
       {
         course: 'Hard',
         level: 5,
-        blockIndex: 1,
-        player: '',
+
         maker: '',
-        style: 'Single',
-        cloudScoreEligible: true,
       },
       {
         course: 'Edit',
         level: 8,
-        blockIndex: 0,
-        player: '',
+
         maker: '',
-        style: 'Single',
-        cloudScoreEligible: true,
       },
     ],
   }

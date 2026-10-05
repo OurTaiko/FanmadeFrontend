@@ -25,14 +25,13 @@ const chart: Chart = {
   audioSize: 100,
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: courses.map((course, blockIndex) => ({
     course,
-    blockIndex,
+
     level: 5,
-    player: '',
+
     maker: '',
-    style: 'Single',
-    cloudScoreEligible: true,
   })),
 }
 const tja = (values: string[]) =>
@@ -42,7 +41,8 @@ const unsupported = ['Tower', 'Dan'].map((course, index) => ({
   ...chart,
   id: String(index + 2).repeat(32),
   title: `不支持的${course}作品`,
-  difficulties: [...chart.difficulties, { ...chart.difficulties[0], blockIndex: 5, course }],
+  isSingle: true,
+  difficulties: [...chart.difficulties, { ...chart.difficulties[0], course }],
 }))
 
 test.beforeEach(async ({ page }) => {
@@ -89,11 +89,11 @@ test('five course filters and ordinary preview; unsupported cards and details st
   await page.getByRole('combobox', { name: '筛选难度' }).click()
   await expect(page.getByRole('option')).toHaveText([
     '全部难度',
-    '简单',
-    '普通',
-    '困难',
-    '魔王',
-    '里谱',
+    ...['简单', '普通', '困难', '魔王', '里谱'].flatMap((name) => [
+      name,
+      `${name} 1P`,
+      `${name} 2P`,
+    ]),
   ])
   await page.keyboard.press('Escape')
   await expect(page.locator('[data-testid="chart-card"]')).toHaveCount(1)

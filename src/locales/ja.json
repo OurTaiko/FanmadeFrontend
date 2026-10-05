@@ -388,7 +388,15 @@
     "activeSearchFilters": "選択中の条件",
     "resetSearchFilters": "絞り込みをリセット",
     "tryOtherSearchFilters": "キーワード・難易度・星の数を変更するか、絞り込みをリセットしてください。",
-    "searchChartKeywords": "曲名・サブタイトル・翻訳名・譜面制作者を検索…"
+    "searchChartKeywords": "曲名・サブタイトル・翻訳名・譜面制作者を検索…",
+    "doublePlayerRequired": "双人譜面には #START P1 または #START P2 が必要です",
+    "mixedChartModes": "シングルとダブルは別々のファイルでアップロードしてください",
+    "duplicateCourse": "難易度またはプレイヤー側が重複しています",
+    "invalidChartStyle": "STYLE は譜面外で Single または Double を指定してください",
+    "courseCreator": "{{difficulty}} の譜面制作者",
+    "bestScoresTiesShareRanks": "自己ベスト · 同点は同順位",
+    "leaderboardUnavailable": "ランキングを利用できません",
+    "serverDoesNotSupportLeaderboard": "この難易度のランキングはサーバーで対応していません。"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",

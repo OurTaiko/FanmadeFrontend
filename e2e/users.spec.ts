@@ -43,15 +43,13 @@ const chart: Chart = {
   audioSize: 100,
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: [
     {
       course: 'Oni',
       level: 8,
-      blockIndex: 0,
-      player: '',
-      style: 'Single',
+
       maker: 'Vanilla',
-      cloudScoreEligible: true,
     },
   ],
 }

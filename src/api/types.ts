@@ -10,11 +10,7 @@ export type User = {
 export type Locale = 'en' | 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
 export type Category = { id: string; title: string; genre: string }
-export type Chart = Omit<Metadata, 'difficulties'> & {
-  difficulties: (Metadata['difficulties'][number] & {
-    style: 'Single' | 'Double'
-    cloudScoreEligible: boolean
-  })[]
+export type Chart = Metadata & {
   id: string
   coverHash?: string
   categoryIds: string[]

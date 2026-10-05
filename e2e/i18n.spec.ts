@@ -30,15 +30,13 @@ const chart: Chart = {
   offset: 0,
   demoStart: 0,
   wave: 'test.ogg',
+  isSingle: true,
   difficulties: [
     {
       course: 'Oni',
       level: 5,
-      blockIndex: 0,
-      player: '',
+
       maker: 'Maker',
-      style: 'Single',
-      cloudScoreEligible: true,
     },
   ],
 }

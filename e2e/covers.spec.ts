@@ -31,14 +31,13 @@ const makeChart = (): Chart => ({
   categoryIds: ['variety'],
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: ['Easy', 'Normal', 'Hard', 'Oni', 'Edit'].map((course, blockIndex) => ({
     course,
-    blockIndex,
+
     level: blockIndex + 6,
-    player: '',
+
     maker: '测试谱师',
-    style: 'Single',
-    cloudScoreEligible: true,
   })),
 })
 const artwork = Buffer.from(

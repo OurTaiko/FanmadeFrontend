@@ -40,3 +40,19 @@ it('defaults every difficulty to the scanned MAKER', () => {
   )
   expect(blank.difficulties.map((d) => d.maker)).toEqual(['', '', ''])
 })
+
+it('enforces a single chart mode and uses course suffixes for double charts', () => {
+  const header = 'TITLE:D\nBPM:120\nWAVE:a.ogg\nCOURSE:Oni\nLEVEL:8\n'
+  const p1 = '#START P1\n1000,\n#END\n',
+    p2 = '#START P2\n2000,\n#END\n',
+    single = '#START\n1000,\n#END\n'
+  const parse = (body: string) =>
+    parseTja(new TextEncoder().encode(header + body), 'utf-8', 'a.ogg')
+  const chart = parse('STYLE:Double\n' + p2 + p1)
+  expect(chart.isSingle).toBe(false)
+  expect(chart.difficulties.map((d) => d.course)).toEqual(['Oni_2p', 'Oni_1p'])
+  expect(parse(single).isSingle).toBe(true)
+  expect(() => parse(p1 + single)).toThrow()
+  expect(() => parse(p1 + p1)).toThrow()
+  expect(() => parse('STYLE:Double\n' + single)).toThrow()
+})

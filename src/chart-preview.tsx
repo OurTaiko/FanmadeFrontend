@@ -50,11 +50,7 @@ export default function ChartPreview({
 
   const branchLabels = getBranchLabels()
   const { title, subtitle } = chartText(chart, i18n.resolvedLanguage)
-  const blocks = chart.difficulties.filter((d) => d.course === course)
-  const preferred =
-    blocks.find((d) => d.cloudScoreEligible) ?? blocks.find((d) => d.player === 'P1') ?? blocks[0]
   const { notify } = useNotification()
-  const [blockIndex, setBlockIndex] = useState(preferred?.blockIndex ?? 0)
   const [branch, setBranch] = useState<'all' | BranchName>('all')
   const [zoom, setZoom] = useState(initialZoom)
   const [selected, setSelected] = useState<HitInfo | null>(null)
@@ -73,7 +69,7 @@ export default function ChartPreview({
       }
     }
   }, [source, t])
-  const root = parsed.blocks?.[blockIndex]
+  const root = parsed.blocks?.[course]
   const selectedChart = branch === 'all' ? root : (root?.branches?.[branch] ?? root)
   const currentChart = useMemo(
     () =>
@@ -84,11 +80,10 @@ export default function ChartPreview({
             subtitle,
             course,
             level:
-              chart.difficulties.find((d) => d.blockIndex === blockIndex)?.level ??
-              selectedChart.level,
+              chart.difficulties.find((d) => d.course === course)?.level ?? selectedChart.level,
           }
         : null,
-    [selectedChart, title, subtitle, chart.difficulties, course, blockIndex],
+    [selectedChart, title, subtitle, chart.difficulties, course],
   )
 
   useEffect(() => {
@@ -199,23 +194,6 @@ export default function ChartPreview({
     <div className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 flex-wrap items-center gap-3 [&>label]:flex [&>label]:flex-wrap [&>label]:items-center [&>label]:gap-2">
-          {blocks.length > 1 && (
-            <Label>
-              {t('messages.chartPart')}
-              <ChoiceSelect
-                label={t('messages.chartPart')}
-                value={String(blockIndex)}
-                onValueChange={(value) => {
-                  setBlockIndex(Number(value))
-                  setBranch('all')
-                }}
-                items={blocks.map((d) => ({
-                  value: String(d.blockIndex),
-                  label: `${d.cloudScoreEligible ? t('messages.single') : `DOUBLE ${d.player || ''}`} · ★${d.level}`,
-                }))}
-              />
-            </Label>
-          )}
           {root.branches && (
             <Label>
               <GitBranch size={16} />

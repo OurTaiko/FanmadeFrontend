@@ -31,13 +31,12 @@ const chart: Chart = {
   categoryIds: ['variety'],
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: ['Hard', 'Oni', 'Edit'].map((course, blockIndex) => ({
     course,
-    blockIndex,
+
     level: 5,
-    player: '',
-    style: 'Single',
-    cloudScoreEligible: true,
+
     maker: blockIndex === 1 ? 'B' : 'A',
   })),
 }
@@ -86,8 +85,8 @@ test('upload maker defaults, individual edits, submitted per-difficulty mapping 
   await page.getByRole('button', { name: '知道了', exact: true }).click()
   await expect(page.getByRole('table')).toHaveCount(1)
   for (const [i, course] of ['Hard', 'Oni', 'Edit'].entries())
-    await expect(page.getByLabel(`${course} 制作者 #${i + 1}`)).toHaveValue('A')
-  await page.getByLabel('Oni 制作者 #2').fill('B')
+    await expect(page.getByLabel(`${course} 制作者`)).toHaveValue('A')
+  await page.getByLabel('Oni 制作者').fill('B')
   await expect(page.locator('[data-testid="preview-panel"] dd').first()).toHaveText('A | B')
   await page.screenshot({ path: 'test-results/makers-upload-desktop.png', fullPage: true })
   await page.setViewportSize({ width: 390, height: 844 })
@@ -99,9 +98,9 @@ test('upload maker defaults, individual edits, submitted per-difficulty mapping 
   await expect(page).toHaveURL(`/charts/${chart.id}`)
   await page.getByRole('button', { name: '知道了', exact: true }).click()
   expect(submitted).toEqual([
-    { blockIndex: 0, maker: 'A' },
-    { blockIndex: 1, maker: 'B' },
-    { blockIndex: 2, maker: 'A' },
+    { course: 'Hard', maker: 'A' },
+    { course: 'Oni', maker: 'B' },
+    { course: 'Edit', maker: 'A' },
   ])
   await expect(page.locator('[data-testid="detail-facts"]')).toContainText('A | B')
   for (const [course, name] of [

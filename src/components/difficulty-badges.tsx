@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { StarIcon } from '@phosphor-icons/react'
 import { Badge } from '@/components/ui/badge'
 import type { Difficulty } from '@/tja'
-import { courseNames, isSupportedCourse } from '@/courses'
+import { courseNames, isSupportedCourse, baseCourse } from '@/courses'
 
 const difficultyColors = {
   Easy: 'bg-orange-100 text-orange-800 dark:bg-[#493128] dark:text-[#f7bb78]',
@@ -37,7 +37,7 @@ export function DifficultyBadges({
       >
         {items.map((d) => (
           <li
-            key={d.blockIndex}
+            key={d.course}
             className="flex justify-between items-center gap-1 bg-[#f5f5f7] dark:bg-muted py-2 pr-3 pl-5 min-h-8 font-medium text-[#424245] dark:text-foreground text-xs [clip-path:polygon(0_0,100%_0,100%_100%,0_100%,8px_50%)]"
           >
             <span>{isSupportedCourse(d.course) ? courseNames[d.course] : ''}</span>
@@ -61,11 +61,12 @@ export function DifficultyBadges({
       {items.map((d) => (
         <Badge
           variant="secondary"
-          className={isSupportedCourse(d.course) ? difficultyColors[d.course] : undefined}
-          key={d.blockIndex}
+          className={
+            isSupportedCourse(d.course) ? difficultyColors[baseCourse(d.course)] : undefined
+          }
+          key={d.course}
         >
           {isSupportedCourse(d.course) ? courseNames[d.course] : ''}
-          {detailed && d.player ? ` ${d.player}` : ''}
           <span
             className="inline-flex items-center gap-1 tabular-nums"
             aria-label={t('common.stars', { count: d.level })}

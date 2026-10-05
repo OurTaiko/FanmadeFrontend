@@ -29,15 +29,12 @@ const original: Chart = {
   createdAt: '2026-09-15T00:00:00Z',
   titleTranslations: {},
   subtitleTranslations: {},
+  isSingle: true,
   difficulties: [
     {
       course: 'Hard',
       level: 5,
       maker: 'A',
-      blockIndex: 0,
-      player: '',
-      style: 'Single',
-      cloudScoreEligible: true,
     },
   ],
 }
@@ -106,9 +103,10 @@ for (const replaceAudio of [false, true]) {
         audioHash: replaceAudio ? 'f'.repeat(64) : original.audioHash,
         title: 'Replacement preview',
         maker: 'A | B',
+        isSingle: true,
         difficulties: [
           original.difficulties[0],
-          { ...original.difficulties[0], blockIndex: 1, course: 'Oni', maker: 'B' },
+          { ...original.difficulties[0], course: 'Oni', maker: 'B' },
         ],
       }
       await route.fulfill({ json: current })
@@ -130,7 +128,7 @@ for (const replaceAudio of [false, true]) {
       await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
       await page.getByRole('button', { name: '知道了', exact: true }).click()
     }
-    await page.getByLabel('Oni 制作者 #2').fill('B')
+    await page.getByLabel('Oni 制作者').fill('B')
     await page.screenshot({
       path: `test-results/replacement-${replaceAudio}-desktop.png`,
       fullPage: true,
@@ -148,7 +146,7 @@ for (const replaceAudio of [false, true]) {
     await page.getByRole('button', { name: '确认替换并清空' }).click()
     await expect(page.getByRole('alertdialog')).toContainText('保存失败，旧数据保持不变')
     await page.getByRole('button', { name: '知道了', exact: true }).click()
-    await expect(page.getByLabel('Oni 制作者 #2')).toHaveValue('B')
+    await expect(page.getByLabel('Oni 制作者')).toHaveValue('B')
     await page.getByRole('button', { name: '更新歌曲与谱面', exact: true }).click()
     await page.getByRole('button', { name: '确认替换并清空' }).click()
     await expect(page).toHaveURL(`/charts/${original.id}`)
@@ -158,8 +156,8 @@ for (const replaceAudio of [false, true]) {
     expect(submitted?.has('audio')).toBe(replaceAudio)
     expect(submitted?.get('description')).toBe(original.description)
     expect(JSON.parse(String(submitted?.get('difficultyMakers')))).toEqual([
-      { blockIndex: 0, maker: 'A' },
-      { blockIndex: 1, maker: 'B' },
+      { course: 'Hard', maker: 'A' },
+      { course: 'Oni', maker: 'B' },
     ])
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Replacement preview' })).toBeVisible()

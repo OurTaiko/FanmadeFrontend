@@ -4,17 +4,16 @@ import { normalizeTja } from './tja-encoding'
 import { ValidationError } from './validation-error'
 export { ValidationError } from './validation-error'
 
-export const validationVersion = 'tja-upload-v7'
+export const validationVersion = 'tja-upload-v8'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
 export type Difficulty = {
   course: string
   level: number
-  blockIndex: number
-  player: string
   maker: string
 }
 export type Metadata = {
+  isSingle: boolean
   title: string
   subtitle: string
   titleTranslations?: Partial<Record<'en' | 'ja' | 'zh' | 'ko', string>>
@@ -81,6 +80,7 @@ export function safeFilename(s: string) {
 }
 export function parseTja(data: Uint8Array, encoding: string, audioName: string): Metadata {
   const m: Metadata = {
+    isSingle: true,
     title: '',
     subtitle: '',
     maker: '',
@@ -110,7 +110,9 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     inBlock = false,
     hasNotes = false,
     course = 'Oni',
-    level = 0
+    level = 0,
+    style = 'Single'
+  const coursesSeen = new Set<string>()
   const seen = new Set<string>()
   for (const [index, raw] of text.replace(/\r\n/g, '\n').split('\n').entries()) {
     const line = index + 1
@@ -129,13 +131,17 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       started = true
       inBlock = true
       hasNotes = false
-      m.difficulties.push({
-        course,
-        level,
-        maker: m.maker,
-        blockIndex: m.difficulties.length,
-        player: s.slice(6).trim(),
-      })
+      const player = s.slice(6).trim()
+      const single = style === 'Single' && !player
+      if (!single && !player) fail('TJA_PLAYER_REQUIRED', t('messages.doublePlayerRequired'), line)
+      if (m.difficulties.length && m.isSingle !== single)
+        fail('TJA_MODE_MIXED', t('messages.mixedChartModes'), line)
+      m.isSingle = single
+      const courseKey = player ? `${course}_${player === 'P1' ? '1p' : '2p'}` : course
+      if (coursesSeen.has(courseKey))
+        fail('TJA_DIFFICULTY_DUPLICATE', t('messages.duplicateCourse'), line)
+      coursesSeen.add(courseKey)
+      m.difficulties.push({ course: courseKey, level, maker: m.maker })
       continue
     }
     if (s === '#END') {
@@ -164,6 +170,18 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     }
     if (['LYRICS', 'BGIMAGE', 'BGMOVIE'].includes(upper) && value)
       fail('TJA_RESOURCE_UNSUPPORTED', t('messages.onlyTjaWithASingleOggOrMp3IsAccepted'), line)
+    if (upper === 'STYLE') {
+      const parsed = {
+        single: 'Single',
+        '0': 'Single',
+        double: 'Double',
+        duet: 'Double',
+        '1': 'Double',
+      }[value.toLowerCase()]
+      if (!parsed || inBlock) fail('TJA_STRUCTURE_INVALID', t('messages.invalidChartStyle'), line)
+      style = parsed!
+      continue
+    }
     if (upper === 'COURSE') {
       if (['tower', 'dan', '5', '6'].includes(value.toLowerCase()))
         fail(
@@ -179,6 +197,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
           line,
         )
       course = parsed!
+      style = 'Single'
       level = 0
       continue
     }

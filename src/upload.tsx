@@ -186,9 +186,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       form.append('categoryIds', JSON.stringify(categoryIds))
       form.append(
         'difficultyMakers',
-        JSON.stringify(
-          metadata.difficulties.map(({ blockIndex, maker }) => ({ blockIndex, maker })),
-        ),
+        JSON.stringify(metadata.difficulties.map(({ course, maker }) => ({ course, maker }))),
       )
       const chart = await uploadChart(
         form,
@@ -375,19 +373,14 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                 </TableHeader>
                 <TableBody>
                   {metadata.difficulties.map((d) => (
-                    <TableRow key={d.blockIndex}>
+                    <TableRow key={d.course}>
                       <TableHead scope="row">
                         {isSupportedCourse(d.course) ? courseNames[d.course] : d.course} ·{' '}
                         {d.course} ★{d.level}
-                        {d.player && ` · ${d.player}`} <small>#{d.blockIndex + 1}</small>
                       </TableHead>
                       <TableCell>
                         <Input
-                          aria-label={t('messages.difficultyCreator', {
-                            difficulty: d.course,
-                            player: d.player ? ` ${d.player}` : '',
-                            block: d.blockIndex + 1,
-                          })}
+                          aria-label={t('messages.courseCreator', { difficulty: d.course })}
                           value={d.maker}
                           maxLength={500}
                           placeholder={t('messages.notSpecified')}
@@ -399,7 +392,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                                 current && {
                                   ...current,
                                   difficulties: current.difficulties.map((block) =>
-                                    block.blockIndex === d.blockIndex ? { ...block, maker } : block,
+                                    block.course === d.course ? { ...block, maker } : block,
                                   ),
                                 },
                             )

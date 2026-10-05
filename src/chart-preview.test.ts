@@ -8,10 +8,8 @@ describe('detail difficulty selection', () => {
   const courses = ['Easy', 'Normal', 'Hard', 'Edit', 'Oni']
   it('defaults to Oni and follows the requested fallback order', () => {
     while (courses.length) {
-      const difficulties: Difficulty[] = courses.map((course, blockIndex) => ({
+      const difficulties: Difficulty[] = courses.map((course) => ({
         course,
-        blockIndex,
-        player: '',
         maker: '',
         level: 5,
       }))
@@ -19,10 +17,15 @@ describe('detail difficulty selection', () => {
       courses.pop()
     }
     expect(defaultDifficulty([])).toBe('')
+    expect(defaultDifficulty([{ course: 'Tower', level: 5, maker: '' }])).toBe('')
+    expect(Object.keys(courseNames)).toHaveLength(15)
+    expect(supportsChart([{ course: 'Oni_1p' }, { course: 'Oni_2p' }])).toBe(true)
     expect(
-      defaultDifficulty([{ course: 'Tower', level: 5, blockIndex: 0, player: '', maker: '' }]),
-    ).toBe('')
-    expect(Object.keys(courseNames)).toEqual(['Easy', 'Normal', 'Hard', 'Oni', 'Edit'])
+      defaultDifficulty([
+        { course: 'Oni_2p', level: 10, maker: '' },
+        { course: 'Oni_1p', level: 9, maker: '' },
+      ]),
+    ).toBe('Oni_1p')
     expect(supportsChart([{ course: 'Oni' }, { course: 'Dan' }])).toBe(false)
     expect(supportsChart([{ course: 'Oni' }, { course: 'Edit' }])).toBe(true)
   })
@@ -53,7 +56,7 @@ LEVEL:6
 1212,
 #END`
     const parsed = parsePreviewTja(text)
-    expect(Object.keys(parsed)).toEqual(['0', '1', '2', '3'])
+    expect(Object.keys(parsed)).toEqual(['Oni', 'Oni_1p', 'Oni_2p', 'Hard'])
     expect(Object.values(parsed).map((c) => c.level)).toEqual([8, 10, 10, 6])
     expect(Object.values(parsed).map((c) => c.bars[0].join(''))).toEqual([
       '1111',
@@ -69,9 +72,9 @@ LEVEL:6
     const parsed = parsePreviewTja(
       '\uFEFFtitle:Song\r\nbpm:180\r\nlevel:7\r\n#start // comment\r\n1000,\r\n#end\r\n',
     )
-    expect(parsed[0].title).toBe('Song')
-    expect(parsed[0].level).toBe(7)
-    expect(parsed[0].bars[0].join('')).toBe('1000')
+    expect(parsed.Oni.title).toBe('Song')
+    expect(parsed.Oni.level).toBe(7)
+    expect(parsed.Oni.bars[0].join('')).toBe('1000')
   })
   it('preserves selectable branch charts', () => {
     const parsed = parsePreviewTja(`TITLE:Branch
@@ -88,8 +91,8 @@ COURSE:Oni
 1212,
 #BRANCHEND
 #END`)
-    expect(Object.keys(parsed[0].branches ?? {})).toEqual(['normal', 'expert', 'master'])
-    expect(parsed[0].branches?.master?.bars.some((bar) => bar.join('') === '1212')).toBe(true)
+    expect(Object.keys(parsed.Oni.branches ?? {})).toEqual(['normal', 'expert', 'master'])
+    expect(parsed.Oni.branches?.master?.bars.some((bar) => bar.join('') === '1212')).toBe(true)
   })
   it.each(['Tower', 'Dan', '5', '6', 'tower', 'dAn'])('rejects %s in preview input', (course) => {
     expect(() =>
@@ -102,4 +105,12 @@ COURSE:Oni
     expect(() => parsePreviewTja('TITLE:Empty')).toThrow()
     expect(() => parsePreviewTja('COURSE:Oni\n#START\n1,')).toThrow()
   })
+})
+
+it('keeps side identities when the TJA starts with P2', () => {
+  const parsed = parsePreviewTja(
+    'TITLE:D\nBPM:120\nCOURSE:Oni\nLEVEL:10\n#START P2\n2222,\n#END\n#START P1\n1111,\n#END',
+  )
+  expect(parsed.Oni_1p.bars[0].join('')).toBe('1111')
+  expect(parsed.Oni_2p.bars[0].join('')).toBe('2222')
 })

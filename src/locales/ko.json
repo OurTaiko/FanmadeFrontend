@@ -388,7 +388,15 @@
     "activeSearchFilters": "선택한 조건",
     "resetSearchFilters": "필터 초기화",
     "tryOtherSearchFilters": "다른 검색어, 난이도 또는 별 개수를 선택하거나 필터를 초기화하세요.",
-    "searchChartKeywords": "곡명, 부제, 번역명 또는 채보 제작자 검색…"
+    "searchChartKeywords": "곡명, 부제, 번역명 또는 채보 제작자 검색…",
+    "doublePlayerRequired": "더블 채보에는 #START P1 또는 #START P2가 필요합니다",
+    "mixedChartModes": "싱글과 더블 채보는 별도 파일로 업로드하세요",
+    "duplicateCourse": "난이도 또는 플레이어 위치가 중복됩니다",
+    "invalidChartStyle": "STYLE은 채보 블록 밖에서 Single 또는 Double로 지정하세요",
+    "courseCreator": "{{difficulty}} 제작자",
+    "bestScoresTiesShareRanks": "개인 최고 점수 · 동점은 공동 순위",
+    "leaderboardUnavailable": "순위표를 사용할 수 없습니다",
+    "serverDoesNotSupportLeaderboard": "서버가 이 난이도의 순위표를 지원하지 않습니다."
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 창작 채보",

@@ -24,7 +24,7 @@ import {
 } from '@phosphor-icons/react'
 import { api } from './api/client'
 import type { Chart, Leaderboard } from './api/types'
-import { courseNames, isSupportedCourse } from './courses'
+import { courseNames, isSupportedCourse, baseCourse } from './courses'
 import { Notice } from './notifications'
 import { defaultDifficulty } from './chart-difficulty'
 import { useSession } from './session-context'
@@ -106,14 +106,12 @@ export function ChartActivity({ chart }: { chart: Chart }) {
         >
           <TabsList aria-label={t('messages.selectDifficulty')} className={tabButtonGroupClassName}>
             {courses.map((value) => {
-              const difficulty =
-                chart.difficulties.find((d) => d.course === value && d.cloudScoreEligible) ??
-                chart.difficulties.find((d) => d.course === value)!
+              const difficulty = chart.difficulties.find((d) => d.course === value)!
               return (
                 <TabsTrigger
                   key={value}
                   value={value}
-                  className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[value]}`}
+                  className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[baseCourse(value)]}`}
                 >
                   {courseNames[value]}
                   <span
@@ -226,8 +224,8 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
   if (!data.supported)
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
-        <Notice kind="info" title={t('messages.thisDifficultyUsesADoubleChart')}>
-          {t('messages.doubleChartsDoNotSaveCloudScoresAndHaveNoLeaderboard')}
+        <Notice kind="info" title={t('messages.leaderboardUnavailable')}>
+          {t('messages.serverDoesNotSupportLeaderboard')}
         </Notice>
       </div>
     )
@@ -236,7 +234,7 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm [&>span]:text-muted-foreground">
         <strong>{t('common.playerCount', { count: data.total })}</strong>
-        <span>{t('messages.soloBestScoresTiesShareRanks')}</span>
+        <span>{t('messages.bestScoresTiesShareRanks')}</span>
       </div>
       {data.items.length === 0 ? (
         <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
