@@ -408,7 +408,9 @@
     "metadataTab_makers": "谱师名义",
     "metadataTab_translations": "译名",
     "editMetadataTabsHint": "切换标签页不会丢失修改，完成后统一保存。",
-    "makerValidation": "谱师名义不能超过 500 字节或包含控制字符。"
+    "makerValidation": "谱师名义不能超过 500 字节或包含控制字符。",
+    "uploadFilesTab": "文件与封面",
+    "uploadPreviewHint": "先选择文件，再调整试听区间；点击播放即可试听，发布时按此区间生成片段。超出音频的终点会截到歌曲结尾。"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",

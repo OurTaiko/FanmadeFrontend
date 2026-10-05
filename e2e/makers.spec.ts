@@ -71,6 +71,9 @@ test('upload maker defaults, individual edits, submitted per-difficulty mapping 
     const form = await new Response(route.request().postDataBuffer()!, {
       headers: { 'Content-Type': route.request().headers()['content-type'] },
     }).formData()
+    expect(form.get('demoStart')).toBe('0.1')
+    expect(form.get('demoEnd')).toBe('0.3')
+    expect(form.get('description')).toBe('Upload tabs test')
     submitted = JSON.parse(String(form.get('difficultyMakers')))
     await route.fulfill({ status: 201, json: chart })
   })
@@ -83,6 +86,37 @@ test('upload maker defaults, individual edits, submitted per-difficulty mapping 
     .setInputFiles({ name: 'cbr.mp3', mimeType: 'audio/mpeg', buffer: audio })
   await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
   await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await expect(page.getByRole('tablist').getByRole('tab')).toHaveText([
+    '文件与封面',
+    '谱面分类',
+    '试听',
+    '谱面介绍',
+    '谱师名义',
+  ])
+  await page.getByRole('tab', { name: '试听', exact: true }).click()
+  await expect(page.getByLabel('试听开始（秒）')).toHaveValue('0')
+  await expect(page.getByLabel('试听结束（秒）')).toHaveValue('15')
+  await page.getByLabel('试听结束（秒）').fill('0')
+  await page.getByRole('button', { name: '发布谱面', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('终点须晚于起点')
+  await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await page.getByLabel('试听开始（秒）').fill('0.1')
+  await page.getByLabel('试听结束（秒）').fill('0.3')
+  await page.getByRole('button', { name: '播放试听', exact: true }).click()
+  await expect
+    .poll(() => page.locator('audio').evaluate((a: HTMLAudioElement) => a.currentTime))
+    .toBeGreaterThanOrEqual(0.1)
+  await expect
+    .poll(() => page.locator('audio').evaluate((a: HTMLAudioElement) => a.paused))
+    .toBe(true)
+  await page.getByRole('tab', { name: '谱面介绍', exact: true }).click()
+  await page.getByLabel('投稿说明', { exact: true }).fill('Upload tabs test')
+  await page.getByRole('tab', { name: '试听', exact: true }).click()
+  await expect(page.getByLabel('试听结束（秒）')).toHaveValue('0.3')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: '/tmp/upload-preview-tabs.png', fullPage: true })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.getByRole('tab', { name: '谱师名义', exact: true }).click()
   await expect(page.getByRole('table')).toHaveCount(1)
   for (const [i, course] of ['Hard', 'Oni', 'Edit'].entries())
     await expect(page.getByLabel(`${course} 制作者`)).toHaveValue('A')

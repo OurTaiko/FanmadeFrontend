@@ -32,6 +32,7 @@ test('register, reject mismatched ESE audio locally, publish, download, delete a
   await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
   await page.getByRole('button', { name: '知道了', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Happy Synthesizer', exact: true })).toBeVisible()
+  await page.getByRole('tab', { name: '谱面介绍', exact: true }).click()
   await page.getByLabel('投稿说明', { exact: true }).fill('ESE 原始文件 · 浏览器端到端验证')
   await page.getByRole('button', { name: '发布谱面', exact: true }).click()
   await expect(page).toHaveURL(/\/charts\/[a-f0-9]{32}$/, { timeout: 60000 })

@@ -115,7 +115,9 @@ for (const replaceAudio of [false, true]) {
     await page.getByRole('link', { name: '更新歌曲与谱面' }).click()
     await expect(page.getByRole('heading', { name: '更新歌曲与谱面' })).toBeVisible()
     await expect(page.getByLabel('更新须知')).toContainText('即使某个难度没有变化也不继承成绩')
+    await page.getByRole('tab', { name: '谱面介绍', exact: true }).click()
     await expect(page.getByLabel('投稿说明')).toHaveValue('Keep description')
+    await page.getByRole('tab', { name: '文件与封面', exact: true }).click()
     await page
       .getByLabel('选择 TJA 谱面')
       .setInputFiles({ name: 'updated.tja', mimeType: 'text/plain', buffer: Buffer.from(source) })
@@ -128,6 +130,10 @@ for (const replaceAudio of [false, true]) {
       await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
       await page.getByRole('button', { name: '知道了', exact: true }).click()
     }
+    await page.getByRole('tab', { name: '试听', exact: true }).click()
+    await page.getByLabel('试听开始（秒）').fill('0.1')
+    await page.getByLabel('试听结束（秒）').fill('0.3')
+    await page.getByRole('tab', { name: '谱师名义', exact: true }).click()
     await page.getByLabel('Oni 制作者').fill('B')
     await page.screenshot({
       path: `test-results/replacement-${replaceAudio}-desktop.png`,

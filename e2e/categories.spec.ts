@@ -10,6 +10,7 @@ async function login(page: Page) {
   return registerAccount(page, 'cat' + randomUUID().slice(0, 8), randomUUID())
 }
 async function files(page: Page) {
+  await page.getByRole('tab', { name: '文件与封面', exact: true }).click()
   await page.getByLabel('选择 TJA 谱面').setInputFiles({
     name: 'categories.tja',
     mimeType: 'application/octet-stream',
@@ -52,6 +53,7 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     return route.continue()
   })
   await page.goto('/upload')
+  await page.getByRole('tab', { name: '谱面分类', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('分类加载失败')
   failCategories = false
   await page.getByRole('button', { name: '重试加载分类' }).click()
@@ -135,6 +137,7 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
 test('upload with no selected categories defaults to Variety', async ({ page }) => {
   const session = await login(page)
   await page.goto('/upload')
+  await page.getByRole('tab', { name: '谱面分类', exact: true }).click()
   await expect(page.getByRole('checkbox')).toHaveCount(6)
   await files(page)
   const chart = await publish(page)

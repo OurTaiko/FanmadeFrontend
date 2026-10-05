@@ -408,7 +408,9 @@
     "metadataTab_makers": "Charter credits",
     "metadataTab_translations": "Translations",
     "editMetadataTabsHint": "Changes are kept when switching tabs. Save when finished.",
-    "makerValidation": "Charter credits must not exceed 500 bytes or contain control characters."
+    "makerValidation": "Charter credits must not exceed 500 bytes or contain control characters.",
+    "uploadFilesTab": "Files & cover",
+    "uploadPreviewHint": "Choose files, adjust the preview range, then press play to listen. Publishing generates this clip; the end is capped at the audio duration."
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",

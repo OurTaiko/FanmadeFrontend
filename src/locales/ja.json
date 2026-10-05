@@ -408,7 +408,9 @@
     "metadataTab_makers": "譜面作者名義",
     "metadataTab_translations": "翻訳名",
     "editMetadataTabsHint": "タブを切り替えても変更は保持されます。完了後に保存してください。",
-    "makerValidation": "譜面作者名義は500バイト以内で、制御文字は使用できません。"
+    "makerValidation": "譜面作者名義は500バイト以内で、制御文字は使用できません。",
+    "uploadFilesTab": "ファイルと画像",
+    "uploadPreviewHint": "ファイルを選び、試聴範囲を調整して再生できます。公開時にこの範囲の音声を生成します。終点が曲の長さを超える場合は曲末までになります。"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",
