@@ -410,7 +410,16 @@
     "editMetadataTabsHint": "切换标签页不会丢失修改，完成后统一保存。",
     "makerValidation": "谱师名义不能超过 500 字节或包含控制字符。",
     "uploadFilesTab": "文件与封面",
-    "uploadPreviewHint": "先选择文件，再调整试听区间；点击播放即可试听，发布时按此区间生成片段。超出音频的终点会截到歌曲结尾。"
+    "uploadPreviewHint": "先选择文件，再调整试听区间；点击播放即可试听，发布时按此区间生成片段。超出音频的终点会截到歌曲结尾。",
+    "chartImage": "谱面图片",
+    "playerPractice": "练习",
+    "playerWatch": "观看谱面",
+    "playerClose": "关闭播放器",
+    "playerHelp": "F / J 打咚，D / K 打咔，空格暂停；也可点击鼓面。暂停后可调整小节和速度，本播放器不上传成绩。",
+    "playerFailed": "播放器加载失败",
+    "playerFinished": "播放结束，已回到第一小节并暂停。",
+    "playerChoose": "选择练习或观看谱面后加载播放器。",
+    "playerFullscreen": "全屏"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",

@@ -31,6 +31,7 @@ import { useSession } from './session-context'
 import { maxTja } from './tja'
 
 const ChartPreview = lazy(() => import('./chart-preview'))
+const EmbeddedPlayer = lazy(() => import('./embedded-player'))
 
 const difficultyTabColors = {
   Easy: '[--difficulty-bg:var(--color-orange-100)] [--difficulty-fg:var(--color-orange-800)] dark:[--difficulty-bg:#493128] dark:[--difficulty-fg:#f7bb78]',
@@ -52,7 +53,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   const { t } = useTranslation()
 
   const [course, setCourse] = useState(() => defaultDifficulty(chart.difficulties))
-  const [tab, setTab] = useState<'preview' | 'leaderboard'>('preview')
+  const [tab, setTab] = useState<'image' | 'preview' | 'leaderboard'>('image')
   const [source, setSource] = useState('')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -128,6 +129,10 @@ export function ChartActivity({ chart }: { chart: Chart }) {
         </Tabs>
         <Separator orientation="vertical" className="h-6 data-vertical:self-center" />
         <TabsList aria-label={t('messages.songDetails')} className={tabButtonGroupClassName}>
+          <TabsTrigger value="image" className={tabButtonClassName}>
+            <FileMusic size={18} />
+            {t('messages.chartImage')}
+          </TabsTrigger>
           <TabsTrigger value="preview" className={tabButtonClassName}>
             <FileMusic size={18} />
             {t('messages.chartPreview')}
@@ -139,8 +144,8 @@ export function ChartActivity({ chart }: { chart: Chart }) {
         </TabsList>
       </section>
       <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6">
-        <TabsContent value="preview">
-          {tab === 'preview' &&
+        <TabsContent value="image">
+          {tab === 'image' &&
             (error ? (
               <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
                 <Notice>{error}</Notice>
@@ -168,6 +173,23 @@ export function ChartActivity({ chart }: { chart: Chart }) {
                 }
               >
                 <ChartPreview key={course} chart={chart} source={source} course={course} />
+              </Suspense>
+            ))}
+        </TabsContent>
+        <TabsContent value="preview">
+          {tab === 'preview' &&
+            (error ? (
+              <div className="space-y-3">
+                <Notice>{error}</Notice>
+                <Button variant="outline" onClick={() => setAttempt((n) => n + 1)}>
+                  {t('messages.reload')}
+                </Button>
+              </div>
+            ) : !source ? (
+              <p role="status">{t('messages.loadingTjaFromServer')}</p>
+            ) : (
+              <Suspense fallback={<p role="status">{t('messages.loadingChartPreview')}</p>}>
+                <EmbeddedPlayer chart={chart} source={source} course={course} />
               </Suspense>
             ))}
         </TabsContent>

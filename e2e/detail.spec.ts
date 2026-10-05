@@ -16,7 +16,7 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
     if (new URL(r.url()).pathname.endsWith('/tja')) files++
   })
   await page.goto(`/charts/${chart.id}`)
-  await expect(page.getByRole('tab', { name: '谱面预览', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('tab', { name: '谱面图片', exact: true })).toHaveAttribute(
     'aria-selected',
     'true',
   )
@@ -40,7 +40,7 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
   await selectValue(page, '选择难度', 'Oni')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
   await expect(page.getByText('个人最高分 · 同分并列')).toBeVisible()
-  await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
+  await page.getByRole('tab', { name: '谱面图片', exact: true }).click()
   await expect(canvas).toBeVisible()
   expect(files).toBe(fetched)
   await page.setViewportSize({ width: 390, height: 844 })
@@ -176,7 +176,7 @@ LEVEL:5
   await expect(page.getByText('第 1 / 2 页')).toBeVisible()
   await page.getByRole('tab', { name: '排行榜', exact: true }).focus()
   await page.keyboard.press('ArrowLeft')
-  await expect(page.getByRole('tab', { name: '谱面预览', exact: true })).toBeFocused()
+  await expect(page.getByRole('tab', { name: '谱面图片', exact: true })).toBeFocused()
 })
 
 test('real DOUBLE chart keeps P1 and P2 separate and has no leaderboard', async ({

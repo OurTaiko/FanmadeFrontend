@@ -410,7 +410,16 @@
     "editMetadataTabsHint": "タブを切り替えても変更は保持されます。完了後に保存してください。",
     "makerValidation": "譜面作者名義は500バイト以内で、制御文字は使用できません。",
     "uploadFilesTab": "ファイルと画像",
-    "uploadPreviewHint": "ファイルを選び、試聴範囲を調整して再生できます。公開時にこの範囲の音声を生成します。終点が曲の長さを超える場合は曲末までになります。"
+    "uploadPreviewHint": "ファイルを選び、試聴範囲を調整して再生できます。公開時にこの範囲の音声を生成します。終点が曲の長さを超える場合は曲末までになります。",
+    "chartImage": "譜面画像",
+    "playerPractice": "練習",
+    "playerWatch": "譜面を見る",
+    "playerClose": "プレイヤーを閉じる",
+    "playerHelp": "F / J: ドン、D / K: カッ、スペース: 一時停止。タッチ操作に対応。一時停止中は小節と速度を調整できます。成績は送信されません。",
+    "playerFailed": "プレイヤーを読み込めませんでした",
+    "playerFinished": "再生が終了し、最初の小節で一時停止しました。",
+    "playerChoose": "練習または譜面を見るを選択してください。",
+    "playerFullscreen": "全画面"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",

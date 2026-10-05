@@ -410,7 +410,16 @@
     "editMetadataTabsHint": "탭을 전환해도 변경 사항이 유지됩니다. 완료 후 저장하세요.",
     "makerValidation": "제작자 명의는 500바이트 이내이며 제어 문자를 포함할 수 없습니다.",
     "uploadFilesTab": "파일 및 커버",
-    "uploadPreviewHint": "파일을 선택하고 구간을 조정한 뒤 재생해 보세요. 게시할 때 해당 구간을 생성하며, 끝점이 곡 길이를 넘으면 곡 끝에서 잘립니다。"
+    "uploadPreviewHint": "파일을 선택하고 구간을 조정한 뒤 재생해 보세요. 게시할 때 해당 구간을 생성하며, 끝점이 곡 길이를 넘으면 곡 끝에서 잘립니다。",
+    "chartImage": "채보 이미지",
+    "playerPractice": "연습",
+    "playerWatch": "채보 보기",
+    "playerClose": "플레이어 닫기",
+    "playerHelp": "F / J: 동, D / K: 캇, 스페이스: 일시 정지. 터치 입력을 지원합니다. 일시 정지 중 마디와 속도를 조절할 수 있습니다. 기록은 업로드하지 않습니다.",
+    "playerFailed": "플레이어를 불러오지 못했습니다",
+    "playerFinished": "재생이 끝나 첫 마디에서 일시 정지했습니다.",
+    "playerChoose": "연습 또는 채보 보기를 선택하세요.",
+    "playerFullscreen": "전체 화면"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 창작 채보",
