@@ -10,8 +10,18 @@ import ko from './locales/ko.json'
 const chart = {
   title: 'Original',
   subtitle: '--Original subtitle',
-  titleTranslations: { zh: '中文曲名', ja: '日本語の曲名', ko: '한국어 곡명' },
-  subtitleTranslations: { zh: '++中文副标题', ja: '--日本語の副題', ko: '한국어 부제' },
+  titleTranslations: {
+    en: 'English translation',
+    zh: '中文曲名',
+    ja: '日本語の曲名',
+    ko: '한국어 곡명',
+  },
+  subtitleTranslations: {
+    en: '--English subtitle',
+    zh: '++中文副标题',
+    ja: '--日本語の副題',
+    ko: '한국어 부제',
+  },
 }
 afterEach(() => {
   void i18n.changeLanguage('zh-Hans')
@@ -31,11 +41,24 @@ describe('account language and chart fallback', () => {
   })
   it.each([
     ['zh-Hans', '中文曲名', '中文副标题'],
-    ['en', 'Original', 'Original subtitle'],
+    ['en', 'English translation', 'English subtitle'],
     ['ja', '日本語の曲名', '日本語の副題'],
     ['ko', '한국어 곡명', '한국어 부제'],
   ])('uses %s for title and subtitle independently', (language, title, subtitle) => {
     expect(chartText(chart, language)).toEqual({ title, subtitle })
+  })
+  it('falls back to English in the UI while keeping all server translations', () => {
+    const translated = {
+      ...chart,
+      titleTranslations: { en: 'English translation', zh: '中文' },
+      subtitleTranslations: { en: '--English subtitle' },
+    }
+    const before = JSON.stringify(translated)
+    expect(chartText(translated, 'ja')).toEqual({
+      title: 'English translation',
+      subtitle: 'English subtitle',
+    })
+    expect(JSON.stringify(translated)).toBe(before)
   })
   it('falls back directly to original fields without changing source metadata', () => {
     const missing = {
@@ -97,10 +120,15 @@ it('localizes API error codes and keeps line diagnostics', async () => {
 it('preserves localized TJA fields for the upload preview', async () => {
   const { parseTja } = await import('./tja')
   const data = new TextEncoder().encode(
-    'TITLE:Original\nTITLEZH:中文曲名\nTITLEJA:日本語\nSUBTITLEKO:한국어 부제\nWAVE:audio.ogg\nBPM:120\nCOURSE:Oni\nLEVEL:1\n#START\n1000,\n#END\n',
+    'TITLE:Original\nTITLEEN:English translation\nSUBTITLEEN:English subtitle\nTITLEZH:中文曲名\nTITLEJA:日本語\nSUBTITLEKO:한국어 부제\nWAVE:audio.ogg\nBPM:120\nCOURSE:Oni\nLEVEL:1\n#START\n1000,\n#END\n',
   )
   const metadata = parseTja(data, 'utf-8', 'audio.ogg')
-  expect(chartText(metadata, 'ko')).toEqual({ title: 'Original', subtitle: '한국어 부제' })
+  expect(chartText(metadata, 'ko')).toEqual({
+    title: 'English translation',
+    subtitle: '한국어 부제',
+  })
+  expect(metadata.titleTranslations?.en).toBe('English translation')
+  expect(metadata.subtitleTranslations?.en).toBe('English subtitle')
   expect(metadata.title).toBe('Original')
 })
 

@@ -16,17 +16,15 @@ import { Modal } from './notifications'
 
 const getLanguages = () =>
   [
-    { code: 'en', label: t('messages.english'), caption: t('messages.originalField') },
+    { code: 'en', label: t('messages.english'), caption: 'English' },
     { code: 'ja', label: t('messages.japanese'), caption: '日本語' },
     { code: 'zh', label: t('messages.chinese'), caption: t('messages.chinese') },
     { code: 'ko', label: t('messages.korean'), caption: '한국어' },
   ] as const
-type Language = 'en' | Locale
+type Language = Locale
 type Draft = Record<Language, { title: string; subtitle: string; restore: boolean }>
 type Patch = {
   categoryIds?: string[]
-  title?: string | null
-  subtitle?: string | null
   titleTranslations?: Partial<Record<Locale, string | null>>
   subtitleTranslations?: Partial<Record<Locale, string | null>>
 }
@@ -46,8 +44,8 @@ export function EditMetadata({
 
   const languages = getLanguages()
   const initial = (code: Language) => ({
-    title: code === 'en' ? chart.title : (chart.titleTranslations[code] ?? ''),
-    subtitle: code === 'en' ? chart.subtitle : (chart.subtitleTranslations[code] ?? ''),
+    title: chart.titleTranslations[code] ?? (code === 'en' ? chart.title : ''),
+    subtitle: chart.subtitleTranslations[code] ?? (code === 'en' ? chart.subtitle : ''),
     restore: false,
   })
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -100,18 +98,14 @@ export function EditMetadata({
           )
           return
         }
-        if (code === 'en') {
-          if (!current.restore && field === 'title' && !text) {
-            setError(t('messages.englishTitleIsRequired'))
-            return
-          }
-          patch[field] = current.restore ? null : text
-        } else {
-          const key = field === 'title' ? 'titleTranslations' : 'subtitleTranslations'
-          patch[key] = {
-            ...patch[key],
-            [code]: current.restore || (field === 'title' && !text) ? null : text,
-          }
+        if (code === 'en' && !current.restore && field === 'title' && !text) {
+          setError(t('messages.englishTitleIsRequired'))
+          return
+        }
+        const key = field === 'title' ? 'titleTranslations' : 'subtitleTranslations'
+        patch[key] = {
+          ...patch[key],
+          [code]: current.restore || (field === 'title' && !text) ? null : text,
         }
       }
     }

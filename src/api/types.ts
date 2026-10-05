@@ -7,7 +7,7 @@ export type User = {
   isAdmin: boolean
   preferredLanguage?: string
 }
-export type Locale = 'ja' | 'zh' | 'ko'
+export type Locale = 'en' | 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
 export type Category = { id: string; title: string; genre: string }
 export type Chart = Omit<Metadata, 'difficulties'> & {

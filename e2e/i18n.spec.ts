@@ -6,8 +6,13 @@ const chart: Chart = {
   id: 'language-chart',
   title: 'Original title',
   subtitle: '--Original subtitle',
-  titleTranslations: { zh: '中文曲名', ja: '日本語の曲名', ko: '한국어 곡명' },
-  subtitleTranslations: { zh: '中文副标题', ja: '--日本語の副題', ko: '한국어 부제' },
+  titleTranslations: { en: 'English title', zh: '中文曲名', ja: '日本語の曲名', ko: '한국어 곡명' },
+  subtitleTranslations: {
+    en: '--English subtitle',
+    zh: '中文副标题',
+    ja: '--日本語の副題',
+    ko: '한국어 부제',
+  },
   ownerId: 'language-user',
   uploader: 'Test creator',
   categoryIds: [],
@@ -76,7 +81,7 @@ async function fixture(page: Page, language?: string, loggedIn = true) {
 
 for (const [language, htmlLanguage, heading, title, subtitle] of [
   ['zh-hans', 'zh-CN', '发现好谱。', '中文曲名', '中文副标题'],
-  ['en', 'en', 'Discover great charts.', 'Original title', 'Original subtitle'],
+  ['en', 'en', 'Discover great charts.', 'English title', 'English subtitle'],
   ['ja', 'ja', 'お気に入りの譜面を見つけよう。', '日本語の曲名', '日本語の副題'],
   ['ko', 'ko', '멋진 채보를 발견하세요.', '한국어 곡명', '한국어 부제'],
 ]) {
@@ -184,4 +189,37 @@ test('anonymous visitors use Chinese even with an English browser preference', a
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
   await expect(page.getByTestId('chart-card')).toContainText('中文曲名')
+})
+
+test('English edits use the same translation dictionary and preserve other languages', async ({
+  page,
+}) => {
+  await fixture(page, 'en')
+  let current = { ...chart }
+  await page.route('**/api/v1/charts/language-chart', async (route) => {
+    if (route.request().method() === 'PATCH') {
+      const patch = route.request().postDataJSON()
+      expect(patch).toEqual({ titleTranslations: { en: 'Edited English' } })
+      current = {
+        ...current,
+        titleTranslations: { ...current.titleTranslations, ...patch.titleTranslations },
+      }
+    }
+    await route.fulfill({ json: current })
+  })
+  await page.goto('/charts/language-chart')
+  await expect(page.getByRole('heading', { name: 'English title', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Edit information', exact: true }).click()
+  await expect(page.locator('#edit-en-title')).toHaveValue('English title')
+  await page.locator('#edit-en-title').fill('Edited English')
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Success' })
+    .getByRole('button', { name: 'Got it', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'Edited English', exact: true })).toBeVisible()
+  expect(current.title).toBe('Original title')
+  expect(current.titleTranslations.ja).toBe('日本語の曲名')
+  expect(current.titleTranslations.zh).toBe('中文曲名')
+  expect(current.titleTranslations.ko).toBe('한국어 곡명')
 })

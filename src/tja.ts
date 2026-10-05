@@ -4,7 +4,7 @@ import { normalizeTja } from './tja-encoding'
 import { ValidationError } from './validation-error'
 export { ValidationError } from './validation-error'
 
-export const validationVersion = 'tja-upload-v6'
+export const validationVersion = 'tja-upload-v7'
 export const maxTja = 2 * 1024 * 1024
 export const maxAudio = 100 * 1024 * 1024
 export type Difficulty = {
@@ -17,8 +17,8 @@ export type Difficulty = {
 export type Metadata = {
   title: string
   subtitle: string
-  titleTranslations?: Partial<Record<'ja' | 'zh' | 'ko', string>>
-  subtitleTranslations?: Partial<Record<'ja' | 'zh' | 'ko', string>>
+  titleTranslations?: Partial<Record<'en' | 'ja' | 'zh' | 'ko', string>>
+  subtitleTranslations?: Partial<Record<'en' | 'ja' | 'zh' | 'ko', string>>
   maker: string
   bpm: number
   offset: number
@@ -189,7 +189,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
       level = n
       continue
     }
-    const localized = /^(TITLE|SUBTITLE)(JA|ZH|KO)$/.exec(key)
+    const localized = /^(TITLE|SUBTITLE)(EN|JA|ZH|KO)$/.exec(key)
     if (localized) {
       if (started || seen.has(key))
         fail('TJA_STRUCTURE_INVALID', t('messages.metadataScopeError', { field: key }), line)
@@ -197,7 +197,7 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
         fail('TJA_STRUCTURE_INVALID', t('messages.metadataFieldIsTooLong'), line)
       seen.add(key)
       const field = localized[1] === 'TITLE' ? 'titleTranslations' : 'subtitleTranslations'
-      const language = localized[2].toLowerCase() as 'ja' | 'zh' | 'ko'
+      const language = localized[2].toLowerCase() as 'en' | 'ja' | 'zh' | 'ko'
       m[field] = { ...m[field], [language]: value }
       continue
     }
@@ -255,6 +255,8 @@ export function parseTja(data: Uint8Array, encoding: string, audioName: string):
     )
   if (!m.title || m.bpm <= 0 || inBlock || !m.difficulties.length)
     fail('TJA_STRUCTURE_INVALID', t('messages.titleAPositiveBpmAndCompleteChartBlocksAreRequired'))
+  m.titleTranslations = { en: m.title, ...m.titleTranslations }
+  m.subtitleTranslations = { en: m.subtitle, ...m.subtitleTranslations }
   return m
 }
 export type PreparedTja = Metadata & { file: File; sourceEncoding: string }
