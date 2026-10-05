@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
@@ -24,6 +26,8 @@ const getLanguages = () =>
 type Language = Locale
 type Draft = Record<Language, { title: string; subtitle: string; restore: boolean }>
 type Patch = {
+  description?: string
+  difficultyMakers?: { course: string; maker: string }[]
   demoStart?: number
   demoEnd?: number
   categoryIds?: string[]
@@ -56,6 +60,12 @@ export function EditMetadata({
     zh: initial('zh'),
     ko: initial('ko'),
   }))
+  const [tab, setTab] = useState('categories')
+  const [description, setDescription] = useState(chart.description)
+  const [makers, setMakers] = useState(
+    chart.difficulties.map(({ course, maker }) => ({ course, maker })),
+  )
+  const makersChanged = makers.some((d, i) => d.maker !== chart.difficulties[i].maker)
   const [categoryIds, setCategoryIds] = useState<string[]>(chart.categoryIds ?? [])
   const categoriesChanged =
     [...categoryIds].sort().join() !== [...(chart.categoryIds ?? [])].sort().join()
@@ -67,11 +77,13 @@ export function EditMetadata({
   const [busy, setBusy] = useState(false)
   const { notify } = useNotification()
   const setError = (message: string) => notify(message, 'error')
-  const firstInput = useRef<HTMLInputElement>(null)
+  const firstInput = useRef<HTMLButtonElement>(null)
   const request = useRef<AbortController | null>(null)
   useEffect(() => () => request.current?.abort(), [])
 
   const changed =
+    description !== chart.description ||
+    makersChanged ||
     categoriesChanged ||
     previewChanged ||
     languages.some(
@@ -84,6 +96,24 @@ export function EditMetadata({
     e.preventDefault()
     if (request.current || !changed) return
     const patch: Patch = categoriesChanged ? { categoryIds } : {}
+    if (description !== chart.description) patch.description = description
+    if (makersChanged) {
+      if (
+        makers.some(
+          ({ maker }) =>
+            new TextEncoder().encode(maker.trim()).length > 500 ||
+            Array.from(maker.trim()).some((char) => {
+              const code = char.codePointAt(0)!
+              return code < 32 || (code >= 127 && code <= 159)
+            }),
+        )
+      ) {
+        setTab('makers')
+        setError(t('messages.makerValidation'))
+        return
+      }
+      patch.difficultyMakers = makers
+    }
     if (previewChanged) {
       const start = Number(demoStart),
         end = Number(demoEnd)
@@ -97,6 +127,7 @@ export function EditMetadata({
         end <= start ||
         end > 1215
       ) {
+        setTab('preview')
         setError(t('messages.previewRangeInvalid'))
         return
       }
@@ -117,6 +148,7 @@ export function EditMetadata({
               return code < 32 || (code >= 127 && code <= 159)
             }))
         ) {
+          setTab('translations')
           setError(
             t('messages.metadataValidationError', {
               language: label,
@@ -126,6 +158,7 @@ export function EditMetadata({
           return
         }
         if (code === 'en' && !current.restore && field === 'title' && !text) {
+          setTab('translations')
           setError(t('messages.englishTitleIsRequired'))
           return
         }
@@ -161,113 +194,185 @@ export function EditMetadata({
       actions={null}
       className="sm:max-w-3xl"
     >
-      <form onSubmit={submit} aria-busy={busy}>
+      <form onSubmit={submit} aria-busy={busy} noValidate>
         <div className="space-y-6">
           <p id="edit-metadata-hint" className="text-sm text-muted-foreground">
-            {t('messages.editCategoriesTitlesAndSubtitlesSavedScoresAndDownloadContentsStayIntact')}
+            {t('messages.editMetadataTabsHint')}
           </p>
-          <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
-          <fieldset disabled={busy} className="space-y-3 rounded-2xl border p-4">
-            <legend className="px-2 font-medium">{t('messages.previewRange')}</legend>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Label htmlFor="edit-demo-start" className="flex flex-col items-start gap-2">
-                {t('messages.previewStartSeconds')}
-                <Input
-                  id="edit-demo-start"
-                  type="number"
-                  min="0"
-                  step="any"
-                  required
-                  value={demoStart}
-                  onChange={(e) => setDemoStart(e.target.value)}
-                />
-              </Label>
-              <Label htmlFor="edit-demo-end" className="flex flex-col items-start gap-2">
-                {t('messages.previewEndSeconds')}
-                <Input
-                  id="edit-demo-end"
-                  type="number"
-                  min="0"
-                  max="1215"
-                  step="any"
-                  required
-                  value={demoEnd}
-                  onChange={(e) => setDemoEnd(e.target.value)}
-                />
-              </Label>
+          <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
+            <div className="overflow-x-auto pb-1">
+              <TabsList
+                aria-label={t('messages.editChartInformation')}
+                className="grid h-auto! w-full grid-cols-3 rounded-2xl sm:grid-cols-5"
+              >
+                {(['categories', 'preview', 'description', 'makers', 'translations'] as const).map(
+                  (value) => (
+                    <TabsTrigger
+                      key={value}
+                      className="h-auto py-2"
+                      value={value}
+                      disabled={busy}
+                      ref={value === 'categories' ? firstInput : undefined}
+                    >
+                      {t(`messages.metadataTab_${value}`)}
+                    </TabsTrigger>
+                  ),
+                )}
+              </TabsList>
             </div>
-            <p className="text-sm text-muted-foreground">{t('messages.previewRangeHint')}</p>
-          </fieldset>
-          {languages.map(({ code, label, caption }) => (
-            <fieldset
-              key={code}
-              className="min-w-0 space-y-4 rounded-2xl border p-4 [&>legend]:px-2 [&>legend]:font-medium [&>legend_span]:ml-2 [&>legend_span]:text-xs [&>legend_span]:text-muted-foreground"
-              disabled={busy}
-            >
-              <legend>
-                {label}
-                <span>{caption}</span>
-              </legend>
-              <div className="grid gap-4 sm:grid-cols-2 [&>label]:flex [&>label]:flex-col [&>label]:items-start [&>label]:gap-2">
-                <Label htmlFor={`edit-${code}-title`}>
-                  {t('messages.localizedTitle', { language: label })}
+            <TabsContent value="categories" className="pt-3">
+              <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
+            </TabsContent>
+            <TabsContent value="preview" className="pt-3">
+              <fieldset disabled={busy} className="space-y-3 rounded-2xl border p-4">
+                <legend className="px-2 font-medium">{t('messages.previewRange')}</legend>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Label htmlFor="edit-demo-start" className="flex flex-col items-start gap-2">
+                    {t('messages.previewStartSeconds')}
+                    <Input
+                      id="edit-demo-start"
+                      type="number"
+                      min="0"
+                      step="any"
+                      required
+                      value={demoStart}
+                      onChange={(e) => setDemoStart(e.target.value)}
+                    />
+                  </Label>
+                  <Label htmlFor="edit-demo-end" className="flex flex-col items-start gap-2">
+                    {t('messages.previewEndSeconds')}
+                    <Input
+                      id="edit-demo-end"
+                      type="number"
+                      min="0"
+                      max="1215"
+                      step="any"
+                      required
+                      value={demoEnd}
+                      onChange={(e) => setDemoEnd(e.target.value)}
+                    />
+                  </Label>
+                </div>
+                <p className="text-sm text-muted-foreground">{t('messages.previewRangeHint')}</p>
+              </fieldset>
+            </TabsContent>
+            <TabsContent value="description" className="space-y-3 pt-3">
+              <Label htmlFor="edit-description">{t('messages.metadataTab_description')}</Label>
+              <Textarea
+                id="edit-description"
+                rows={6}
+                maxLength={1000}
+                value={description}
+                disabled={busy}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              <p className="text-right text-xs text-muted-foreground">
+                {description.length} / 1000
+              </p>
+            </TabsContent>
+            <TabsContent value="makers" className="space-y-4 pt-3">
+              {makers.map((d, index) => (
+                <div key={d.course} className="space-y-2">
+                  <Label htmlFor={`edit-maker-${d.course}`}>
+                    {d.course} ★{chart.difficulties[index].level}
+                  </Label>
                   <Input
-                    id={`edit-${code}-title`}
-                    value={draft[code].title}
-                    required={code === 'en' && !draft[code].restore}
-                    disabled={draft[code].restore}
+                    id={`edit-maker-${d.course}`}
+                    value={d.maker}
                     maxLength={500}
-                    autoComplete="off"
-                    ref={code === 'en' ? firstInput : undefined}
-                    placeholder={
-                      code === 'en'
-                        ? t('messages.originalEnglishTitle')
-                        : t('messages.noTranslation')
-                    }
+                    disabled={busy}
+                    placeholder={t('messages.notSpecified')}
                     onChange={(e) =>
-                      setDraft((d) => ({ ...d, [code]: { ...d[code], title: e.target.value } }))
+                      setMakers((current) =>
+                        current.map((item) =>
+                          item.course === d.course ? { ...item, maker: e.target.value } : item,
+                        ),
+                      )
                     }
                   />
-                </Label>
-                <Label htmlFor={`edit-${code}-subtitle`}>
-                  {t('messages.localizedSubtitle', { language: label })}
-                  <Input
-                    id={`edit-${code}-subtitle`}
-                    value={draft[code].subtitle}
-                    disabled={draft[code].restore}
-                    maxLength={500}
-                    autoComplete="off"
-                    placeholder={t('messages.optional')}
-                    onChange={(e) =>
-                      setDraft((d) => ({ ...d, [code]: { ...d[code], subtitle: e.target.value } }))
-                    }
-                  />
-                </Label>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&>small]:text-muted-foreground">
-                <small>
-                  {draft[code].restore
-                    ? t('messages.restoreTheFileSTitleAndSubtitleWhenSaved')
-                    : code === 'en'
-                      ? t('messages.englishTitleIsRequiredSubtitleCanBeEmpty')
-                      : t('messages.clearingATranslatedTitleRestoresTheFileSValueSubtitleCanBe')}
-                </small>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setDraft((d) => ({ ...d, [code]: { ...d[code], restore: !d[code].restore } }))
-                  }
+                </div>
+              ))}
+            </TabsContent>
+            <TabsContent value="translations" className="space-y-4 pt-3">
+              {languages.map(({ code, label, caption }) => (
+                <fieldset
+                  key={code}
+                  className="min-w-0 space-y-4 rounded-2xl border p-4 [&>legend]:px-2 [&>legend]:font-medium [&>legend_span]:ml-2 [&>legend_span]:text-xs [&>legend_span]:text-muted-foreground"
+                  disabled={busy}
                 >
-                  <RotateCcw size={13} />
-                  {draft[code].restore
-                    ? t('messages.undoLanguageRestore', { language: label })
-                    : t('messages.restoreLanguage', { language: label })}
-                </Button>
-              </div>
-            </fieldset>
-          ))}
+                  <legend>
+                    {label}
+                    <span>{caption}</span>
+                  </legend>
+                  <div className="grid gap-4 sm:grid-cols-2 [&>label]:flex [&>label]:flex-col [&>label]:items-start [&>label]:gap-2">
+                    <Label htmlFor={`edit-${code}-title`}>
+                      {t('messages.localizedTitle', { language: label })}
+                      <Input
+                        id={`edit-${code}-title`}
+                        value={draft[code].title}
+                        required={code === 'en' && !draft[code].restore}
+                        disabled={draft[code].restore}
+                        maxLength={500}
+                        autoComplete="off"
+                        placeholder={
+                          code === 'en'
+                            ? t('messages.originalEnglishTitle')
+                            : t('messages.noTranslation')
+                        }
+                        onChange={(e) =>
+                          setDraft((d) => ({ ...d, [code]: { ...d[code], title: e.target.value } }))
+                        }
+                      />
+                    </Label>
+                    <Label htmlFor={`edit-${code}-subtitle`}>
+                      {t('messages.localizedSubtitle', { language: label })}
+                      <Input
+                        id={`edit-${code}-subtitle`}
+                        value={draft[code].subtitle}
+                        disabled={draft[code].restore}
+                        maxLength={500}
+                        autoComplete="off"
+                        placeholder={t('messages.optional')}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            [code]: { ...d[code], subtitle: e.target.value },
+                          }))
+                        }
+                      />
+                    </Label>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between [&>small]:text-muted-foreground">
+                    <small>
+                      {draft[code].restore
+                        ? t('messages.restoreTheFileSTitleAndSubtitleWhenSaved')
+                        : code === 'en'
+                          ? t('messages.englishTitleIsRequiredSubtitleCanBeEmpty')
+                          : t(
+                              'messages.clearingATranslatedTitleRestoresTheFileSValueSubtitleCanBe',
+                            )}
+                    </small>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setDraft((d) => ({
+                          ...d,
+                          [code]: { ...d[code], restore: !d[code].restore },
+                        }))
+                      }
+                    >
+                      <RotateCcw size={13} />
+                      {draft[code].restore
+                        ? t('messages.undoLanguageRestore', { language: label })
+                        : t('messages.restoreLanguage', { language: label })}
+                    </Button>
+                  </div>
+                </fieldset>
+              ))}
+            </TabsContent>
+          </Tabs>
         </div>
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t pt-4 [&>span]:mr-auto">
           <span className="text-sm text-muted-foreground">

@@ -41,9 +41,10 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
     await page.goto(path)
     const edit = page.getByRole('button', { name: '编辑信息', exact: true })
     await edit.click()
+    await page.getByRole('tab', { name: '译名', exact: true }).click()
     const modal = page.getByRole('dialog', { name: '编辑谱面信息' })
     await expect(modal).toBeVisible()
-    await expect(page.getByLabel('英文歌名', { exact: true })).toBeFocused()
+    await expect(page.getByRole('tab', { name: '译名', exact: true })).toBeFocused()
     await expect(page.getByLabel('日文歌名', { exact: true })).toHaveValue(
       chart.titleTranslations.ja,
     )
@@ -53,6 +54,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
     await expect(modal).not.toBeVisible()
     await expect(edit).toBeFocused()
     await edit.click()
+    await page.getByRole('tab', { name: '译名', exact: true }).click()
     await expect(page.getByLabel('英文歌名', { exact: true })).toHaveValue(chart.title)
     await page.getByLabel('英文歌名', { exact: true }).fill('Edited song')
     await page.getByLabel('英文副标题', { exact: true }).fill('Edited subtitle')
@@ -80,6 +82,7 @@ test('owner edits metadata in a modal, handles errors, restores values and prote
     await expect(page.getByRole('heading', { name: 'Edited song', exact: true })).toBeVisible()
     await page.setViewportSize({ width: 390, height: 844 })
     await edit.click()
+    await page.getByRole('tab', { name: '译名', exact: true }).click()
     const bounds = await modal.boundingBox()
     expect(bounds!.x).toBeGreaterThanOrEqual(0)
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)

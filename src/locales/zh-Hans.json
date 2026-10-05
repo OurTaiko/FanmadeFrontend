@@ -401,7 +401,14 @@
     "previewStartSeconds": "试听开始（秒）",
     "previewEndSeconds": "试听结束（秒）",
     "previewRangeHint": "保存时会重新生成试听片段。终点超出歌曲时截到歌曲结尾。",
-    "previewRangeInvalid": "起点必须位于音频内，终点须晚于起点且不超过 1215 秒。"
+    "previewRangeInvalid": "起点必须位于音频内，终点须晚于起点且不超过 1215 秒。",
+    "metadataTab_categories": "谱面分类",
+    "metadataTab_preview": "试听",
+    "metadataTab_description": "谱面介绍",
+    "metadataTab_makers": "谱师名义",
+    "metadataTab_translations": "译名",
+    "editMetadataTabsHint": "切换标签页不会丢失修改，完成后统一保存。",
+    "makerValidation": "谱师名义不能超过 500 字节或包含控制字符。"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",

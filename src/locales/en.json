@@ -401,7 +401,14 @@
     "previewStartSeconds": "Preview start (seconds)",
     "previewEndSeconds": "Preview end (seconds)",
     "previewRangeHint": "Saving regenerates the preview clip. An end beyond the song is clipped to its end.",
-    "previewRangeInvalid": "The start must be within the audio. The end must be later than the start and at most 1215 seconds."
+    "previewRangeInvalid": "The start must be within the audio. The end must be later than the start and at most 1215 seconds.",
+    "metadataTab_categories": "Categories",
+    "metadataTab_preview": "Preview",
+    "metadataTab_description": "Description",
+    "metadataTab_makers": "Charter credits",
+    "metadataTab_translations": "Translations",
+    "editMetadataTabsHint": "Changes are kept when switching tabs. Save when finished.",
+    "makerValidation": "Charter credits must not exceed 500 bytes or contain control characters."
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",

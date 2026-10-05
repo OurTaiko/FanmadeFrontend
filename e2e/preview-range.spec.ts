@@ -67,6 +67,7 @@ test('owner edits preview range while player keeps full audio source', async ({ 
   })
   await page.goto('/charts/preview-song')
   await page.getByRole('button', { name: '编辑信息', exact: true }).click()
+  await page.getByRole('tab', { name: '试听', exact: true }).click()
   await expect(page.getByLabel('试听开始（秒）')).toHaveValue('12')
   await expect(page.getByLabel('试听结束（秒）')).toHaveValue('27')
   await page.getByLabel('试听结束（秒）').fill('10')
@@ -74,11 +75,24 @@ test('owner edits preview range while player keeps full audio source', async ({ 
   await expect(page.getByRole('alertdialog')).toContainText('终点须晚于起点')
   expect(patches).toHaveLength(0)
   await page.getByRole('button', { name: '知道了', exact: true }).click()
+  await page.getByRole('tab', { name: '谱面介绍', exact: true }).click()
+  await page.getByRole('textbox', { name: '谱面介绍', exact: true }).fill('新的介绍')
+  await page.getByRole('tab', { name: '谱师名义', exact: true }).click()
+  await page.getByLabel('Oni ★5', { exact: true }).fill('New maker')
+  await page.getByRole('tab', { name: '译名', exact: true }).click()
+  await page.getByLabel('英文歌名', { exact: true }).fill('New title')
+  await page.getByRole('tab', { name: '试听', exact: true }).click()
   await page.getByLabel('试听开始（秒）').fill('20.5')
   await page.getByLabel('试听结束（秒）').fill('36')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
   await expect.poll(() => patches.length).toBe(1)
-  expect(patches[0]).toEqual({ demoStart: 20.5, demoEnd: 36 })
+  expect(patches[0]).toEqual({
+    demoStart: 20.5,
+    demoEnd: 36,
+    description: '新的介绍',
+    difficultyMakers: [{ course: 'Oni', maker: 'New maker' }],
+    titleTranslations: { en: 'New title' },
+  })
   await page.getByRole('button', { name: '知道了', exact: true }).click()
   await page.getByRole('button', { name: '试听', exact: true }).click()
   await expect(page.locator('audio')).toHaveAttribute(
@@ -87,8 +101,11 @@ test('owner edits preview range while player keeps full audio source', async ({ 
   )
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: '编辑信息', exact: true }).click()
+  await page.getByRole('tab', { name: '试听', exact: true }).click()
   await expect(page.getByLabel('试听开始（秒）')).toHaveValue('20.5')
   await expect(page.getByLabel('试听结束（秒）')).toHaveValue('36')
   expect(errors).toEqual([])
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.getByRole('tab', { name: '译名', exact: true })).toBeVisible()
   await page.screenshot({ path: '/tmp/fanmade-preview-editor.png', animations: 'disabled' })
 })
