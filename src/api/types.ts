@@ -11,6 +11,8 @@ export type Locale = 'en' | 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }
 export type Category = { id: string; title: string; genre: string }
 export type Chart = Metadata & {
+  demoEnd?: number
+  previewPath?: string
   id: string
   coverHash?: string
   categoryIds: string[]

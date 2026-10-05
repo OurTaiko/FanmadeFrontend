@@ -24,6 +24,8 @@ const getLanguages = () =>
 type Language = Locale
 type Draft = Record<Language, { title: string; subtitle: string; restore: boolean }>
 type Patch = {
+  demoStart?: number
+  demoEnd?: number
   categoryIds?: string[]
   titleTranslations?: Partial<Record<Locale, string | null>>
   subtitleTranslations?: Partial<Record<Locale, string | null>>
@@ -57,6 +59,11 @@ export function EditMetadata({
   const [categoryIds, setCategoryIds] = useState<string[]>(chart.categoryIds ?? [])
   const categoriesChanged =
     [...categoryIds].sort().join() !== [...(chart.categoryIds ?? [])].sort().join()
+  const [demoStart, setDemoStart] = useState(String(chart.demoStart))
+  const [demoEnd, setDemoEnd] = useState(String(chart.demoEnd ?? chart.demoStart + 15))
+  const previewChanged =
+    Number(demoStart) !== chart.demoStart ||
+    Number(demoEnd) !== (chart.demoEnd ?? chart.demoStart + 15)
   const [busy, setBusy] = useState(false)
   const { notify } = useNotification()
   const setError = (message: string) => notify(message, 'error')
@@ -66,6 +73,7 @@ export function EditMetadata({
 
   const changed =
     categoriesChanged ||
+    previewChanged ||
     languages.some(
       ({ code }) =>
         draft[code].restore ||
@@ -76,6 +84,25 @@ export function EditMetadata({
     e.preventDefault()
     if (request.current || !changed) return
     const patch: Patch = categoriesChanged ? { categoryIds } : {}
+    if (previewChanged) {
+      const start = Number(demoStart),
+        end = Number(demoEnd)
+      if (
+        !demoStart.trim() ||
+        !demoEnd.trim() ||
+        !Number.isFinite(start) ||
+        !Number.isFinite(end) ||
+        start < 0 ||
+        start >= chart.duration ||
+        end <= start ||
+        end > 1215
+      ) {
+        setError(t('messages.previewRangeInvalid'))
+        return
+      }
+      patch.demoStart = start
+      patch.demoEnd = end
+    }
     for (const { code, label } of languages) {
       const current = draft[code],
         original = initial(code)
@@ -140,6 +167,37 @@ export function EditMetadata({
             {t('messages.editCategoriesTitlesAndSubtitlesSavedScoresAndDownloadContentsStayIntact')}
           </p>
           <CategoryPicker value={categoryIds} disabled={busy} onChange={setCategoryIds} />
+          <fieldset disabled={busy} className="space-y-3 rounded-2xl border p-4">
+            <legend className="px-2 font-medium">{t('messages.previewRange')}</legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Label htmlFor="edit-demo-start" className="flex flex-col items-start gap-2">
+                {t('messages.previewStartSeconds')}
+                <Input
+                  id="edit-demo-start"
+                  type="number"
+                  min="0"
+                  step="any"
+                  required
+                  value={demoStart}
+                  onChange={(e) => setDemoStart(e.target.value)}
+                />
+              </Label>
+              <Label htmlFor="edit-demo-end" className="flex flex-col items-start gap-2">
+                {t('messages.previewEndSeconds')}
+                <Input
+                  id="edit-demo-end"
+                  type="number"
+                  min="0"
+                  max="1215"
+                  step="any"
+                  required
+                  value={demoEnd}
+                  onChange={(e) => setDemoEnd(e.target.value)}
+                />
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('messages.previewRangeHint')}</p>
+          </fieldset>
           {languages.map(({ code, label, caption }) => (
             <fieldset
               key={code}

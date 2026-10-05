@@ -396,7 +396,12 @@
     "courseCreator": "{{difficulty}} creator",
     "bestScoresTiesShareRanks": "Personal best scores · Ties share ranks",
     "leaderboardUnavailable": "Leaderboard unavailable",
-    "serverDoesNotSupportLeaderboard": "The server does not support a leaderboard for this difficulty."
+    "serverDoesNotSupportLeaderboard": "The server does not support a leaderboard for this difficulty.",
+    "previewRange": "Preview range",
+    "previewStartSeconds": "Preview start (seconds)",
+    "previewEndSeconds": "Preview end (seconds)",
+    "previewRangeHint": "Saving regenerates the preview clip. An end beyond the song is clipped to its end.",
+    "previewRangeInvalid": "The start must be within the audio. The end must be later than the start and at most 1215 seconds."
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",
