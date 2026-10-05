@@ -8,7 +8,6 @@ const source =
   ['Hard', 'Oni'].map((course) => `COURSE:${course}\nLEVEL:5\n#START\n1000,\n#END\n`).join('')
 const original: Chart = {
   id: 'a'.repeat(32),
-  versionId: 'b'.repeat(32),
   ownerId: 'owner',
   uploader: 'tester',
   title: 'Original song',
@@ -71,15 +70,14 @@ for (const replaceAudio of [false, true]) {
       route.fulfill({ json: { items: [{ id: 'variety', title: '综艺', genre: 'バラエティ' }] } }),
     )
     await page.route(`**/api/v1/charts/${original.id}`, (route) => route.fulfill({ json: current }))
-    await page.route('**/versions/*/tja', (route) => route.fulfill({ body: source }))
-    await page.route('**/versions/*/audio', (route) =>
+    await page.route('**/api/v1/charts/*/tja', (route) => route.fulfill({ body: source }))
+    await page.route('**/api/v1/charts/*/audio', (route) =>
       route.fulfill({ body: audio, contentType: 'audio/mpeg' }),
     )
     await page.route('**/leaderboard?*', (route) =>
       route.fulfill({
         json: {
           songId: current.id,
-          versionId: current.versionId,
           difficulty: 'Hard',
           supported: true,
           items: [],
@@ -104,7 +102,8 @@ for (const replaceAudio of [false, true]) {
         return route.fulfill({ status: 503, json: { message: '保存失败，旧数据保持不变' } })
       current = {
         ...original,
-        versionId: 'e'.repeat(32),
+        tjaHash: 'e'.repeat(64),
+        audioHash: replaceAudio ? 'f'.repeat(64) : original.audioHash,
         title: 'Replacement preview',
         maker: 'A | B',
         difficulties: [
@@ -154,7 +153,7 @@ for (const replaceAudio of [false, true]) {
     await page.getByRole('button', { name: '确认替换并清空' }).click()
     await expect(page).toHaveURL(`/charts/${original.id}`)
     expect(attempts).toBe(2)
-    expect(submitted?.get('expectedVersionId')).toBe(original.versionId)
+    expect(submitted?.has('expectedVersionId')).toBe(false)
     expect(submitted?.get('confirmReset')).toBe('true')
     expect(submitted?.has('audio')).toBe(replaceAudio)
     expect(submitted?.get('description')).toBe(original.description)

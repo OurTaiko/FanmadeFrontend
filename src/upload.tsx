@@ -73,7 +73,7 @@ export function UpdatePage() {
   if (!chart || session.loading) return <p role="status">{t('messages.loadingSong')}</p>
   if (!session.user || (session.user.id !== chart.ownerId && !session.user.isAdmin))
     return <p>{t('messages.onlyTheUploaderOrAnAdministratorCanUpdateThisSong')}</p>
-  return <UploadPage key={chart.versionId} existing={chart} />
+  return <UploadPage key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`} existing={chart} />
 }
 
 export function UploadPage({ existing }: { existing?: Chart }) {
@@ -179,7 +179,6 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       if (audio) form.append('audio', audio)
       if (cover && !existing) form.append('cover', cover)
       if (existing) {
-        form.append('expectedVersionId', existing.versionId)
         form.append('confirmReset', 'true')
       }
       form.append('encoding', 'utf-8')

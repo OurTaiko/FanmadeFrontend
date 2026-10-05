@@ -3,7 +3,6 @@ import type { Chart } from '../src/api/types'
 import { selectValue } from './ui-helpers'
 const chart: Chart = {
   id: '1'.repeat(32),
-  versionId: 'a'.repeat(32),
   ownerId: 'fixture-user',
   uploader: 'tester',
   title: '普通谱面预览',

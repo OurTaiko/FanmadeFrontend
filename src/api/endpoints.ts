@@ -34,10 +34,10 @@ export const endpoints = {
   ) => withQuery(`${API_ROOT}${mine ? '/me/charts' : '/charts'}`, query),
   chart: chartPath,
   chartFiles: (id: string) => `${chartPath(id)}/files`,
-  cover: (id: string, version?: string) =>
-    withQuery(`${chartPath(id)}/cover`, version ? { v: version } : {}),
-  leaderboard: (id: string, query: { difficulty: string; versionId: string; page: number }) =>
+  cover: (id: string, hash?: string) =>
+    withQuery(`${chartPath(id)}/cover`, hash ? { v: hash } : {}),
+  leaderboard: (id: string, query: { difficulty: string; page: number }) =>
     withQuery(`${chartPath(id)}/leaderboard`, query),
-  resource: (chart: Pick<Chart, 'id' | 'versionId'>, kind: 'audio' | 'tja' | 'download') =>
-    `${chartPath(chart.id)}/versions/${encodeURIComponent(chart.versionId)}/${kind}`,
+  resource: (chart: Pick<Chart, 'id'>, kind: 'audio' | 'tja' | 'download') =>
+    `${chartPath(chart.id)}/${kind}`,
 } as const

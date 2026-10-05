@@ -88,7 +88,8 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     const updated = await (await page.request.get('/api/v1/charts/' + chart.id)).json()
     expect(updated.categoryIds).toEqual(['classic', 'virtual-singer'])
-    expect(updated.versionId).toBe(chart.versionId)
+    expect(updated.tjaHash).toBe(chart.tjaHash)
+    expect(updated.audioHash).toBe(chart.audioHash)
     await expect(page.getByRole('list', { name: '所属分类' }).getByRole('listitem')).toHaveText([
       'Classic',
       'Virtual Singer',
@@ -104,7 +105,8 @@ test('server categories retry, multi-select upload, owner edits and mobile persi
     await page.getByRole('button', { name: '知道了', exact: true }).click()
     const anime = await (await page.request.get('/api/v1/charts/' + chart.id)).json()
     expect(anime.categoryIds).toEqual(['anime'])
-    expect(anime.versionId).toBe(chart.versionId)
+    expect(anime.tjaHash).toBe(chart.tjaHash)
+    expect(anime.audioHash).toBe(chart.audioHash)
     await expect(page.getByRole('list', { name: '所属分类' })).toHaveText('Anime')
     await page.reload()
     await page.getByRole('button', { name: '编辑信息', exact: true }).click()

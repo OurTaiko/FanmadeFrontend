@@ -31,7 +31,6 @@ const chart: Chart = {
   wave: 'audio.ogg',
   ownerId: owner,
   uploader: member.nickname!,
-  versionId: 'd'.repeat(32),
   categoryIds: [],
   description: '',
   createdAt: '2026-09-20T00:00:00Z',

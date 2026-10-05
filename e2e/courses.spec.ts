@@ -5,7 +5,6 @@ import type { Chart } from '../src/api/types'
 const courses = ['Easy', 'Normal', 'Hard', 'Oni', 'Edit']
 const chart: Chart = {
   id: '1'.repeat(32),
-  versionId: 'a'.repeat(32),
   ownerId: 'fixture-user',
   uploader: 'tester',
   title: '普通谱面预览',
@@ -82,7 +81,8 @@ test('five course filters and ordinary preview; unsupported cards and details st
   const assets: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('request', (request) => {
-    if (request.url().includes('/versions/')) assets.push(request.url())
+    if (/\/api\/v1\/charts\/[^/]+\/(tja|audio|download)(?:\?|$)/.test(request.url()))
+      assets.push(request.url())
   })
   await page.goto('/')
   await page.getByRole('button', { name: '高级搜索' }).click()

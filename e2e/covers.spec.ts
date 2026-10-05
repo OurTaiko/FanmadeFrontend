@@ -10,7 +10,6 @@ const source =
     .join('')
 const makeChart = (): Chart => ({
   id,
-  versionId: 'version',
   ownerId: 'owner',
   uploader: '测试上传者',
   title: 'Cover test',

@@ -10,7 +10,6 @@ const chart: Chart = {
   subtitleTranslations: { zh: '中文副标题', ja: '--日本語の副題', ko: '한국어 부제' },
   ownerId: 'language-user',
   uploader: 'Test creator',
-  versionId: 'version1',
   categoryIds: [],
   description: '',
   createdAt: '2026-09-22T00:00:00Z',

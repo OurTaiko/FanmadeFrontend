@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { endpoints } from './endpoints'
 
 describe('API addresses', () => {
-  it('encodes IDs as path segments for chart, cover and version resources', () => {
+  it('encodes IDs as path segments for chart, cover and current song resources', () => {
     const id = '曲目/a?b#c'
     const path = `/api/v1/charts/${encodeURIComponent(id)}`
     expect(endpoints.chart(id)).toBe(path)
@@ -11,9 +11,7 @@ describe('API addresses', () => {
     const cover = new URL(endpoints.cover(id, 'hash+/?='), 'http://127.0.0.1:5173')
     expect(cover.pathname).toBe(`${path}/cover`)
     expect(cover.searchParams.get('v')).toBe('hash+/?=')
-    expect(endpoints.resource({ id, versionId: 'v/2' }, 'download')).toBe(
-      `${path}/versions/v%2F2/download`,
-    )
+    expect(endpoints.resource({ id }, 'download')).toBe(`${path}/download`)
   })
 
   it('preserves nested return URLs and search text without injecting query parameters', () => {
@@ -33,12 +31,11 @@ describe('API addresses', () => {
       })
     }
     const leaderboard = new URL(
-      endpoints.leaderboard('song', { difficulty: 'Oni', versionId: 'v&2', page: 3 }),
+      endpoints.leaderboard('song', { difficulty: 'Oni', page: 3 }),
       login.origin,
     )
     expect(Object.fromEntries(leaderboard.searchParams)).toEqual({
       difficulty: 'Oni',
-      versionId: 'v&2',
       page: '3',
     })
   })

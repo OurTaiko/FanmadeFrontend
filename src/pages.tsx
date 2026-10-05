@@ -559,7 +559,7 @@ export function Detail() {
           )}
         </section>
       </div>
-      <ChartActivity key={`${chart.id}:${chart.versionId}`} chart={chart} />
+      <ChartActivity key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`} chart={chart} />
       {audioOpen && (
         <Modal title={t('messages.listen')} onDismiss={() => setAudioOpen(false)} actions={null}>
           <p className="text-sm text-muted-foreground">

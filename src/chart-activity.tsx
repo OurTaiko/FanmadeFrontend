@@ -57,7 +57,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const courses = [...new Set(chart.difficulties.map((d) => d.course).filter(isSupportedCourse))]
-  const { id, versionId, encoding } = chart
+  const { id, tjaHash, encoding } = chart
 
   useEffect(() => {
     const controller = new AbortController()
@@ -65,7 +65,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
     setError('')
     async function load() {
       try {
-        const response = await fetch(endpoints.resource({ id, versionId }, 'tja'), {
+        const response = await fetch(endpoints.resource({ id }, 'tja'), {
           signal: controller.signal,
           credentials: 'include',
         })
@@ -85,7 +85,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
     }
     void load()
     return () => controller.abort()
-  }, [id, versionId, encoding, attempt])
+  }, [id, tjaHash, encoding, attempt])
 
   return (
     <Tabs
@@ -189,12 +189,12 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const { user } = useSession()
-  const { id, versionId } = chart
+  const { id } = chart
   useEffect(() => {
     const controller = new AbortController()
     setData(null)
     setError('')
-    api<Leaderboard>(endpoints.leaderboard(id, { difficulty: course, versionId, page }), {
+    api<Leaderboard>(endpoints.leaderboard(id, { difficulty: course, page }), {
       signal: controller.signal,
     })
       .then((response) => {
@@ -204,7 +204,7 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
         if (!controller.signal.aborted) setError(e.message)
       })
     return () => controller.abort()
-  }, [id, versionId, course, page, attempt])
+  }, [id, course, page, attempt])
   if (error)
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">
@@ -236,7 +236,7 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm [&>span]:text-muted-foreground">
         <strong>{t('common.playerCount', { count: data.total })}</strong>
-        <span>{t('messages.currentVersionSoloBestScoresTiesShareRanks')}</span>
+        <span>{t('messages.soloBestScoresTiesShareRanks')}</span>
       </div>
       {data.items.length === 0 ? (
         <div className="flex min-h-40 flex-col items-center justify-center gap-3 py-6 text-center">

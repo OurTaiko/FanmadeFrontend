@@ -20,7 +20,6 @@ export type Chart = Omit<Metadata, 'difficulties'> & {
   categoryIds: string[]
   ownerId: string
   uploader: string
-  versionId: string
   description: string
   createdAt: string
   duration: number
@@ -48,7 +47,6 @@ export type LeaderboardEntry = {
 }
 export type Leaderboard = {
   songId: string
-  versionId: string
   difficulty: string
   supported: boolean
   items: LeaderboardEntry[]

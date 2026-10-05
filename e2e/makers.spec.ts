@@ -1,4 +1,3 @@
-import { selectValue } from './ui-helpers'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import type { Chart } from '../src/api/types'
@@ -11,7 +10,6 @@ const source =
 const audio = readFileSync('../backend/internal/audio/testdata/cbr.mp3')
 const chart: Chart = {
   id: 'a'.repeat(32),
-  versionId: 'b'.repeat(32),
   ownerId: 'owner',
   uploader: 'tester',
   title: 'Maker test',
@@ -64,8 +62,8 @@ test('upload maker defaults, individual edits, submitted mapping and per-difficu
     }),
   )
   await page.route(`**/api/v1/charts/${chart.id}`, (route) => route.fulfill({ json: chart }))
-  await page.route('**/versions/*/tja', (route) => route.fulfill({ body: source }))
-  await page.route('**/versions/*/audio', (route) =>
+  await page.route('**/api/v1/charts/*/tja', (route) => route.fulfill({ body: source }))
+  await page.route('**/api/v1/charts/*/audio', (route) =>
     route.fulfill({ body: audio, contentType: 'audio/mpeg' }),
   )
   let submitted: unknown
@@ -106,10 +104,16 @@ test('upload maker defaults, individual edits, submitted mapping and per-difficu
     { blockIndex: 2, maker: 'A' },
   ])
   await expect(page.locator('[data-testid="detail-facts"]')).toContainText('A | B')
-  await expect(page.locator('[data-testid="difficulty-makers"]')).toHaveText('魔王 谱师B')
-  for (const course of ['Hard', 'Edit']) {
-    await selectValue(page, '选择难度', course)
-    await expect(page.locator('[data-testid="difficulty-makers"] dd')).toHaveText('A')
+  await expect(page.getByTitle('谱师：B', { exact: true })).toContainText('魔王')
+  for (const [course, name] of [
+    ['Hard', '困难'],
+    ['Edit', '里谱'],
+  ]) {
+    await expect(
+      page.getByTitle('谱师：A', { exact: true }).filter({ hasText: name }),
+    ).toBeVisible()
+    await page.getByRole('tab', { name: `${name} 5 星`, exact: true }).click()
+    await expect(page.locator('canvas')).toHaveAttribute('aria-label', `${course} 难度交互谱面预览`)
   }
   await page.screenshot({ path: 'test-results/makers-detail-mobile.png', fullPage: true })
   expect(errors).toEqual([])
