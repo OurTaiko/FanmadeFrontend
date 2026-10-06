@@ -6,6 +6,7 @@ export type User = {
   emailVerified: boolean
   isAdmin: boolean
   preferredLanguage?: string
+  avatarUrl?: string
 }
 export type Locale = 'en' | 'ja' | 'zh' | 'ko'
 export type Session = { user: User | null; csrfToken: string }

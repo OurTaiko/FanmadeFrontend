@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { languageNames, normalizeLanguage } from './i18n'
 import { endpoints } from '@/api/endpoints'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -50,6 +50,7 @@ export function ProfilePage() {
           aria-label={t('messages.publicNickname')}
         >
           <Avatar className="size-16">
+            {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt="" />}
             <AvatarFallback className="text-2xl">{Array.from(user.nickname)[0]}</AvatarFallback>
           </Avatar>
           <h2 className="text-base font-semibold">{user.nickname}</h2>

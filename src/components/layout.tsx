@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { Notice } from '@/notifications'
 import { useSession } from '@/session-context'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +89,7 @@ export function Layout() {
                   aria-label={t('messages.openProfile')}
                 >
                   <Avatar>
+                    {session.user.avatarUrl && <AvatarImage src={session.user.avatarUrl} alt="" />}
                     <AvatarFallback>{Array.from(session.user.nickname ?? '')[0]}</AvatarFallback>
                   </Avatar>
                   <span data-testid="account-nickname" className="hidden lg:block text-sm truncate">
