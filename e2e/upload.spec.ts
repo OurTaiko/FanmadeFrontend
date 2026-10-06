@@ -77,8 +77,9 @@ test('ESE library search, detail navigation and mobile layout', async ({ page })
     .first()
   await expect(title).toBeVisible()
   await title.click()
-  await expect(page.getByRole('heading', { name: '难度一览' })).toBeVisible()
-  await expect(page.getByText('魔王 P1', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '谱面介绍' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '难度一览' })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: '音频试听' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )

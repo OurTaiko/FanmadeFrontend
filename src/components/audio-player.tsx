@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import {
   PauseIcon as Pause,
   PlayIcon as Play,
@@ -20,6 +20,14 @@ type AudioPlayerProps = {
   startAt?: number
   endAt?: number
   disabled?: boolean
+  /** Inline variant: label and time share one row above the track. */
+  compact?: boolean
+  onPlayingChange?: (playing: boolean) => void
+  ref?: Ref<AudioPlayerHandle>
+}
+
+export type AudioPlayerHandle = {
+  toggle: () => Promise<void>
 }
 
 export function AudioPlayer(props: AudioPlayerProps) {
@@ -32,6 +40,9 @@ function AudioPlayerContent({
   startAt = 0,
   endAt,
   disabled = false,
+  compact = false,
+  onPlayingChange,
+  ref,
 }: AudioPlayerProps) {
   const { t } = useTranslation()
 
@@ -73,6 +84,13 @@ function AudioPlayerContent({
     }, 25)
     return () => window.clearInterval(timer)
   }, [range, validRange, playing, rangeEnd])
+  const playingChange = useRef(onPlayingChange)
+  useEffect(() => {
+    playingChange.current = onPlayingChange
+  })
+  useEffect(() => {
+    playingChange.current?.(playing)
+  }, [playing])
   const toggle = async () => {
     const player = audio.current
     if (!player || disabled || !validRange) return
@@ -88,8 +106,18 @@ function AudioPlayerContent({
       setError(t('messages.cannotPlayAudioRightNowPleaseRetry'))
     }
   }
+  useImperativeHandle(ref, () => ({ toggle }))
+  const shownEnd = time(range && validRange ? rangeEnd : duration)
   return (
-    <div className="space-y-3 rounded-2xl border p-4" role="group" aria-label={label}>
+    <div
+      className={
+        compact
+          ? 'space-y-2 rounded-xl border bg-card py-2.5 pr-3.5 pl-2.5'
+          : 'space-y-3 rounded-2xl border p-4'
+      }
+      role="group"
+      aria-label={label}
+    >
       <audio
         ref={audio}
         src={src}
@@ -123,7 +151,8 @@ function AudioPlayerContent({
         <Button
           type="button"
           size="icon"
-          variant="secondary"
+          variant={compact ? 'default' : 'secondary'}
+          className={compact ? 'size-11 shrink-0 rounded-full' : undefined}
           aria-label={playing ? t('messages.pauseAudio') : t('messages.playAudio')}
           disabled={disabled || !validRange || (range && !duration)}
           onClick={() => void toggle()}
@@ -131,6 +160,14 @@ function AudioPlayerContent({
           {playing ? <Pause /> : <Play />}
         </Button>
         <div className="min-w-0 flex-1 space-y-2">
+          {compact && (
+            <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+              <span className="truncate font-medium text-foreground">{label}</span>
+              <span className="shrink-0 tabular-nums">
+                {time(position)} / {shownEnd}
+              </span>
+            </div>
+          )}
           <Slider
             aria-label={t('messages.playbackProgress', { label: label })}
             value={[
@@ -146,10 +183,12 @@ function AudioPlayerContent({
               setPosition(next)
             }}
           />
-          <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-            <span>{time(position)}</span>
-            <span>{time(range && validRange ? rangeEnd : duration)}</span>
-          </div>
+          {!compact && (
+            <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+              <span>{time(position)}</span>
+              <span>{shownEnd}</span>
+            </div>
+          )}
         </div>
         <Button
           type="button"

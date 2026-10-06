@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
 import { ChartCover } from '@/components/chart-cover'
-import { AudioPlayer } from '@/components/audio-player'
+import { AudioPlayer, type AudioPlayerHandle } from '@/components/audio-player'
 import { buttonVariants, Button } from '@/components/ui/button'
 import { ChartSearch } from '@/components/chart-search'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,13 +20,13 @@ import {
   UploadSimpleIcon as Upload,
   PencilSimpleIcon as Pencil,
   HeadphonesIcon,
+  PauseIcon,
   ArrowSquareOutIcon,
   ClockIcon,
 } from '@phosphor-icons/react'
 import { api, jsonRequest } from './api/client'
 import type { Chart, ChartList } from './api/types'
 import { ChartCard } from '@/components/chart-card'
-import { DifficultyBadges } from '@/components/difficulty-badges'
 import { isSupportedCourse, supportsChart } from './courses'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
@@ -319,14 +319,14 @@ export function Detail() {
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const editButton = useRef<HTMLButtonElement>(null)
-  const [audioOpen, setAudioOpen] = useState(false)
+  const audioPlayer = useRef<AudioPlayerHandle>(null)
+  const [audioPlaying, setAudioPlaying] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
     setEditing(false)
     setSaved(false)
-    setAudioOpen(false)
     setConfirm(false)
     if (!id) return
     api<Chart>(endpoints.chart(id), { signal: controller.signal })
@@ -416,9 +416,18 @@ export function Detail() {
               <Download size={17} />
               {t('messages.downloadChartPackage')}
             </a>
-            <Button variant="outline" onClick={() => setAudioOpen(true)}>
-              <HeadphonesIcon size={17} aria-hidden="true" />
-              {t('messages.listen')}
+            <Button
+              variant="outline"
+              aria-pressed={audioPlaying}
+              className={audioPlaying ? 'border-primary text-primary' : undefined}
+              onClick={() => void audioPlayer.current?.toggle()}
+            >
+              {audioPlaying ? (
+                <PauseIcon size={17} weight="fill" aria-hidden="true" />
+              ) : (
+                <HeadphonesIcon size={17} aria-hidden="true" />
+              )}
+              {audioPlaying ? t('messages.pauseAudio') : t('messages.listen')}
             </Button>
             <Button
               variant="outline"
@@ -450,6 +459,16 @@ export function Detail() {
                 {t('messages.editInformation')}
               </Button>
             )}
+          </div>
+          <div className="max-w-xl">
+            <AudioPlayer
+              ref={audioPlayer}
+              compact
+              label={t('messages.audioPreview')}
+              src={endpoints.resource(chart, 'audio')}
+              startAt={chart.demoStart}
+              onPlayingChange={setAudioPlaying}
+            />
           </div>
         </div>
       </div>
@@ -484,10 +503,6 @@ export function Detail() {
           <p className="max-w-[70ch] whitespace-pre-wrap text-sm leading-7 text-muted-foreground wrap-anywhere">
             {chart.description || t('messages.noDescriptionFromTheUploaderYet')}
           </p>
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold">{t('messages.difficulties')}</h3>
-            <DifficultyBadges difficulties={chart.difficulties} detailed />
-          </div>
         </section>
         <section aria-labelledby="chart-submission-heading" className="min-w-0 space-y-6">
           <h2 id="chart-submission-heading" className="text-xl font-semibold tracking-tight">
@@ -507,14 +522,6 @@ export function Detail() {
             <dd>
               {new Date(chart.createdAt).toLocaleDateString(formatLocale(i18n.resolvedLanguage))}
             </dd>
-            <dt>{t('messages.chartFile')}</dt>
-            <dd>{chart.tjaName}</dd>
-            <dt>{t('messages.audioFile')}</dt>
-            <dd>{chart.wave}</dd>
-            <dt>{t('messages.audioSize')}</dt>
-            <dd>{(chart.audioSize / 1024 / 1024).toFixed(1)} MiB</dd>
-            <dt>{t('messages.textEncoding')}</dt>
-            <dd>{chart.encoding.toUpperCase()}</dd>
           </dl>
           {session.user?.id === chart.ownerId && (
             <div className="border-t pt-4">
@@ -560,18 +567,6 @@ export function Detail() {
         </section>
       </div>
       <ChartActivity key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`} chart={chart} />
-      {audioOpen && (
-        <Modal title={t('messages.listen')} onDismiss={() => setAudioOpen(false)} actions={null}>
-          <p className="text-sm text-muted-foreground">
-            {chart.audioName.toLowerCase().endsWith('.mp3') ? 'MP3' : 'OGG / Vorbis'}
-          </p>
-          <AudioPlayer
-            label={t('messages.audioPreview')}
-            src={endpoints.resource(chart, 'audio')}
-            startAt={chart.demoStart}
-          />
-        </Modal>
-      )}
     </>
   )
 }
