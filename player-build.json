@@ -1,10 +1,10 @@
 {
-  "path": "/player/7ecff89dd85a9f10/index.html",
+  "path": "/player/d2b67827596f4c93/index.html",
   "files": {
-    "Build/Web.data.unityweb": "7612a7076ccdf4ea938198803c81217ffb2b421e110b0d01353434785905d45f",
-    "Build/Web.framework.js.unityweb": "0703e52a5a0222fc681d96dc852497331a7bb92501d249703e2fb4220526a29a",
-    "Build/Web.loader.js": "8961493831a9b760126796e95e2c35281e151debbcd8327228b8d0441007cac5",
-    "Build/Web.wasm.unityweb": "2936e23f5005dc039f32314b39fea946473111955b33194ab33a977234606ab0",
+    "Build/Web.data.unityweb": "be057389ecb3d7d03ecbf96857f1a283ac3568de4061325ca19945d8a631a61c",
+    "Build/Web.framework.js.unityweb": "1adf6af88849cc18f6d385344d0273367afdd690934fd9bc6e2d0133c3af243f",
+    "Build/Web.loader.js": "a43b17d05e16256dbcb9c071b0b52f55303a1cf624c5604dd71ccb7088324581",
+    "Build/Web.wasm.unityweb": "a8881d0baafb5027c2629710b4e7cb38e1c8508a59b8aa0193ef040f6106d80e",
     "index.html": "0b2e3fd050ab856a9111988c3b78113dd5aff22c9174990142fa44d10b4d3941"
   }
 }
