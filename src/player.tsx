@@ -4,15 +4,16 @@ import {
   DownloadSimpleIcon,
   GameControllerIcon,
   GithubLogoIcon,
+  UsersThreeIcon,
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
-const githubRepository = 'https://github.com/OurTaiko/OurTaikoPlayer'
+const githubRepository = 'https://github.com/OurTaiko/OurTaikoPlay'
 const githubReleases = `${githubRepository}/releases`
-const testFlight = 'https://testflight.apple.com/join/MeCmYuMZ'
+const testFlight = 'https://testflight.apple.com/join/PGTVXtFq'
 
 export function PlayerPage() {
   const { t } = useTranslation()
@@ -28,7 +29,7 @@ export function PlayerPage() {
           <div className="space-y-5">
             <Badge variant="secondary">{t('messages.openSourceTaikoSimulator')}</Badge>
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">OurTaikoPlayer</h1>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">OurTaikoPlay</h1>
               <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
                 {t('messages.ourTaikoPlayerDescription')}
               </p>
@@ -52,6 +53,16 @@ export function PlayerPage() {
               >
                 <GithubLogoIcon className="size-5" aria-hidden="true" />
                 {t('messages.viewOnGitHub')}
+              </a>
+              <a
+                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                href="https://qm.qq.com/q/UbdxqcTrCm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <UsersThreeIcon className="size-5" aria-hidden="true" />
+                {t('messages.joinOurTaikoQQGroup')}
+                <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
               </a>
             </div>
           </div>
