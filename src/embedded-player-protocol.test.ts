@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasBranchInCourse, isPlayerMessage, playerLoad } from './embedded-player-protocol'
+import { isPlayerMessage, playerLoad } from './embedded-player-protocol'
 describe('embedded player boundary', () => {
   const frame = {} as Window
   const origin = 'https://player.example.com'
@@ -46,37 +46,17 @@ describe('embedded player boundary', () => {
   })
 })
 
-describe('branch controls', () => {
-  const chart = `COURSE:3
-#START
-1000,
-#END
-COURSE:4
-#START
-#BRANCHSTART s,100,200
-#N
-1000,
-#E
-1100,
-#M
-1111,
-#BRANCHEND
-#END`
-  it('shows branches only for the selected course, including numeric COURSE headers', () => {
-    expect(hasBranchInCourse(chart, 'Oni')).toBe(false)
-    expect(hasBranchInCourse(chart, 'Edit')).toBe(true)
-    expect(hasBranchInCourse(chart.replace('#BRANCHSTART', '// #BRANCHSTART'), 'Edit')).toBe(false)
-    expect(
-      hasBranchInCourse(chart.replace('COURSE:4\n#START', 'COURSE:4\n#START P1'), 'Edit_1p'),
-    ).toBe(true)
-  })
-  it('sends the chosen route independently of practice and automatic modes', () => {
-    expect(
-      playerLoad('a', chart, 'https://example.com/audio', 'Edit', 'practice', 'wav', 'master')
-        .payload,
-    ).toMatchObject({ branch: 'master', autoPlay: false, audioType: 'wav' })
-    expect(playerLoad('b', chart, 'https://example.com/audio', 'Edit', 'auto').payload.branch).toBe(
-      'normal',
+describe('branch selection', () => {
+  it('leaves the route to the in-game practice menu', () => {
+    const load = playerLoad(
+      'a',
+      '#START\n#END',
+      'https://example.com/audio',
+      'Edit',
+      'practice',
+      'wav',
     )
+    expect(load.payload).not.toHaveProperty('branch')
+    expect(load.payload).toMatchObject({ autoPlay: false, audioType: 'wav', course: 'Edit' })
   })
 })

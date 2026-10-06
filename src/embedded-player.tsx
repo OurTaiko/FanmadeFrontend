@@ -1,12 +1,10 @@
 import playerBuild from '../player-build.json'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChoiceSelect } from '@/components/choice-select'
 import { Button } from '@/components/ui/button'
 import { endpoints } from '@/api/endpoints'
 import type { Chart } from '@/api/types'
 import {
-  hasBranchInCourse,
   isPlayerMessage,
   playerChannel,
   playerLoad,
@@ -27,8 +25,6 @@ export default function EmbeddedPlayer({
   const audioType = chart.audioName.split('.').pop()?.toLowerCase() || 'ogg'
   const iframe = useRef<HTMLIFrameElement>(null)
   const request = useRef('')
-  const [branch, setBranch] = useState<'normal' | 'expert' | 'master'>('normal')
-  const hasBranch = hasBranchInCourse(source, course)
   const [mode, setMode] = useState<PlayerMode | null>(null)
   const [ready, setReady] = useState(false)
   const [status, setStatus] = useState('idle')
@@ -82,10 +78,10 @@ export default function EmbeddedPlayer({
     setStatus('loading')
     const audio = new URL(endpoints.resource({ id: chartId }, 'audio'), window.location.href).href
     iframe.current?.contentWindow?.postMessage(
-      playerLoad(id, source, audio, course, mode, audioType, branch),
+      playerLoad(id, source, audio, course, mode, audioType),
       playerOrigin,
     )
-  }, [ready, mode, source, chartId, course, playerOrigin, audioType, branch])
+  }, [ready, mode, source, chartId, course, playerOrigin, audioType])
 
   useEffect(() => {
     if (!mode || ready || error) return
@@ -109,19 +105,6 @@ export default function EmbeddedPlayer({
   return (
     <section className="space-y-4" aria-label={t('messages.chartPreview')}>
       <div className="flex flex-wrap items-center gap-2">
-        {hasBranch && (
-          <ChoiceSelect
-            label={t('messages.selectBranch')}
-            disabled={status === 'loading'}
-            value={branch}
-            onValueChange={(value) => setBranch(value as typeof branch)}
-            items={[
-              { value: 'normal', label: t('messages.normalBranch') },
-              { value: 'expert', label: t('messages.expertBranch') },
-              { value: 'master', label: t('messages.masterBranch') },
-            ]}
-          />
-        )}
         <Button
           variant={mode === 'practice' ? 'default' : 'outline'}
           disabled={!source || status === 'loading'}

@@ -141,21 +141,6 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
     .poll(async () => frame.locator('#message').innerText(), { timeout: 150000 })
     .not.toContain('Loading player')
   await expect(frame.locator('#start')).toBeVisible({ timeout: 45000 })
-  await frame.locator('#start').click()
-  await expect(page.getByText('播放结束，已回到第一小节并暂停。')).toBeVisible({ timeout: 30000 })
-  const finished = await page.evaluate(() =>
-    (
-      window as unknown as {
-        playerEvents: Array<{
-          type: string
-          payload: { Good: number; Bad: number; AutoPlay: boolean }
-        }>
-      }
-    ).playerEvents.find((e) => e.type === 'finished'),
-  )
-  expect(finished?.payload.AutoPlay).toBe(true)
-  expect(finished?.payload.Good).toBe(8)
-  expect(finished?.payload.Bad).toBe(0)
   const state = async () => {
     return page.evaluate(async () => {
       const frame = document.querySelector('iframe')!
@@ -184,6 +169,42 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
       })
     })
   }
+  const finishedCount = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { playerEvents: Array<{ type: string }> }).playerEvents.filter(
+          (e) => e.type === 'finished',
+        ).length,
+    )
+  // Start only opens the in-game practice menu, as in OurTaikoPlay; don confirms each page.
+  const openMenu = async (stage: string) => {
+    await frame.locator('#start').click()
+    await expect.poll(async () => (await state()).stage).toBe(stage)
+    expect((await state()).paused).toBe(true)
+  }
+  const confirmPages = async (count: number) => {
+    for (let i = 0; i < count; i++) {
+      await page.keyboard.press('f')
+      await page.waitForTimeout(80)
+    }
+  }
+  await openMenu('Measure')
+  await confirmPages(2)
+  await expect.poll(finishedCount, { timeout: 30000 }).toBe(1)
+  await expect(page.getByText('播放结束，已回到第一小节并暂停。')).toBeVisible({ timeout: 30000 })
+  const finished = await page.evaluate(() =>
+    (
+      window as unknown as {
+        playerEvents: Array<{
+          type: string
+          payload: { Good: number; Bad: number; AutoPlay: boolean }
+        }>
+      }
+    ).playerEvents.find((e) => e.type === 'finished'),
+  )
+  expect(finished?.payload.AutoPlay).toBe(true)
+  expect(finished?.payload.Good).toBe(8)
+  expect(finished?.payload.Bad).toBe(0)
   const ended = await state()
   expect(ended.paused).toBe(true)
   expect(ended.position).toBe(ended.first)
@@ -191,14 +212,19 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   await page.screenshot({ path: 'test-results/embedded-auto-finished.png' })
   await changeAndLoad(() => page.getByRole('button', { name: '练习', exact: true }).click())
   await expect(frame.locator('#start')).toBeVisible({ timeout: 30000 })
-  await frame.locator('#start').click()
+  await openMenu('Measure')
+  await confirmPages(2)
   const preparing = await state()
   expect(Number(preparing.time)).toBeLessThan(Number(preparing.first) - 1.7)
   expect(preparing.bad).toBe(0)
-  await page.waitForTimeout(1800)
-  for (let i = 0; i < 35; i++) {
+  // Press on the four dons of the first measure, 0.5 s apart from the first bar, instead of
+  // mashing: an early press inside the 不可 window takes the note and scores nothing.
+  const clock = await state()
+  const origin = Date.now() - Number(clock.time) * 1000
+  for (let k = 0; k < 4; k++) {
+    const wait = origin + (Number(clock.first) + k * 0.5) * 1000 - Date.now()
+    if (wait > 0) await page.waitForTimeout(wait)
     await page.keyboard.press('f')
-    await page.waitForTimeout(40)
   }
   expect((await state()).autoPlay).toBe(false)
   expect(Number((await state()).score)).toBeGreaterThan(0)
@@ -223,25 +249,24 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   console.log('manual input verified; changing course')
   await changeAndLoad(() => page.getByRole('tab', { name: /里谱/ }).click())
   await expect(frame.locator('#start')).toBeVisible({ timeout: 30000 })
-  await expect(page.getByRole('combobox', { name: '选择分支' })).toBeVisible()
+  // The host no longer offers a branch control: the route is chosen on the in-game menu's first page.
+  await expect(page.getByRole('combobox', { name: '选择分支' })).toHaveCount(0)
   await changeAndLoad(() => page.getByRole('button', { name: '观看谱面', exact: true }).click())
-  await expect(frame.locator('#start')).toBeVisible({ timeout: 30000 })
-  for (const [label, route, notes] of [
-    ['普通分支', 'Normal', 2],
-    ['玄人分支', 'Expert', 3],
-    ['达人分支', 'Master', 5],
+  await openMenu('Branch')
+  for (const [route, notes] of [
+    ['Normal', 2],
+    ['Expert', 3],
+    ['Master', 5],
   ] as const) {
     console.log('checking route', route)
-    if (route !== 'Normal') {
-      await page.getByRole('combobox', { name: '选择分支' }).click()
-      await changeAndLoad(() => page.getByRole('option', { name: label, exact: true }).click())
-      await expect(frame.locator('#start')).toBeVisible({ timeout: 30000 })
-      expect((await state()).forcedBranch).toBe(route)
-    }
-    await expect(frame.locator('#start')).toBeVisible({ timeout: 30000 })
-    expect((await state()).paused).toBe(true)
-    await frame.locator('#start').click()
-    await expect(page.getByText('播放结束，已回到第一小节并暂停。')).toBeVisible({ timeout: 30000 })
+    // Finishing returns to the branch page with the route kept, so each step is one ka.
+    if (route !== 'Normal') await page.keyboard.press('k')
+    await expect.poll(async () => (await state()).forcedBranch).toBe(route)
+    expect((await state()).stage).toBe('Branch')
+    const before = await finishedCount()
+    await confirmPages(3)
+    await expect.poll(finishedCount, { timeout: 30000 }).toBe(before + 1)
+    await expect.poll(async () => (await state()).stage).toBe('Branch')
     const result = await page.evaluate(() => {
       const events = (
         window as unknown as { playerEvents: Array<{ type: string; payload: { Good: number } }> }
