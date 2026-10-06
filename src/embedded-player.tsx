@@ -2,11 +2,14 @@ import playerBuild from '../player-build.json'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
 import { endpoints } from '@/api/endpoints'
 import type { Chart } from '@/api/types'
 import {
+  defaultDrumVolume,
   isPlayerMessage,
   playerChannel,
+  playerDrumVolume,
   playerLoad,
   type PlayerMode,
 } from './embedded-player-protocol'
@@ -30,6 +33,8 @@ export default function EmbeddedPlayer({
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [drumVolume, setDrumVolume] = useState(defaultDrumVolume)
+  const drumVolumeRef = useRef(defaultDrumVolume)
   const url = new URL(import.meta.env.VITE_PLAYER_URL || playerBuild.path, window.location.href)
   url.searchParams.set('parentOrigin', window.location.origin)
   const playerOrigin = url.origin
@@ -43,12 +48,23 @@ export default function EmbeddedPlayer({
     },
     [playerOrigin],
   )
+  const sendDrumVolume = useCallback(
+    (volume: number) => {
+      iframe.current?.contentWindow?.postMessage(
+        playerDrumVolume(request.current, volume),
+        playerOrigin,
+      )
+    },
+    [playerOrigin],
+  )
 
   useEffect(() => {
     function receive(event: MessageEvent) {
       if (!isPlayerMessage(event, iframe.current?.contentWindow ?? null, playerOrigin)) return
       const data = event.data
       if (data.type === 'ready') {
+        // A new or reloaded player starts at the default; keep the chosen volume.
+        sendDrumVolume(drumVolumeRef.current)
         setReady(true)
         return
       }
@@ -68,7 +84,7 @@ export default function EmbeddedPlayer({
     }
     window.addEventListener('message', receive)
     return () => window.removeEventListener('message', receive)
-  }, [playerOrigin])
+  }, [playerOrigin, sendDrumVolume])
 
   useEffect(() => {
     if (!ready || !mode || !source) return
@@ -154,6 +170,25 @@ export default function EmbeddedPlayer({
         >
           {t('messages.playerFullscreen')}
         </Button>
+      )}
+      {mode && (
+        <div className="flex max-w-sm items-center gap-3 text-sm">
+          <span className="shrink-0">{t('messages.playerDrumVolume')}</span>
+          <Slider
+            aria-label={t('messages.playerDrumVolume')}
+            value={[drumVolume]}
+            min={0}
+            max={100}
+            step={1}
+            onValueChange={(value) => {
+              const next = typeof value === 'number' ? value : value[0]
+              drumVolumeRef.current = next
+              setDrumVolume(next)
+              sendDrumVolume(next)
+            }}
+          />
+          <span className="w-9 shrink-0 text-right tabular-nums">{drumVolume}</span>
+        </div>
       )}
       {status === 'finished' && (
         <p role="status" className="text-sm text-muted-foreground">

@@ -188,6 +188,17 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
       await page.waitForTimeout(80)
     }
   }
+  // The drum volume slider posts setDrumVolume on every change; the player reports it back.
+  expect((await state()).drumVolume).toBe(100)
+  const drumVolume = page.getByRole('slider', { name: /鼓声音量|Drum volume/ })
+  await drumVolume.focus()
+  await page.keyboard.press('Home')
+  await expect.poll(async () => (await state()).drumVolume).toBe(0)
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(async () => (await state()).drumVolume).toBe(2)
+  await page.keyboard.press('End')
+  await expect.poll(async () => (await state()).drumVolume).toBe(100)
   await openMenu('Measure')
   await confirmPages(2)
   await expect.poll(finishedCount, { timeout: 30000 }).toBe(1)

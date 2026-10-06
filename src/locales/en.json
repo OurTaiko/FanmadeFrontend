@@ -419,7 +419,8 @@
     "playerFailed": "Player could not load",
     "playerFinished": "Playback finished. Returned to the first bar and paused.",
     "playerChoose": "Choose Practice or Watch chart to load the player.",
-    "playerFullscreen": "Fullscreen"
+    "playerFullscreen": "Fullscreen",
+    "playerDrumVolume": "Drum volume"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",

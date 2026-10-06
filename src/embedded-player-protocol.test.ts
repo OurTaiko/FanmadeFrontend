@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPlayerMessage, playerLoad } from './embedded-player-protocol'
+import { isPlayerMessage, playerDrumVolume, playerLoad } from './embedded-player-protocol'
 describe('embedded player boundary', () => {
   const frame = {} as Window
   const origin = 'https://player.example.com'
@@ -58,5 +58,17 @@ describe('branch selection', () => {
     )
     expect(load.payload).not.toHaveProperty('branch')
     expect(load.payload).toMatchObject({ autoPlay: false, audioType: 'wav', course: 'Edit' })
+  })
+  it('sends the drum volume as an integer from 0 to 100', () => {
+    expect(playerDrumVolume('a', 42.4)).toEqual({
+      channel: 'ourtaiko-view',
+      version: 1,
+      type: 'setDrumVolume',
+      requestId: 'a',
+      payload: { volume: 42 },
+    })
+    expect(playerDrumVolume('a', -5).payload.volume).toBe(0)
+    expect(playerDrumVolume('a', 250).payload.volume).toBe(100)
+    expect(playerDrumVolume('a', Number.NaN).payload.volume).toBe(100)
   })
 })

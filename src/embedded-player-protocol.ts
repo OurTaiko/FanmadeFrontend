@@ -24,6 +24,18 @@ export function playerLoad(
     },
   }
 }
+export const defaultDrumVolume = 100
+// Hit-sound volume, 0-100; the player rejects anything else.
+export function playerDrumVolume(requestId: string, volume: number) {
+  const value = Number.isFinite(volume) ? Math.round(Math.min(100, Math.max(0, volume))) : 100
+  return {
+    channel: playerChannel,
+    version: 1,
+    type: 'setDrumVolume',
+    requestId,
+    payload: { volume: value },
+  }
+}
 export function isPlayerMessage(
   event: MessageEvent,
   source: Window | null,

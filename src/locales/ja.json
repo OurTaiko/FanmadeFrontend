@@ -419,7 +419,8 @@
     "playerFailed": "プレイヤーを読み込めませんでした",
     "playerFinished": "再生が終了し、最初の小節で一時停止しました。",
     "playerChoose": "練習または譜面を見るを選択してください。",
-    "playerFullscreen": "全画面"
+    "playerFullscreen": "全画面",
+    "playerDrumVolume": "太鼓音量"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",
