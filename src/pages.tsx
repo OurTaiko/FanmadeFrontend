@@ -467,6 +467,7 @@ export function Detail() {
               label={t('messages.audioPreview')}
               src={endpoints.resource(chart, 'audio')}
               startAt={chart.demoStart}
+              knownDuration={chart.duration}
               onPlayingChange={setAudioPlaying}
             />
           </div>

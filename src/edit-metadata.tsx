@@ -260,6 +260,7 @@ export function EditMetadata({
                   src={endpoints.resource(chart, 'audio')}
                   startAt={demoStart.trim() ? Number(demoStart) : NaN}
                   endAt={demoEnd.trim() ? Number(demoEnd) : NaN}
+                  knownDuration={chart.duration}
                   disabled={busy || Number(demoEnd) > 1215}
                 />
               </fieldset>

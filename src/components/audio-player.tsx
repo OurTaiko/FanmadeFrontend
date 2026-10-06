@@ -20,6 +20,8 @@ type AudioPlayerProps = {
   startAt?: number
   endAt?: number
   disabled?: boolean
+  /** Server-measured length; preferred over the browser's (Safari misreads some Ogg files). */
+  knownDuration?: number
   /** Inline variant: label and time share one row above the track. */
   compact?: boolean
   onPlayingChange?: (playing: boolean) => void
@@ -40,6 +42,7 @@ function AudioPlayerContent({
   startAt = 0,
   endAt,
   disabled = false,
+  knownDuration,
   compact = false,
   onPlayingChange,
   ref,
@@ -48,7 +51,12 @@ function AudioPlayerContent({
 
   const audio = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
-  const [duration, setDuration] = useState(0)
+  const [mediaDuration, setMediaDuration] = useState(0)
+  const known =
+    knownDuration !== undefined && Number.isFinite(knownDuration) && knownDuration > 0
+      ? knownDuration
+      : undefined
+  const duration = known ?? mediaDuration
   const [position, setPosition] = useState(0)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
@@ -64,9 +72,9 @@ function AudioPlayerContent({
     if (!player || endAt === undefined) return
     player.pause()
     if (player.readyState >= 1 && Number.isFinite(startAt)) {
-      player.currentTime = Math.max(0, Math.min(startAt, player.duration))
+      player.currentTime = Math.max(0, Math.min(startAt, known ?? player.duration))
     }
-  }, [startAt, endAt])
+  }, [startAt, endAt, known])
   useEffect(() => {
     const player = audio.current
     return () => {
@@ -126,8 +134,8 @@ function AudioPlayerContent({
         onLoadedMetadata={(event) => {
           const player = event.currentTarget
           if (!Number.isFinite(player.duration)) return
-          setDuration(player.duration)
-          player.currentTime = Math.max(0, Math.min(rangeStart, player.duration))
+          setMediaDuration(player.duration)
+          player.currentTime = Math.max(0, Math.min(rangeStart, known ?? player.duration))
           setPosition(player.currentTime)
         }}
         onSeeked={(event) => setPosition(event.currentTarget.currentTime)}
