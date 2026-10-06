@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightIcon } from '@phosphor-icons/react'
 import type { PublicUser } from '@/api/types'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/user-avatar'
 import { buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { formatLocale } from '@/i18n'
@@ -30,9 +30,12 @@ export function PublicUserCard({
   return (
     <Card className="h-full min-w-0 gap-6 rounded-2xl border p-6 shadow-none ring-0 sm:p-7">
       <div className="flex min-w-0 items-center gap-4">
-        <Avatar className="size-12 shrink-0">
-          <AvatarFallback className="text-lg">{Array.from(nickname)[0]}</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          nickname={nickname}
+          avatarUrl={user.avatarUrl}
+          className="size-12 shrink-0"
+          fallbackClassName="text-lg"
+        />
         <h2 className="min-w-0 break-words text-lg font-semibold tracking-tight">{nickname}</h2>
       </div>
       <p className="break-all font-mono text-xs leading-relaxed text-muted-foreground">

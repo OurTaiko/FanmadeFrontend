@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/user-avatar'
 import {
   Table,
   TableCaption,
@@ -309,10 +310,16 @@ function ChartLeaderboard({ chart, course }: { chart: Chart; course: string }) {
                   </TableCell>
                   <TableHead scope="row">
                     <Link
-                      className="text-primary hover:underline"
+                      className="inline-flex max-w-full items-center gap-2 align-middle text-primary hover:underline"
                       to={`/users/${encodeURIComponent(entry.userId)}`}
                     >
-                      {entry.nickname}
+                      <UserAvatar
+                        nickname={entry.nickname}
+                        avatarUrl={entry.avatarUrl}
+                        className="size-6"
+                        fallbackClassName="text-xs"
+                      />
+                      <span className="truncate">{entry.nickname}</span>
                     </Link>
                     {entry.userId === user?.id && (
                       <span className="ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">

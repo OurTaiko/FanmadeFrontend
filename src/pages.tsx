@@ -11,6 +11,7 @@ import { ChartSearch } from '@/components/chart-search'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { UserAvatar } from '@/components/user-avatar'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -513,10 +514,16 @@ export function Detail() {
             <dt>{t('messages.uploader')}</dt>
             <dd>
               <Link
-                className="text-primary hover:underline"
+                className="inline-flex max-w-full items-center gap-2 align-middle text-primary hover:underline"
                 to={`/users/${encodeURIComponent(chart.ownerId)}`}
               >
-                {chart.uploader}
+                <UserAvatar
+                  nickname={chart.uploader}
+                  avatarUrl={chart.uploaderAvatarUrl}
+                  className="size-6"
+                  fallbackClassName="text-xs"
+                />
+                <span className="min-w-0 wrap-anywhere">{chart.uploader}</span>
               </Link>
             </dd>
             <dt>{t('messages.published')}</dt>

@@ -19,6 +19,7 @@ export type Chart = Metadata & {
   categoryIds: string[]
   ownerId: string
   uploader: string
+  uploaderAvatarUrl?: string
   description: string
   createdAt: string
   duration: number
@@ -36,6 +37,7 @@ export type LeaderboardEntry = {
   id: string
   userId: string
   nickname: string
+  avatarUrl?: string
   rank: number
   score: number
   good: number
@@ -57,6 +59,7 @@ export type Leaderboard = {
 export type PublicUser = {
   id: string
   nickname: string | null
+  avatarUrl?: string
   firstLoginAt: string | null
   lastActiveAt: string | null
   chartCount: number
