@@ -1,4 +1,3 @@
-import playerBuild from '../player-build.json'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -35,10 +34,51 @@ export default function EmbeddedPlayer({
   const [attempt, setAttempt] = useState(0)
   const [drumVolume, setDrumVolume] = useState(defaultDrumVolume)
   const drumVolumeRef = useRef(defaultDrumVolume)
-  const url = new URL(import.meta.env.VITE_PLAYER_URL || playerBuild.path, window.location.href)
-  url.searchParams.set('parentOrigin', window.location.origin)
-  const playerOrigin = url.origin
-  const playerUrl = url.href
+  const [playerUrl, setPlayerUrl] = useState('')
+  const playerOrigin = playerUrl ? new URL(playerUrl).origin : window.location.origin
+  const opened = mode !== null
+
+  useEffect(() => {
+    if (!opened) return
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 30_000)
+    async function resolvePlayer() {
+      try {
+        let path = import.meta.env.VITE_PLAYER_URL
+        if (!path) {
+          const response = await fetch(`/player-build.json?t=${Date.now()}`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          })
+          if (!response.ok) throw new Error('PLAYER_MANIFEST_UNAVAILABLE')
+          const build = await response.json()
+          if (
+            typeof build.path !== 'string' ||
+            !/^\/player\/[a-f0-9]{16}\/index\.html$/.test(build.path)
+          )
+            throw new Error('PLAYER_MANIFEST_INVALID')
+          path = build.path
+        }
+        const url = new URL(path, window.location.href)
+        url.searchParams.set('parentOrigin', window.location.origin)
+        if (!controller.signal.aborted) setPlayerUrl(url.href)
+      } catch {
+        if (!disposed) {
+          setError('PLAYER_MANIFEST_UNAVAILABLE')
+          setStatus('error')
+        }
+      } finally {
+        window.clearTimeout(timeout)
+      }
+    }
+    let disposed = false
+    void resolvePlayer()
+    return () => {
+      disposed = true
+      controller.abort()
+      window.clearTimeout(timeout)
+    }
+  }, [opened, attempt])
   const send = useCallback(
     (type: string) => {
       iframe.current?.contentWindow?.postMessage(
@@ -78,6 +118,7 @@ export default function EmbeddedPlayer({
         setStatus('error')
       } else if (data.type === 'exit') {
         setMode(null)
+        setPlayerUrl('')
         setReady(false)
         setStatus('idle')
       } else if (['loading', 'loaded', 'finished'].includes(data.type)) setStatus(data.type)
@@ -113,6 +154,7 @@ export default function EmbeddedPlayer({
     setMode(value)
   }
   function reload() {
+    setPlayerUrl('')
     setReady(false)
     setError('')
     setStatus('loading')
@@ -141,6 +183,7 @@ export default function EmbeddedPlayer({
             onClick={() => {
               send('unload')
               setMode(null)
+              setPlayerUrl('')
               setReady(false)
               setStatus('idle')
               setError('')
@@ -195,7 +238,7 @@ export default function EmbeddedPlayer({
           {t('messages.playerFinished')}
         </p>
       )}
-      {mode ? (
+      {mode && playerUrl ? (
         <iframe
           key={attempt}
           ref={iframe}
