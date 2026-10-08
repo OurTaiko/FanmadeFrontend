@@ -403,7 +403,9 @@
     "playerFinished": "播放结束，已回到第一小节并暂停。",
     "playerChoose": "选择练习或观看谱面后加载播放器。",
     "playerFullscreen": "全屏",
-    "playerDrumVolume": "鼓声音量"
+    "playerDrumVolume": "鼓声音量",
+    "doubleCourse": "{{course}} 双打",
+    "selectPlayerSide": "选择玩家侧"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",

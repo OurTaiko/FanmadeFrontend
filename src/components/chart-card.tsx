@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { DifficultyBadges } from '@/components/difficulty-badges'
 import { compactNumber } from '@/components/vote-control'
 import { ArrowFatUpIcon, ChatCircleIcon } from '@phosphor-icons/react'
+import { cn } from '@/lib/utils'
 
 export function ChartCard({ chart }: { chart: Chart }) {
   const { t } = useTranslation()
@@ -26,9 +27,10 @@ export function ChartCard({ chart }: { chart: Chart }) {
       data-testid="chart-card"
       to={`/charts/${chart.id}`}
     >
+      {/* Fixed height: five difficulty bookmarks, the most a song has, fit exactly. */}
       <Card
         size="sm"
-        className="isolate relative bg-white dark:bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] py-6 rounded-2xl ring-0 h-full"
+        className="isolate relative bg-white dark:bg-card shadow-[0_4px_12px_rgba(0,0,0,0.08)] py-5 rounded-2xl ring-0 h-56"
       >
         {hasCover && (
           <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
@@ -40,12 +42,18 @@ export function ChartCard({ chart }: { chart: Chart }) {
               className="size-full object-cover motion-reduce:transform-none group-hover:scale-105 transition-transform motion-reduce:transition-none duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
               onError={() => setFailedSource(source)}
             />
-            <div className="absolute inset-0 bg-white/80 dark:bg-black/75" />
+            <div className="absolute inset-0 bg-white/55 dark:bg-black/55 group-hover:bg-white/45 dark:group-hover:bg-black/45 transition-colors motion-reduce:transition-none duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]" />
           </div>
         )}
-        <CardContent className="relative flex gap-4 pr-0 pl-6 h-full">
-          <div className="flex flex-col flex-1 gap-5 min-w-0">
-            <div className="space-y-0.5 min-w-0">
+        <CardContent className="relative flex gap-4 pr-0 pl-6 h-full min-h-0">
+          <div className="flex flex-col flex-1 gap-4 min-w-0 min-h-0">
+            <div
+              className={cn(
+                'space-y-0.5 min-w-0',
+                hasCover &&
+                  '[text-shadow:0_1px_3px_rgb(255_255_255/0.9)] dark:[text-shadow:0_1px_3px_rgb(0_0_0/0.9)]',
+              )}
+            >
               <h3
                 className="font-semibold text-lg truncate tracking-tight"
                 title={chartText(chart, i18n.resolvedLanguage).title}
@@ -53,32 +61,43 @@ export function ChartCard({ chart }: { chart: Chart }) {
                 {chartText(chart, i18n.resolvedLanguage).title}
               </h3>
               <p
-                className="text-muted-foreground text-sm truncate"
+                className={cn(
+                  'text-sm truncate',
+                  hasCover ? 'text-foreground/80' : 'text-muted-foreground',
+                )}
                 title={chartText(chart, i18n.resolvedLanguage).subtitle}
               >
                 {chartText(chart, i18n.resolvedLanguage).subtitle}
               </p>
             </div>
-            <CategoryLabels ids={chart.categoryIds}>
-              <li className="min-w-0 max-w-full">
-                <Badge
-                  variant="outline"
-                  className="gap-0 p-0 min-w-0 max-w-full"
-                  title={t('messages.chartCreatorWithName', {
-                    name: chart.maker || chart.uploader,
-                  })}
-                >
-                  <span className="flex items-center bg-muted px-2 border-r h-full text-muted-foreground shrink-0">
-                    {t('messages.chartCreator')}
-                  </span>
-                  <span className="px-2 truncate">{chart.maker || chart.uploader}</span>
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="outline" className="tabular-nums">
-                  {chart.bpm} BPM
-                </Badge>
-              </li>
+            {/* Two rows of facts at most; a third row is cut off whole. */}
+            <div className="max-h-[3.25rem] overflow-hidden">
+              <CategoryLabels ids={chart.categoryIds}>
+                <li className="min-w-0 max-w-full">
+                  <Badge
+                    variant="outline"
+                    className="gap-0 p-0 min-w-0 max-w-full"
+                    title={t('messages.chartCreatorWithName', {
+                      name: chart.maker || chart.uploader,
+                    })}
+                  >
+                    <span className="flex items-center bg-muted px-2 border-r h-full text-muted-foreground shrink-0">
+                      {t('messages.chartCreator')}
+                    </span>
+                    <span className="px-2 truncate">{chart.maker || chart.uploader}</span>
+                  </Badge>
+                </li>
+                <li>
+                  <Badge variant="outline" className="tabular-nums">
+                    {chart.bpm} BPM
+                  </Badge>
+                </li>
+              </CategoryLabels>
+            </div>
+            <ul
+              className="flex items-center gap-2 mt-auto"
+              aria-label={t('messages.chartInformation')}
+            >
               <li>
                 <Badge
                   variant="outline"
@@ -105,7 +124,7 @@ export function ChartCard({ chart }: { chart: Chart }) {
                   </span>
                 </Badge>
               </li>
-            </CategoryLabels>
+            </ul>
           </div>
           <DifficultyBadges difficulties={chart.difficulties} bookmarks />
         </CardContent>

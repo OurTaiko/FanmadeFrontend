@@ -79,11 +79,16 @@ test('double chart sides select separate previews and leaderboards without block
   const canvas = page.locator('canvas')
   await expect(canvas).toHaveAttribute('aria-label', 'Oni_1p 难度交互谱面预览')
   await expect.poll(() => canvas.evaluate((c: HTMLCanvasElement) => c.height)).toBeGreaterThan(100)
-  await page.getByRole('tab', { name: '魔王 2P 8 星', exact: true }).click()
+  // P1 and P2 of one course are one double chart with a side switch.
+  await expect(
+    page.getByRole('tablist', { name: '选择难度', exact: true }).getByRole('tab'),
+  ).toHaveText(['魔王 双打9/8'])
+  const sides = page.getByRole('tablist', { name: '选择玩家侧', exact: true })
+  await sides.getByRole('tab', { name: '2P 8 星', exact: true }).click()
   await expect(canvas).toHaveAttribute('aria-label', 'Oni_2p 难度交互谱面预览')
   await page.getByRole('tab', { name: '排行榜', exact: true }).click()
   await expect(page.getByText('Oni_2p player', { exact: true })).toBeVisible()
-  await page.getByRole('tab', { name: '魔王 1P 9 星', exact: true }).click()
+  await sides.getByRole('tab', { name: '1P 9 星', exact: true }).click()
   await expect(page.getByText('Oni_1p player', { exact: true })).toBeVisible()
   expect(boards).toContain('Oni_1p')
   expect(boards).toContain('Oni_2p')

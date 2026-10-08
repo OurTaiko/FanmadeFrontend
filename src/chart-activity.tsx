@@ -25,7 +25,14 @@ import {
 } from '@phosphor-icons/react'
 import { api } from './api/client'
 import type { Chart, Leaderboard } from './api/types'
-import { courseNames, isSupportedCourse, baseCourse } from './courses'
+import {
+  courseNames,
+  isSupportedCourse,
+  baseCourse,
+  groupCourses,
+  groupLevel,
+  groupName,
+} from './courses'
 import { Notice } from './notifications'
 import { defaultDifficulty } from './chart-difficulty'
 import { useSession } from './session-context'
@@ -58,7 +65,10 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   const [source, setSource] = useState('')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const courses = [...new Set(chart.difficulties.map((d) => d.course).filter(isSupportedCourse))]
+  // P1 and P2 of a double course are one chart: one tab per course, then a
+  // side switch for the preview and the per-side leaderboard.
+  const groups = groupCourses(chart.difficulties)
+  const group = groups.find((g) => g.base === baseCourse(course))
   const { id, tjaHash, encoding } = chart
 
   useEffect(() => {
@@ -102,32 +112,66 @@ export function ChartActivity({ chart }: { chart: Chart }) {
         aria-label={t('messages.chartContentAndDifficultySelection')}
       >
         <Tabs
-          value={course}
-          onValueChange={(value) => setCourse(String(value))}
+          value={group?.base ?? ''}
+          onValueChange={(value) => {
+            const next = groups.find((g) => g.base === value)
+            if (!next) return
+            // Keep the chosen side when switching between double courses.
+            const side = course.slice(baseCourse(course).length)
+            setCourse(
+              next.sides.find((d) => d.course === `${next.base}${side}`)?.course ??
+                next.sides[0].course,
+            )
+          }}
           className="shrink-0"
         >
           <TabsList aria-label={t('messages.selectDifficulty')} className={tabButtonGroupClassName}>
-            {courses.map((value) => {
-              const difficulty = chart.difficulties.find((d) => d.course === value)!
-              return (
-                <TabsTrigger
-                  key={value}
-                  value={value}
-                  className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[baseCourse(value)]}`}
+            {groups.map((g) => (
+              <TabsTrigger
+                key={g.base}
+                value={g.base}
+                className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[g.base]}`}
+              >
+                {groupName(g)}
+                <span
+                  className="inline-flex items-center gap-1 tabular-nums"
+                  aria-label={g.sides
+                    .map((d) => t('common.stars', { count: d.level }))
+                    .filter((label, index, all) => all.indexOf(label) === index)
+                    .join(' / ')}
                 >
-                  {courseNames[value]}
-                  <span
-                    className="inline-flex items-center gap-1 tabular-nums"
-                    aria-label={t('common.stars', { count: difficulty.level })}
-                  >
-                    <StarIcon weight="fill" className="size-3" aria-hidden="true" />
-                    {difficulty.level}
-                  </span>
-                </TabsTrigger>
-              )
-            })}
+                  <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+                  {groupLevel(g)}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
+        {group?.double && (
+          <Tabs
+            value={course}
+            onValueChange={(value) => setCourse(String(value))}
+            className="shrink-0"
+          >
+            <TabsList
+              aria-label={t('messages.selectPlayerSide')}
+              className={tabButtonGroupClassName}
+            >
+              {group.sides.map((d) => (
+                <TabsTrigger key={d.course} value={d.course} className={tabButtonClassName}>
+                  {d.course.slice(-2).toUpperCase()}
+                  <span
+                    className="inline-flex items-center gap-1 tabular-nums"
+                    aria-label={t('common.stars', { count: d.level })}
+                  >
+                    <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+                    {d.level}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
         <Separator orientation="vertical" className="h-6 data-vertical:self-center" />
         <TabsList aria-label={t('messages.songDetails')} className={tabButtonGroupClassName}>
           <TabsTrigger value="image" className={tabButtonClassName}>

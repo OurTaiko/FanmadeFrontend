@@ -403,7 +403,9 @@
     "playerFinished": "Playback finished. Returned to the first bar and paused.",
     "playerChoose": "Choose Practice or Watch chart to load the player.",
     "playerFullscreen": "Fullscreen",
-    "playerDrumVolume": "Drum volume"
+    "playerDrumVolume": "Drum volume",
+    "doubleCourse": "{{course}} Double",
+    "selectPlayerSide": "Select player side"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",

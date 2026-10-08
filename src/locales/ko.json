@@ -403,7 +403,9 @@
     "playerFinished": "재생이 끝나 첫 마디에서 일시 정지했습니다.",
     "playerChoose": "연습 또는 채보 보기를 선택하세요.",
     "playerFullscreen": "전체 화면",
-    "playerDrumVolume": "북 소리 음량"
+    "playerDrumVolume": "북 소리 음량",
+    "doubleCourse": "{{course}} 더블",
+    "selectPlayerSide": "플레이어 쪽 선택"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 창작 채보",
