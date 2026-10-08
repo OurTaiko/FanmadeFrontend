@@ -4,7 +4,7 @@ React + TypeScript + Vite 前端，独立 Git 仓库。**仅使用 pnpm**，提�
 
 远端仓库：[OurTaiko/Fanmade_Frontend](https://github.com/OurTaiko/Fanmade_Frontend)，使用 `ourtaiko` 远端管理。
 
-生产服务器通过 Git 拉取本仓库及 TJARenderer 子模块，使用 pnpm 构建，1Panel OpenResty 提供静态文件和同域 `/api/`。服务器更新入口为 `bash /opt/ourtaiko-fanmade/src/frontend/deploy/publish.sh`，按 Git 版本保存构建并切换站点目录；不会启动 Vite 开发服务。后端仓库的 `docs/DEPLOYMENT.md` 记录完整部署路径。
+生产服务器通过 Git 拉取本仓库及 TJARenderer 子模块，使用 pnpm 构建，1Panel OpenResty 提供静态文件和同域 `/api/`。服务器更新入口为 `bash /opt/ourtaiko-fanmade/src/frontend/deploy/publish.sh`，按 Git 版本保存构建并切换站点目录；不会启动 Vite 开发服务。完整部署路径记录在私有仓库 OurTaikoLogs 的 `FanmadeBackend/docs/DEPLOYMENT.md`。
 
 推送 `main` 后，GitHub Actions 会先执行 lint、单元测试和生产构建，再通过 SSH 自动发布本次提交。服务器地址、用户名、密码和主机指纹通过 GitHub Secrets 配置，详见 [前端自动部署说明](deploy/README.md)。
 
@@ -20,7 +20,7 @@ pnpm dev
 
 打开 `http://127.0.0.1:5173`。后端需先在 `http://127.0.0.1:8080` 启动；Vite 转发 `/api`，无需修改浏览器跨域配置。请使用 127.0.0.1，避免与 localhost 混用导致 Origin 或会话校验失败。
 
-本地 SSO 开发统一使用 `http://127.0.0.1:5173`，账号中心为 `http://127.0.0.1:8090`。其他地址需同时修改 APP_ORIGIN、SSO_ISSUER、精确回调登记和 COOKIE_SECURE；非 loopback 地址使用 HTTPS，详见 [后端 SSO 说明](../backend/docs/SSO.md)。
+本地 SSO 开发统一使用 `http://127.0.0.1:5173`，账号中心为 `http://127.0.0.1:8090`。其他地址需同时修改 APP_ORIGIN、SSO_ISSUER、精确回调登记和 COOKIE_SECURE；非 loopback 地址使用 HTTPS，详见 OurTaikoLogs 的 `FanmadeBackend/docs/SSO.md`。
 
 `pnpm-workspace.yaml` 已明确允许 esbuild 与 agent-browser 的必要安装脚本。不要生成 package-lock.json 或 yarn.lock。
 
@@ -104,7 +104,7 @@ PLAYWRIGHT_BASE_URL=http://<Mac-IP>:5173 pnpm exec playwright test e2e/detail.sp
 FANMADE_SSO_E2E=1 pnpm test:e2e
 ```
 
-本地测试经 SSO 实际注册、文件邮件验证及授权跳转，再测试上传和作品管理；不发送真实邮件。未设置该环境变量时跳过需要新建账号的集成用例。完整配置见 [SSO 接入](../backend/docs/SSO.md)。
+本地测试经 SSO 实际注册、文件邮件验证及授权跳转，再测试上传和作品管理；不发送真实邮件。未设置该环境变量时跳过需要新建账号的集成用例。完整配置见 OurTaikoLogs 的 `FanmadeBackend/docs/SSO.md`。
 
 难度限制的隔离浏览器测试只需启动前端，无需后端、数据库或邮件服务：
 
@@ -209,7 +209,7 @@ Tailwind 原子类。复用控件位于 `src/components/ui/`，音频播放器�
 首页 ChartCard 使用封面作为背景并叠加纯色遮罩保证文字可读，详情头部完整显示封面；旧歌曲无封面时正常回退。
 
 网站通过 `coverHash` 生成 `/api/v1/charts/{id}/cover?v=...` 图片地址。
-后端需先升级到 migration 019 并安装 `cwebp`；WebP 二进制保存在数据库，具体接口见 [后端 API](../backend/docs/API.md#网站歌曲封面)。
+后端需先升级到 migration 019 并安装 `cwebp`；WebP 二进制保存在数据库，具体接口见 OurTaikoLogs 的 `FanmadeBackend/docs/API.md`「网站歌曲封面」一节。
 修改封面不改变谱面、音频或成绩，也不涉及游戏客户端。
 
 `pnpm exec playwright test e2e/covers.spec.ts` 使用隔离 API 响应验证上传、owner 权限入口、保存失败与重试、即时刷新，以及 320–1440px 的明暗主题布局；不写真实业务数据。
