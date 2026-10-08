@@ -55,6 +55,20 @@ export function PublicUserCard({
             {user.scoreCount.toLocaleString(formatLocale(i18n.language))}
           </dd>
         </div>
+        <div>
+          <dt className="text-sm text-muted-foreground">{t('interactions.publicCommentCount')}</dt>
+          <dd className="mt-2 text-2xl font-semibold tabular-nums">
+            {user.commentCount.toLocaleString(formatLocale(i18n.language))}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm text-muted-foreground" title={t('interactions.karmaExplanation')}>
+            {t('interactions.karma')}
+          </dt>
+          <dd className="mt-2 text-2xl font-semibold tabular-nums">
+            {user.karma.toLocaleString(formatLocale(i18n.language))}
+          </dd>
+        </div>
       </dl>
       <dl className="space-y-3 text-sm">
         <div className="space-y-1">

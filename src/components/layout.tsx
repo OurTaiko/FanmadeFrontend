@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/theme'
+import { NotificationBell } from '@/notification-center'
 import pageBackground from '@/assets/page-background.webp'
 
 export function Layout() {
@@ -83,6 +84,7 @@ export function Layout() {
               <span className="text-muted-foreground text-xs">{t('messages.connecting')}</span>
             ) : session.user ? (
               <>
+                <NotificationBell />
                 <Link
                   className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring max-w-40"
                   to="/me/profile"

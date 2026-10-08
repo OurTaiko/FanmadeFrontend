@@ -31,7 +31,65 @@ export type Chart = Metadata & {
   audioSize: number
   titleTranslations: Partial<Record<Locale, string>>
   subtitleTranslations: Partial<Record<Locale, string>>
+  score: number
+  upvotes: number
+  downvotes: number
+  commentCount: number
+  myVote: Vote
 }
+export type Vote = -1 | 0 | 1
+export type VoteResult = { score: number; upvotes?: number; downvotes?: number; myVote: Vote }
+export type CommentSort = 'best' | 'top' | 'new' | 'old' | 'controversial'
+export type Comment = {
+  id: string
+  chartId: string
+  chartTitle?: string
+  parentId: string | null
+  depth: number
+  authorId: string
+  author: string
+  authorAvatarUrl?: string
+  body: string
+  createdAt: string
+  editedAt: string | null
+  deleted: boolean
+  removed: boolean
+  score: number
+  myVote: Vote
+  replyCount: number
+  replies: Comment[]
+}
+export type CommentPage = {
+  items: Comment[]
+  total: number
+  commentCount: number
+  page: number
+  pageSize: number
+  sort: CommentSort
+}
+export type CommentThread = { item: Comment; sort: CommentSort }
+export type CommentList = { items: Comment[]; total: number; page: number; pageSize: number }
+export type NotificationKind =
+  'comment_reply' | 'chart_comment' | 'chart_upvotes' | 'comment_upvotes' | 'comment_removed'
+export type AppNotification = {
+  id: string
+  // Unknown future kinds still render with a generic message.
+  kind: NotificationKind | (string & {})
+  createdAt: string
+  read: boolean
+  actor: { id: string; nickname: string; avatarUrl?: string } | null
+  chart: { id: string; title: string } | null
+  comment: { id: string; parentId: string | null; excerpt: string } | null
+  data: { upvotes?: number } & Record<string, unknown>
+}
+export type NotificationPage = {
+  items: AppNotification[]
+  total: number
+  unread: number
+  page: number
+  pageSize: number
+}
+export type NotificationSetting = { kind: NotificationKind | (string & {}); enabled: boolean }
 export type ChartList = { items: Chart[]; total: number; page: number; pageSize: number }
 export type LeaderboardEntry = {
   id: string
@@ -64,6 +122,8 @@ export type PublicUser = {
   lastActiveAt: string | null
   chartCount: number
   scoreCount: number
+  commentCount: number
+  karma: number
 }
 export type UserDirectory = {
   items: PublicUser[]

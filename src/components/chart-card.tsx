@@ -10,6 +10,8 @@ import { supportsChart } from '@/courses'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { DifficultyBadges } from '@/components/difficulty-badges'
+import { compactNumber } from '@/components/vote-control'
+import { ArrowFatUpIcon, ChatCircleIcon } from '@phosphor-icons/react'
 
 export function ChartCard({ chart }: { chart: Chart }) {
   const { t } = useTranslation()
@@ -75,6 +77,32 @@ export function ChartCard({ chart }: { chart: Chart }) {
               <li>
                 <Badge variant="outline" className="tabular-nums">
                   {chart.bpm} BPM
+                </Badge>
+              </li>
+              <li>
+                <Badge
+                  variant="outline"
+                  className="tabular-nums"
+                  title={t('interactions.scoreExact', { score: chart.score })}
+                >
+                  <ArrowFatUpIcon className="size-3" aria-hidden="true" />
+                  <span className="sr-only">{t('interactions.score')}</span>
+                  {compactNumber(chart.score, i18n.resolvedLanguage ?? '')}
+                </Badge>
+              </li>
+              <li>
+                <Badge
+                  variant="outline"
+                  className="tabular-nums"
+                  title={t('interactions.commentCount', { count: chart.commentCount })}
+                >
+                  <ChatCircleIcon className="size-3" aria-hidden="true" />
+                  <span className="sr-only">
+                    {t('interactions.commentCount', { count: chart.commentCount })}
+                  </span>
+                  <span aria-hidden="true">
+                    {compactNumber(chart.commentCount, i18n.resolvedLanguage ?? '')}
+                  </span>
                 </Badge>
               </li>
             </CategoryLabels>

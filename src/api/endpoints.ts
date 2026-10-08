@@ -38,6 +38,22 @@ export const endpoints = {
     withQuery(`${chartPath(id)}/cover`, hash ? { v: hash } : {}),
   leaderboard: (id: string, query: { difficulty: string; page: number }) =>
     withQuery(`${chartPath(id)}/leaderboard`, query),
+  chartVote: (id: string) => `${chartPath(id)}/vote`,
+  chartComments: (id: string, query: { sort: string; page: number }) =>
+    withQuery(`${chartPath(id)}/comments`, query),
+  newComment: (chartId: string) => `${chartPath(chartId)}/comments`,
+  comment: (id: string) => `${API_ROOT}/comments/${encodeURIComponent(id)}`,
+  commentThread: (id: string, sort: string) =>
+    withQuery(`${API_ROOT}/comments/${encodeURIComponent(id)}`, { sort }),
+  commentVote: (id: string) => `${API_ROOT}/comments/${encodeURIComponent(id)}/vote`,
+  userComments: (id: string, query: { sort: string; page: number }) =>
+    withQuery(`${API_ROOT}/users/${encodeURIComponent(id)}/comments`, query),
+  notifications: (query: { filter: 'all' | 'unread'; page: number }) =>
+    withQuery(`${API_ROOT}/me/notifications`, query),
+  notificationsUnread: `${API_ROOT}/me/notifications/unread`,
+  notificationsRead: `${API_ROOT}/me/notifications/read`,
+  notification: (id: string) => `${API_ROOT}/me/notifications/${encodeURIComponent(id)}`,
+  notificationSettings: `${API_ROOT}/me/notification-settings`,
   resource: (chart: Pick<Chart, 'id'>, kind: 'audio' | 'tja' | 'download') =>
     `${chartPath(chart.id)}/${kind}`,
 } as const

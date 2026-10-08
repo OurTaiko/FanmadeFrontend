@@ -24,6 +24,7 @@ import {
   PauseIcon,
   ArrowSquareOutIcon,
   ClockIcon,
+  ChatCircleIcon,
 } from '@phosphor-icons/react'
 import { api, jsonRequest } from './api/client'
 import type { Chart, ChartList } from './api/types'
@@ -35,6 +36,9 @@ import { ChartActivity } from './chart-activity'
 import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { CategoryLabels } from './categories'
+import { CommentSection } from './comments'
+import { VoteControl } from '@/components/vote-control'
+import type { Vote, VoteResult } from './api/types'
 
 export function Library({
   mine = false,
@@ -310,7 +314,7 @@ export function Detail() {
   const { t } = useTranslation()
 
   const { notify } = useNotification()
-  const { id } = useParams(),
+  const { id, commentId } = useParams(),
     session = useSession(),
     navigate = useNavigate()
   const [chart, setChart] = useState<Chart | null>(null),
@@ -379,6 +383,36 @@ export function Detail() {
           <p className="text-lg text-muted-foreground">
             {chartText(chart, i18n.resolvedLanguage).subtitle}
           </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+            <VoteControl
+              className="rounded-full bg-[#f5f5f7] px-1 py-0.5 dark:bg-muted"
+              score={chart.score}
+              myVote={chart.myVote}
+              label={t('interactions.voteOnChart')}
+              onVote={(value: Vote) =>
+                api<VoteResult>(
+                  endpoints.chartVote(chart.id),
+                  jsonRequest('PUT', { value }, session.csrfToken),
+                )
+              }
+              onResult={(result) =>
+                setChart((current) =>
+                  current?.id === chart.id ? { ...current, ...result } : current,
+                )
+              }
+            />
+            {chart.upvotes + chart.downvotes > 0 && (
+              <span className="tabular-nums">
+                {t('interactions.upvoteRatio', {
+                  percent: Math.round((chart.upvotes / (chart.upvotes + chart.downvotes)) * 100),
+                })}
+              </span>
+            )}
+            <a href="#comments" className="inline-flex items-center gap-1.5 hover:text-foreground">
+              <ChatCircleIcon aria-hidden="true" />
+              {t('interactions.commentCount', { count: chart.commentCount })}
+            </a>
+          </div>
           <div data-testid="detail-facts" className="[&_li]:flex [&_li]:items-center">
             <CategoryLabels ids={chart.categoryIds}>
               <li className="min-w-0 max-w-full">
@@ -575,6 +609,17 @@ export function Detail() {
         </section>
       </div>
       <ChartActivity key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`} chart={chart} />
+      <CommentSection
+        chart={chart}
+        focusId={commentId}
+        onCountChange={(delta) =>
+          setChart((current) =>
+            current?.id === chart.id
+              ? { ...current, commentCount: Math.max(0, current.commentCount + delta) }
+              : current,
+          )
+        }
+      />
     </>
   )
 }

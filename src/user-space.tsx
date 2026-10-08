@@ -11,6 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Library } from '@/pages'
 import { Card } from '@/components/ui/card'
 import { useSession } from '@/session-context'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ChoiceSelect } from '@/components/choice-select'
+import { CommentListView } from '@/comments'
+import type { CommentList } from '@/api/types'
 
 export function UserSpacePage() {
   const { id = '' } = useParams()
@@ -94,15 +98,53 @@ export function UserSpacePage() {
                 {t('messages.memberActivityNote')}
               </p>
             </aside>
-            <section className="min-w-0 space-y-6" aria-label={t('messages.userPublishedCharts')}>
-              <h2 className="text-xl font-semibold tracking-tight">
-                {t('messages.publicChartCount')}
-              </h2>
-              <Library key={`${id}:${refresh}`} ownerId={id} embedded />
-            </section>
+            <Tabs defaultValue="charts" className="min-w-0 gap-6">
+              <TabsList aria-label={t('interactions.userSpaceSections')}>
+                <TabsTrigger value="charts">{t('messages.publicChartCount')}</TabsTrigger>
+                <TabsTrigger value="comments">{t('interactions.publicCommentCount')}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="charts">
+                <section
+                  className="min-w-0 space-y-6"
+                  aria-label={t('messages.userPublishedCharts')}
+                >
+                  <Library key={`${id}:${refresh}`} ownerId={id} embedded />
+                </section>
+              </TabsContent>
+              <TabsContent value="comments">
+                <UserComments key={`${id}:${refresh}`} id={id} />
+              </TabsContent>
+            </Tabs>
           </div>
         </>
       )}
+    </section>
+  )
+}
+
+function UserComments({ id }: { id: string }) {
+  const { t } = useTranslation()
+  const [sort, setSort] = useState('new')
+  return (
+    <section className="min-w-0 space-y-4" aria-label={t('interactions.publicCommentCount')}>
+      <div className="flex justify-end">
+        <ChoiceSelect
+          label={t('interactions.sortComments')}
+          value={sort}
+          items={[
+            { value: 'new', label: t('interactions.sortNew') },
+            { value: 'top', label: t('interactions.sortTop') },
+          ]}
+          onValueChange={setSort}
+        />
+      </div>
+      <CommentListView
+        key={sort}
+        empty={t('interactions.noUserComments')}
+        load={(page, signal) =>
+          api<CommentList>(endpoints.userComments(id, { sort, page }), { signal })
+        }
+      />
     </section>
   )
 }

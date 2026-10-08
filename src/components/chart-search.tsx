@@ -32,7 +32,12 @@ export function ChartSearch({
     { value: '', label: t('messages.defaultSearchOrder') },
     { value: 'unfc', label: t('messages.unfcFirst') },
     { value: 'unperfect', label: t('messages.unperfectFirst') },
+    { value: 'hot', label: t('interactions.orderHot') },
+    { value: 'top', label: t('interactions.orderTop') },
+    { value: 'comments', label: t('interactions.orderComments') },
   ]
+  // Only the personal orders need a signed-in player.
+  const personalOrder = order === 'unfc' || order === 'unperfect'
   const selected = [
     course ? courseNames[course as keyof typeof courseNames] : '',
     level ? `★ ${level}` : '',
@@ -120,7 +125,7 @@ export function ChartSearch({
           </Button>
         </div>
       )}
-      {!expanded && !signedIn && order && (
+      {!expanded && !signedIn && personalOrder && (
         <p className="text-sm text-muted-foreground">{t('messages.guestSearchOrder')}</p>
       )}
     </div>

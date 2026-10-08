@@ -16,6 +16,7 @@ import { ProfilePage } from './profile'
 import { UsersPage } from './users'
 import { UserSpacePage } from './user-space'
 import { PlayerPage } from './player'
+import { NotificationsPage } from './notification-center'
 import './styles.css'
 import { ThemeProvider } from './theme'
 function App() {
@@ -42,6 +43,8 @@ function App() {
                         <Route path="upload" element={<UploadPage />} />
                         <Route path="charts/:id/update" element={<UpdatePage />} />
                         <Route path="charts/:id" element={<Detail />} />
+                        <Route path="charts/:id/comments/:commentId" element={<Detail />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                         <Route path="login" element={<Auth key="login" />} />
                         <Route path="register" element={<Auth key="register" register />} />
                         <Route
