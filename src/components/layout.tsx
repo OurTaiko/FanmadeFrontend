@@ -35,7 +35,11 @@ export function Layout() {
   const links = [
     { to: '/', label: t('messages.exploreCharts'), icon: Compass },
     { to: '/users', label: t('messages.userSquare'), icon: UsersIcon },
-    { to: '/player', label: t('messages.ourTaikoPlayer'), icon: GameControllerIcon },
+    {
+      to: 'https://play.ourtaiko.org/',
+      label: t('messages.ourTaikoPlayer'),
+      icon: GameControllerIcon,
+    },
     { to: '/me/charts', label: t('messages.myCharts'), icon: FolderHeart },
     ...(session.user ? [{ to: '/me/profile', label: t('messages.profile'), icon: UserRound }] : []),
     { to: '/upload', label: t('messages.publishChart'), icon: Upload },
@@ -64,19 +68,32 @@ export function Layout() {
             className="hidden xl:flex items-center gap-1 ml-4"
             aria-label={t('messages.mainNavigation')}
           >
-            {links.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                className={({ isActive }) =>
-                  cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }))
-                }
-              >
-                <Icon className="opacity-60 size-4" aria-hidden="true" />
-                {label}
-              </NavLink>
-            ))}
+            {links.map(({ to, label, icon: Icon }) =>
+              to.startsWith('https://') ? (
+                <a
+                  key={to}
+                  href={to}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                >
+                  <Icon className="opacity-60 size-4" aria-hidden="true" />
+                  {label}
+                </a>
+              ) : (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === '/'}
+                  className={({ isActive }) =>
+                    cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost', size: 'sm' }))
+                  }
+                >
+                  <Icon className="opacity-60 size-4" aria-hidden="true" />
+                  {label}
+                </NavLink>
+              ),
+            )}
           </nav>
           <div className="flex items-center gap-2 ml-auto">
             <ThemeToggle />
@@ -127,7 +144,16 @@ export function Layout() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {links.map(({ to, label, icon: Icon }) => (
-                    <DropdownMenuItem key={to} render={<Link to={to} />}>
+                    <DropdownMenuItem
+                      key={to}
+                      render={
+                        to.startsWith('https://') ? (
+                          <a href={to} target="_blank" rel="noopener noreferrer" />
+                        ) : (
+                          <Link to={to} />
+                        )
+                      }
+                    >
                       <Icon className="opacity-60 size-4" aria-hidden="true" />
                       {label}
                     </DropdownMenuItem>
