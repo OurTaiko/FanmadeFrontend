@@ -74,9 +74,7 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-test('five course filters and ordinary preview; unsupported cards and details stay hidden', async ({
-  page,
-}) => {
+test('ordinary preview; unsupported cards and details stay hidden', async ({ page }) => {
   const errors: string[] = []
   const assets: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -85,17 +83,6 @@ test('five course filters and ordinary preview; unsupported cards and details st
       assets.push(request.url())
   })
   await page.goto('/')
-  await page.getByRole('button', { name: '高级搜索' }).click()
-  await page.getByRole('combobox', { name: '筛选难度' }).click()
-  await expect(page.getByRole('option')).toHaveText([
-    '全部难度',
-    ...['简单', '普通', '困难', '魔王', '里谱'].flatMap((name) => [
-      name,
-      `${name} 1P`,
-      `${name} 2P`,
-    ]),
-  ])
-  await page.keyboard.press('Escape')
   await expect(page.locator('[data-testid="chart-card"]')).toHaveCount(1)
   await expect(page.getByText('不支持的Tower作品')).toHaveCount(0)
   await expect(page.getByText('不支持的Dan作品')).toHaveCount(0)

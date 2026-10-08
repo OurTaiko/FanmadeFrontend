@@ -7,7 +7,8 @@ import { DialogClose } from '@/components/ui/dialog'
 import { ChartCover } from '@/components/chart-cover'
 import { AudioPlayer, type AudioPlayerHandle } from '@/components/audio-player'
 import { buttonVariants, Button } from '@/components/ui/button'
-import { ChartSearch } from '@/components/chart-search'
+import { ChartSearch, chartOrders, useChartOrderLabels } from '@/components/chart-search'
+import type { ChartOrder } from '@/components/chart-search'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +30,7 @@ import {
 import { api, jsonRequest } from './api/client'
 import type { Chart, ChartList } from './api/types'
 import { ChartCard } from '@/components/chart-card'
-import { isSupportedCourse, supportsChart } from './courses'
+import { supportsChart } from './courses'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
 import { ChartActivity } from './chart-activity'
@@ -39,11 +40,6 @@ import { CategoryLabels } from './categories'
 import { CommentSection } from './comments'
 import { VoteControl } from '@/components/vote-control'
 import type { Vote, VoteResult } from './api/types'
-
-// unfc and unperfect only reorder for a signed-in player; the vote orders
-// apply to everyone.
-const chartOrders = ['unfc', 'unperfect', 'hot', 'top', 'comments'] as const
-type ChartOrder = (typeof chartOrders)[number]
 
 export function Library({
   mine = false,
@@ -55,6 +51,7 @@ export function Library({
   embedded?: boolean
 }) {
   const { t } = useTranslation()
+  const orderLabels = useChartOrderLabels()
 
   const [params, setParams] = useSearchParams(),
     { user, loading: authLoading } = useSession()
@@ -78,8 +75,6 @@ export function Library({
     [setParams],
   )
   const q = params.get('q') || '',
-    course = isSupportedCourse(params.get('course') || '') ? params.get('course')! : '',
-    level = /^(?:[1-9]|10)$/.test(params.get('level') || '') ? params.get('level')! : '',
     order = chartOrders.includes(params.get('order') as ChartOrder)
       ? (params.get('order') as ChartOrder)
       : '',
@@ -90,12 +85,9 @@ export function Library({
     const controller = new AbortController()
     setLoading(true)
     setError('')
-    api<ChartList>(
-      endpoints.chartList({ q, course, level, order, page, ...(owner ? { owner } : {}) }, mine),
-      {
-        signal: controller.signal,
-      },
-    )
+    api<ChartList>(endpoints.chartList({ q, order, page, ...(owner ? { owner } : {}) }, mine), {
+      signal: controller.signal,
+    })
       .then((result) => {
         if (!controller.signal.aborted) setData(result)
       })
@@ -106,7 +98,7 @@ export function Library({
         if (!controller.signal.aborted) setLoading(false)
       })
     return () => controller.abort()
-  }, [mine, user, q, course, level, order, page, owner])
+  }, [mine, user, q, order, page, owner])
   if (mine && !user)
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
@@ -168,30 +160,17 @@ export function Library({
       <ChartSearch
         key={mine ? 'mine' : owner || 'all'}
         query={q}
-        course={course}
-        level={level}
         order={order}
-        signedIn={!!user}
         onSearch={search}
         onPendingChange={setSearchPending}
         onChange={update}
       />
       <div className="flex flex-wrap items-center justify-between gap-3 [&_h2]:flex [&_h2]:items-center [&_h2]:gap-2 [&_h2_span]:text-muted-foreground">
         <h2 className="text-base font-semibold">
-          {q ? t('messages.searchResults', { query: q }) : t('messages.latestCharts')}
+          {q ? t('messages.searchResults', { query: q }) : orderLabels[order]}
           {!searchPending && !loading && !error && data && <span>{data.total}</span>}
         </h2>
-        <span className="text-sm text-muted-foreground">
-          {order === 'hot'
-            ? t('interactions.orderHot')
-            : order === 'top'
-              ? t('interactions.orderTop')
-              : order === 'comments'
-                ? t('interactions.orderComments')
-                : user && order
-                  ? t(order === 'unfc' ? 'messages.unfcFirst' : 'messages.unperfectFirst')
-                  : t('messages.sortedByPublishDate')}
-        </span>
+        {q && <span className="text-sm text-muted-foreground">{orderLabels[order]}</span>}
       </div>
       {error ? (
         <Notice>{error}</Notice>
@@ -241,14 +220,14 @@ export function Library({
       ) : (
         <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed bg-card/60 px-6 py-16 text-center [&>p]:max-w-lg [&>p]:text-muted-foreground">
           <h2 className="text-base font-semibold">
-            {q || course || level
+            {q
               ? t('messages.noMatchingCharts')
               : owner
                 ? t('messages.noPublishedChartsYet')
                 : t('messages.beTheFirstToShareARhythm')}
           </h2>
           <p>
-            {q || course || level
+            {q
               ? t('messages.tryOtherSearchFilters')
               : owner
                 ? t('messages.memberHasNoPublicCharts')

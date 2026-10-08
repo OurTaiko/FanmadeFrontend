@@ -20,13 +20,13 @@ describe('API addresses', () => {
     expect([...login.searchParams]).toEqual([['returnTo', returnTo]])
     for (const mine of [false, true]) {
       const list = new URL(
-        endpoints.chartList({ q: 'A&B + 太鼓', course: 'Oni', page: 2 }, mine),
+        endpoints.chartList({ q: 'A&B + 太鼓', order: 'hot', page: 2 }, mine),
         login.origin,
       )
       expect(list.pathname).toBe(`/api/v1/${mine ? 'me/charts' : 'charts'}`)
       expect(Object.fromEntries(list.searchParams)).toEqual({
         q: 'A&B + 太鼓',
-        course: 'Oni',
+        order: 'hot',
         page: '2',
       })
     }

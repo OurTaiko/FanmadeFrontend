@@ -23,6 +23,11 @@ const chart: Chart = {
   audioSize: 100,
   titleTranslations: {},
   subtitleTranslations: {},
+  score: 0,
+  upvotes: 0,
+  downvotes: 0,
+  commentCount: 0,
+  myVote: 0,
   isSingle: true,
   difficulties: ['Easy', 'Normal', 'Hard', 'Oni', 'Edit'].map((course, blockIndex) => ({
     course,
@@ -34,7 +39,7 @@ const chart: Chart = {
 }
 
 for (const signedIn of [false, true]) {
-  test(`advanced search preserves filters and owner across pagination (${signedIn ? 'member' : 'guest'})`, async ({
+  test(`keyword and order survive pagination with the owner filter (${signedIn ? 'member' : 'guest'})`, async ({
     page,
   }) => {
     const requests: URL[] = []
@@ -63,45 +68,47 @@ for (const signedIn of [false, true]) {
       return route.fulfill({ json: { items: [] } })
     })
     await page.goto('/?owner=fixture-user')
-    const toggle = page.getByRole('button', { name: '高级搜索' })
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    await toggle.click()
-    await selectValue(page, '筛选难度', 'Oni')
-    await selectValue(page, '星级', '8')
-    await selectValue(page, '显示顺序', 'unfc')
+    // The website searches by keyword and order only; difficulty, star and
+    // completion filters belong to the game's search.
+    await expect(page.getByRole('combobox', { name: '筛选难度' })).toHaveCount(0)
+    await expect(page.getByRole('combobox', { name: '星级' })).toHaveCount(0)
+    await page.getByRole('combobox', { name: '显示顺序' }).click()
+    await expect(page.locator('[data-slot="select-item"]')).toHaveText([
+      '最新发布',
+      '热门',
+      '最高分',
+      '讨论最多',
+    ])
+    // Pick from the open menu; closing and reopening it races its animation.
+    await page.locator('[data-slot="select-item"][data-value="hot"]').click()
+    await expect(page.getByRole('heading', { name: /^热门/ })).toBeVisible()
     await page.getByRole('searchbox').fill('太鼓 & test')
     await expect.poll(() => requests.at(-1)?.searchParams.get('q')).toBe('太鼓 & test')
     await page.getByRole('button', { name: '下一页', exact: true }).click()
     await expect.poll(() => requests.at(-1)?.searchParams.get('page')).toBe('2')
-    expect(Object.fromEntries(requests.at(-1)!.searchParams)).toMatchObject({
+    expect(Object.fromEntries(requests.at(-1)!.searchParams)).toEqual({
       q: '太鼓 & test',
-      course: 'Oni',
-      level: '8',
-      order: 'unfc',
+      order: 'hot',
       owner: 'fixture-user',
       page: '2',
     })
-    if (!signedIn)
-      await expect(page.getByText('登录后可按个人成绩', { exact: false })).toBeVisible()
-    await toggle.click()
-    await expect(page.getByRole('combobox', { name: '星级' })).toBeHidden()
-    await expect(page.getByText('★ 8 ·', { exact: false })).toBeVisible()
     await page.reload()
-    await toggle.click()
-    await expect(page.getByRole('combobox', { name: '星级' })).toHaveAttribute('data-value', '8')
-    await selectValue(page, '显示顺序', 'unperfect')
-    await expect.poll(() => requests.at(-1)?.searchParams.get('page')).toBe('1')
+    await expect(page.getByRole('combobox', { name: '显示顺序' })).toHaveAttribute(
+      'data-value',
+      'hot',
+    )
+    await selectValue(page, '显示顺序', 'top')
+    await expect.poll(() => requests.at(-1)?.searchParams.get('order')).toBe('top')
+    expect(requests.at(-1)?.searchParams.get('page')).toBe('1')
     await page.goBack()
     await expect(page.getByRole('combobox', { name: '显示顺序' })).toHaveAttribute(
       'data-value',
-      'unfc',
+      'hot',
     )
-    await page.getByRole('button', { name: '重置筛选' }).click()
-    await expect.poll(() => requests.at(-1)?.searchParams.get('level')).toBe('')
-    expect(Object.fromEntries(requests.at(-1)!.searchParams)).toMatchObject({
+    await selectValue(page, '显示顺序', '')
+    await expect.poll(() => requests.at(-1)?.searchParams.get('order')).toBe('')
+    expect(Object.fromEntries(requests.at(-1)!.searchParams)).toEqual({
       q: '太鼓 & test',
-      course: '',
-      level: '',
       order: '',
       owner: 'fixture-user',
       page: '1',

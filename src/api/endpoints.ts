@@ -24,8 +24,6 @@ export const endpoints = {
   chartList: (
     query: {
       q: string
-      course: string
-      level?: string
       order?: string
       page: number
       owner?: string
