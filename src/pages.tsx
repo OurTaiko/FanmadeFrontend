@@ -303,7 +303,7 @@ export function Auth({ register = false }: { register?: boolean }) {
 const detailCardClassName =
   'rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:bg-card'
 const manageItemClassName =
-  'flex min-h-11 w-full items-center justify-between gap-3 text-left text-sm transition-colors hover:text-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md'
+  'flex min-h-11 w-full items-center justify-between gap-3 text-left text-sm text-foreground transition-colors hover:text-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md'
 
 type DetailSection = 'info' | 'activity' | 'comments'
 type PageTab = 'info' | 'chart' | 'leaderboard' | 'comments'
@@ -642,7 +642,10 @@ export function Detail() {
                 <li>
                   <Link className={manageItemClassName} to={`/charts/${chart.id}/update`}>
                     {t('messages.updateSongAndCharts')}
-                    <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                    <CaretRightIcon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                   </Link>
                 </li>
                 <li>
@@ -656,7 +659,10 @@ export function Detail() {
                     }}
                   >
                     {t('messages.editInformation')}
-                    <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                    <CaretRightIcon
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                   </button>
                 </li>
                 {isOwner && (
@@ -667,7 +673,10 @@ export function Detail() {
                       onClick={() => setCoverEditing(true)}
                     >
                       {coverSource(chart) ? t('messages.changeCover') : t('messages.addCover')}
-                      <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                      <CaretRightIcon
+                        className="size-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
                     </button>
                   </li>
                 )}
