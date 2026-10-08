@@ -405,7 +405,10 @@
     "playerFullscreen": "Fullscreen",
     "playerDrumVolume": "Drum volume",
     "doubleCourse": "{{course}} Double",
-    "selectPlayerSide": "Select player side"
+    "selectPlayerSide": "Select player side",
+    "manageChart": "Manage",
+    "chartSections": "Chart sections",
+    "chartTab": "Chart"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · Community charts",
@@ -519,7 +522,8 @@
     "moreReplies_one": "{{count}} more reply",
     "moreReplies_other": "{{count}} more replies",
     "points_one": "{{count}} point",
-    "points_other": "{{count}} points"
+    "points_other": "{{count}} points",
+    "approval": "Upvoted"
   },
   "notificationCenter": {
     "title": "Notifications",

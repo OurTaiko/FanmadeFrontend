@@ -8,6 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import { cn } from '@/lib/utils'
 
 function time(seconds: number) {
   const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
@@ -24,6 +25,7 @@ type AudioPlayerProps = {
   knownDuration?: number
   /** Inline variant: label and time share one row above the track. */
   compact?: boolean
+  className?: string
   onPlayingChange?: (playing: boolean) => void
   ref?: Ref<AudioPlayerHandle>
 }
@@ -44,6 +46,7 @@ function AudioPlayerContent({
   disabled = false,
   knownDuration,
   compact = false,
+  className,
   onPlayingChange,
   ref,
 }: AudioPlayerProps) {
@@ -118,11 +121,12 @@ function AudioPlayerContent({
   const shownEnd = time(range && validRange ? rangeEnd : duration)
   return (
     <div
-      className={
+      className={cn(
         compact
           ? 'space-y-2 rounded-xl border bg-card py-2.5 pr-3.5 pl-2.5'
-          : 'space-y-3 rounded-2xl border p-4'
-      }
+          : 'space-y-3 rounded-2xl border p-4',
+        className,
+      )}
       role="group"
       aria-label={label}
     >

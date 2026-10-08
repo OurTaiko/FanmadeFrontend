@@ -45,6 +45,8 @@ test('real ESE preview, default Oni, zoom, difficulty switching and public leade
   expect(files).toBe(fetched)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
+  // Phones open on the introduction; the chart is one page tab away.
+  await page.getByRole('tab', { name: '谱面', exact: true }).click()
   await expect(page.getByLabel('每行拍数')).toHaveAttribute('data-value', '4')
   await page.locator('[data-testid="chart-activity"]').scrollIntoViewIfNeeded()
   await expect

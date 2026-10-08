@@ -4,28 +4,23 @@ import { i18n } from '@/i18n'
 import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { DialogClose } from '@/components/ui/dialog'
-import { ChartCover } from '@/components/chart-cover'
-import { AudioPlayer, type AudioPlayerHandle } from '@/components/audio-player'
+import { ChartCover, CoverDialog } from '@/components/chart-cover'
+import { AudioPlayer } from '@/components/audio-player'
 import { buttonVariants, Button } from '@/components/ui/button'
 import { ChartSearch, chartOrders, useChartOrderLabels } from '@/components/chart-search'
 import type { ChartOrder } from '@/components/chart-search'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { UserAvatar } from '@/components/user-avatar'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowRightIcon as ArrowRight,
   DownloadSimpleIcon as Download,
-  TrashIcon as Trash2,
   UploadSimpleIcon as Upload,
-  PencilSimpleIcon as Pencil,
-  HeadphonesIcon,
-  PauseIcon,
   ArrowSquareOutIcon,
-  ClockIcon,
   ChatCircleIcon,
+  CaretRightIcon,
 } from '@phosphor-icons/react'
 import { api, jsonRequest } from './api/client'
 import type { Chart, ChartList } from './api/types'
@@ -33,12 +28,15 @@ import { ChartCard } from '@/components/chart-card'
 import { supportsChart } from './courses'
 import { useSession } from './session-context'
 import { EditMetadata } from './edit-metadata'
-import { ChartActivity } from './chart-activity'
+import { ChartActivity, type ActivityTab } from './chart-activity'
 import { Modal, Notice } from './notifications'
 import { useNotification } from './notification-context'
 import { CategoryLabels } from './categories'
 import { CommentSection } from './comments'
 import { VoteControl } from '@/components/vote-control'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
+import { coverSource } from './cover'
 import type { Vote, VoteResult } from './api/types'
 
 export function Library({
@@ -302,29 +300,42 @@ export function Auth({ register = false }: { register?: boolean }) {
     </div>
   )
 }
+const detailCardClassName =
+  'rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:bg-card'
+const manageItemClassName =
+  'flex min-h-11 w-full items-center justify-between gap-3 text-left text-sm transition-colors hover:text-[#0071e3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md'
+
+type DetailSection = 'info' | 'activity' | 'comments'
+type PageTab = 'info' | 'chart' | 'leaderboard' | 'comments'
+
 export function Detail() {
   const { t } = useTranslation()
 
   const { notify } = useNotification()
   const { id, commentId } = useParams(),
     session = useSession(),
-    navigate = useNavigate()
+    navigate = useNavigate(),
+    location = useLocation()
   const [chart, setChart] = useState<Chart | null>(null),
     [error, setError] = useState(''),
     [confirm, setConfirm] = useState(false),
     [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [coverEditing, setCoverEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const editButton = useRef<HTMLButtonElement>(null)
-  const audioPlayer = useRef<AudioPlayerHandle>(null)
-  const [audioPlaying, setAudioPlaying] = useState(false)
+  // Below lg the page shows one section at a time; wider screens show them all.
+  const [section, setSection] = useState<DetailSection>('info')
+  const [activityTab, setActivityTab] = useState<ActivityTab>('image')
   useEffect(() => {
     const controller = new AbortController()
     setChart(null)
     setError('')
     setEditing(false)
+    setCoverEditing(false)
     setSaved(false)
     setConfirm(false)
+    setActivityTab('image')
     if (!id) return
     api<Chart>(endpoints.chart(id), { signal: controller.signal })
       .then(setChart)
@@ -333,6 +344,9 @@ export function Detail() {
       })
     return () => controller.abort()
   }, [id])
+  useEffect(() => {
+    setSection(commentId || location.hash === '#comments' ? 'comments' : 'info')
+  }, [id, commentId, location.hash])
   const remove = async () => {
     if (!chart) return
     setError('')
@@ -358,24 +372,87 @@ export function Detail() {
     )
   if (!supportsChart(chart.difficulties))
     return <Notice>{t('messages.thisChartTypeIsNotSupported')}</Notice>
+  const text = chartText(chart, i18n.resolvedLanguage)
+  const isOwner = session.user?.id === chart.ownerId
+  const canManage = isOwner || !!session.user?.isAdmin
+  const votes = chart.upvotes + chart.downvotes
+  const pageTab: PageTab =
+    section === 'activity' ? (activityTab === 'leaderboard' ? 'leaderboard' : 'chart') : section
+  const selectPageTab = (value: PageTab) => {
+    if (value === 'info' || value === 'comments') return setSection(value)
+    setSection('activity')
+    if (value === 'leaderboard') setActivityTab('leaderboard')
+    else if (activityTab === 'leaderboard') setActivityTab('image')
+  }
   return (
-    <>
-      <div className="flex flex-col gap-6 py-2 sm:flex-row sm:items-start sm:gap-8">
-        <ChartCover
-          key={chart.id}
-          chart={chart}
-          onSaved={(coverHash) =>
-            setChart((current) => (current?.id === chart.id ? { ...current, coverHash } : current))
-          }
-        />
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {chartText(chart, i18n.resolvedLanguage).title}
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            {chartText(chart, i18n.resolvedLanguage).subtitle}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+    <div className="flex flex-col gap-6">
+      <section
+        aria-labelledby="chart-title"
+        className="overflow-hidden rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:bg-card"
+      >
+        <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-start gap-4 p-4 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-x-8 sm:gap-y-5 sm:p-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-x-10">
+          <ChartCover chart={chart} className="sm:row-span-3" />
+          <div className="flex min-w-0 flex-col gap-1 self-center sm:gap-2 sm:self-start">
+            <CategoryLabels ids={chart.categoryIds} />
+            <h1
+              id="chart-title"
+              className="text-xl font-semibold tracking-tight wrap-anywhere sm:text-4xl"
+            >
+              {text.title}
+            </h1>
+            {text.subtitle && (
+              <p className="truncate text-sm text-muted-foreground sm:whitespace-normal sm:text-lg sm:wrap-anywhere">
+                {text.subtitle}
+              </p>
+            )}
+            <p data-testid="detail-facts" className="text-sm text-muted-foreground wrap-anywhere">
+              {t('messages.chartCreator')}{' '}
+              <span className="font-medium text-foreground">{chart.maker || chart.uploader}</span>
+            </p>
+          </div>
+          <dl className="col-span-2 grid max-w-md grid-cols-3 gap-2 rounded-xl bg-[#f5f5f7] p-3 text-center sm:col-span-1 sm:col-start-2 sm:gap-4 sm:bg-transparent sm:p-0 sm:text-left dark:bg-muted sm:dark:bg-transparent">
+            <div>
+              <dt className="text-xs text-muted-foreground">BPM</dt>
+              <dd className="text-base font-semibold tabular-nums sm:text-xl">{chart.bpm}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">{t('messages.duration')}</dt>
+              <dd className="text-base font-semibold tabular-nums sm:text-xl">
+                {Math.floor(chart.duration / 60)}:
+                {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
+              </dd>
+            </div>
+            {votes > 0 && (
+              <div>
+                <dt className="text-xs text-muted-foreground">{t('interactions.approval')}</dt>
+                <dd className="text-base font-semibold tabular-nums sm:text-xl">
+                  {Math.round((chart.upvotes / votes) * 100)}%
+                </dd>
+              </div>
+            )}
+          </dl>
+          <div className="col-span-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:col-start-2 sm:gap-3">
+            <a
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'lg' }),
+                'h-11 flex-1 px-5 sm:flex-none',
+              )}
+              href={endpoints.resource(chart, 'download')}
+            >
+              <Download size={18} aria-hidden="true" />
+              {t('messages.downloadChartPackage')}
+            </a>
+            <a
+              className={cn(
+                buttonVariants({ variant: 'secondary', size: 'lg' }),
+                'h-11 max-sm:hidden',
+              )}
+              href={endpoints.resource(chart, 'tja')}
+            >
+              <ArrowSquareOutIcon size={17} aria-hidden="true" />
+              {t('messages.sourceFiles')}
+            </a>
+            <div className="hidden flex-1 sm:block" />
             <VoteControl
               className="rounded-full bg-[#f5f5f7] px-1 py-0.5 dark:bg-muted"
               score={chart.score}
@@ -393,113 +470,25 @@ export function Detail() {
                 )
               }
             />
-            {chart.upvotes + chart.downvotes > 0 && (
-              <span className="tabular-nums">
-                {t('interactions.upvoteRatio', {
-                  percent: Math.round((chart.upvotes / (chart.upvotes + chart.downvotes)) * 100),
-                })}
-              </span>
-            )}
-            <a href="#comments" className="inline-flex items-center gap-1.5 hover:text-foreground">
-              <ChatCircleIcon aria-hidden="true" />
+            <a
+              href="#comments"
+              onClick={() => setSection('comments')}
+              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm text-muted-foreground hover:text-foreground max-sm:hidden"
+            >
+              <ChatCircleIcon size={18} aria-hidden="true" />
               {t('interactions.commentCount', { count: chart.commentCount })}
             </a>
           </div>
-          <div data-testid="detail-facts" className="[&_li]:flex [&_li]:items-center">
-            <CategoryLabels ids={chart.categoryIds}>
-              <li className="min-w-0 max-w-full">
-                <Badge
-                  variant="outline"
-                  className="min-w-0 max-w-full gap-0 p-0"
-                  title={t('messages.chartCreatorWithName', {
-                    name: chart.maker || chart.uploader,
-                  })}
-                >
-                  <span className="flex h-full shrink-0 items-center border-r bg-muted px-2 text-muted-foreground">
-                    {t('messages.chartCreator')}
-                  </span>
-                  <span className="truncate px-2">{chart.maker || chart.uploader}</span>
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="outline" className="tabular-nums">
-                  {chart.bpm} BPM
-                </Badge>
-              </li>
-              <li>
-                <Badge variant="outline" className="tabular-nums" title={t('messages.duration')}>
-                  <ClockIcon className="size-3" aria-hidden="true" />
-                  {Math.floor(chart.duration / 60)}:
-                  {String(Math.floor(chart.duration % 60)).padStart(2, '0')}
-                </Badge>
-              </li>
-            </CategoryLabels>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <a
-              className={buttonVariants({ variant: 'default', size: 'default' })}
-              href={endpoints.resource(chart, 'download')}
-            >
-              <Download size={17} />
-              {t('messages.downloadChartPackage')}
-            </a>
-            <Button
-              variant="outline"
-              aria-pressed={audioPlaying}
-              className={audioPlaying ? 'border-primary text-primary' : undefined}
-              onClick={() => void audioPlayer.current?.toggle()}
-            >
-              {audioPlaying ? (
-                <PauseIcon size={17} weight="fill" aria-hidden="true" />
-              ) : (
-                <HeadphonesIcon size={17} aria-hidden="true" />
-              )}
-              {audioPlaying ? t('messages.pauseAudio') : t('messages.listen')}
-            </Button>
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<a href={endpoints.resource(chart, 'tja')} />}
-            >
-              <ArrowSquareOutIcon size={17} aria-hidden="true" />
-              {t('messages.sourceFiles')}
-            </Button>
-            {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
-              <Link
-                className={buttonVariants({ variant: 'outline', size: 'default' })}
-                to={`/charts/${chart.id}/update`}
-              >
-                {t('messages.updateSongAndCharts')}
-              </Link>
-            )}
-            {session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
-              <Button
-                ref={editButton}
-                variant="outline"
-                size="default"
-                onClick={() => {
-                  setSaved(false)
-                  setEditing(true)
-                }}
-              >
-                <Pencil size={16} />
-                {t('messages.editInformation')}
-              </Button>
-            )}
-          </div>
-          <div className="max-w-xl">
-            <AudioPlayer
-              ref={audioPlayer}
-              compact
-              label={t('messages.audioPreview')}
-              src={endpoints.resource(chart, 'audio')}
-              startAt={chart.demoStart}
-              knownDuration={chart.duration}
-              onPlayingChange={setAudioPlaying}
-            />
-          </div>
         </div>
-      </div>
+        <AudioPlayer
+          compact
+          className="rounded-none border-0 border-t bg-[#fbfbfd] px-4 py-3 sm:px-8 dark:bg-muted/40"
+          label={t('messages.audioPreview')}
+          src={endpoints.resource(chart, 'audio')}
+          startAt={chart.demoStart}
+          knownDuration={chart.duration}
+        />
+      </section>
       {error && <Notice>{error}</Notice>}
       {saved && (
         <Modal
@@ -510,7 +499,7 @@ export function Detail() {
           {t('messages.chartInformationSaved')}
         </Modal>
       )}
-      {editing && session.user && (session.user.id === chart.ownerId || session.user.isAdmin) && (
+      {editing && canManage && (
         <EditMetadata
           key={chart.id}
           chart={chart}
@@ -523,51 +512,177 @@ export function Detail() {
           }}
         />
       )}
-      <div className="chart-information grid gap-8 rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12 dark:bg-card">
-        <section aria-labelledby="chart-description-heading" className="min-w-0 space-y-6">
-          <h2 id="chart-description-heading" className="text-xl font-semibold tracking-tight">
-            {t('messages.aboutThisChart')}
-          </h2>
-          <p className="max-w-[70ch] whitespace-pre-wrap text-sm leading-7 text-muted-foreground wrap-anywhere">
-            {chart.description || t('messages.noDescriptionFromTheUploaderYet')}
-          </p>
-        </section>
-        <section aria-labelledby="chart-submission-heading" className="min-w-0 space-y-6">
-          <h2 id="chart-submission-heading" className="text-xl font-semibold tracking-tight">
-            {t('messages.submissionDetails')}
-          </h2>
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
-            <dt>{t('messages.uploader')}</dt>
-            <dd>
-              <Link
-                className="inline-flex max-w-full items-center gap-2 align-middle text-primary hover:underline"
-                to={`/users/${encodeURIComponent(chart.ownerId)}`}
-              >
-                <UserAvatar
-                  nickname={chart.uploader}
-                  avatarUrl={chart.uploaderAvatarUrl}
-                  className="size-6"
-                  fallbackClassName="text-xs"
-                />
-                <span className="min-w-0 wrap-anywhere">{chart.uploader}</span>
-              </Link>
-            </dd>
-            <dt>{t('messages.published')}</dt>
-            <dd>
-              {new Date(chart.createdAt).toLocaleDateString(formatLocale(i18n.resolvedLanguage))}
-            </dd>
-          </dl>
-          {session.user?.id === chart.ownerId && (
-            <div className="border-t pt-4">
-              <Button
-                variant="ghost"
-                size="default"
-                className="text-destructive"
-                onClick={() => setConfirm(true)}
-              >
-                <Trash2 size={15} />
-                {t('messages.deleteChart')}
-              </Button>
+      {coverEditing && isOwner && (
+        <CoverDialog
+          chart={chart}
+          onDismiss={() => setCoverEditing(false)}
+          onSaved={(coverHash) =>
+            setChart((current) => (current?.id === chart.id ? { ...current, coverHash } : current))
+          }
+        />
+      )}
+      <Tabs
+        value={pageTab}
+        onValueChange={(value) => selectPageTab(value as PageTab)}
+        className="lg:hidden"
+      >
+        <TabsList
+          aria-label={t('messages.chartSections')}
+          className="grid h-auto w-full grid-cols-4 gap-0.5 rounded-full bg-[#e8e8ed] p-1 dark:bg-muted"
+        >
+          {(
+            [
+              ['info', t('messages.aboutThisChart')],
+              ['chart', t('messages.chartTab')],
+              ['leaderboard', t('messages.leaderboard')],
+              ['comments', t('interactions.commentsHeading', { count: chart.commentCount })],
+            ] as const
+          ).map(([value, label]) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="h-9 min-w-0 truncate rounded-full px-2 text-sm font-medium text-muted-foreground after:hidden data-active:bg-white data-active:text-foreground data-active:shadow-sm dark:data-active:bg-card"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div
+          className={cn(
+            'flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-1',
+            section === 'info' && 'max-lg:hidden',
+          )}
+        >
+          <div className={cn('min-w-0', section !== 'activity' && 'max-lg:hidden')}>
+            <ChartActivity
+              key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`}
+              chart={chart}
+              tab={activityTab}
+              onTabChange={setActivityTab}
+            />
+          </div>
+          <div className={cn('min-w-0', section !== 'comments' && 'max-lg:hidden')}>
+            <CommentSection
+              chart={chart}
+              focusId={commentId}
+              onCountChange={(delta) =>
+                setChart((current) =>
+                  current?.id === chart.id
+                    ? { ...current, commentCount: Math.max(0, current.commentCount + delta) }
+                    : current,
+                )
+              }
+            />
+          </div>
+        </div>
+        <aside
+          className={cn(
+            'flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-start-1',
+            section !== 'info' && 'max-lg:hidden',
+          )}
+        >
+          <section
+            aria-labelledby="chart-description-heading"
+            className={cn(detailCardClassName, 'space-y-3')}
+          >
+            <h2 id="chart-description-heading" className="text-lg font-semibold tracking-tight">
+              {t('messages.aboutThisChart')}
+            </h2>
+            <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground wrap-anywhere">
+              {chart.description || t('messages.noDescriptionFromTheUploaderYet')}
+            </p>
+          </section>
+          <section
+            aria-labelledby="chart-submission-heading"
+            className={cn(detailCardClassName, 'space-y-4')}
+          >
+            <h2 id="chart-submission-heading" className="text-lg font-semibold tracking-tight">
+              {t('messages.submissionDetails')}
+            </h2>
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm [&>dt]:text-muted-foreground [&>dd]:wrap-anywhere">
+              <dt className="self-center">{t('messages.uploader')}</dt>
+              <dd>
+                <Link
+                  className="inline-flex max-w-full items-center gap-2 align-middle text-primary hover:underline"
+                  to={`/users/${encodeURIComponent(chart.ownerId)}`}
+                >
+                  <UserAvatar
+                    nickname={chart.uploader}
+                    avatarUrl={chart.uploaderAvatarUrl}
+                    className="size-6"
+                    fallbackClassName="text-xs"
+                  />
+                  <span className="min-w-0 wrap-anywhere">{chart.uploader}</span>
+                </Link>
+              </dd>
+              <dt>{t('messages.published')}</dt>
+              <dd>
+                {new Date(chart.createdAt).toLocaleDateString(formatLocale(i18n.resolvedLanguage))}
+              </dd>
+              {/* The header shows this link from sm up. */}
+              <dt className="sm:hidden">{t('messages.sourceFiles')}</dt>
+              <dd className="sm:hidden">
+                <a className="text-primary hover:underline" href={endpoints.resource(chart, 'tja')}>
+                  TJA
+                </a>
+              </dd>
+            </dl>
+          </section>
+          {canManage && (
+            <section
+              aria-labelledby="chart-manage-heading"
+              className={cn(detailCardClassName, 'space-y-1')}
+            >
+              <h2 id="chart-manage-heading" className="pb-2 text-lg font-semibold tracking-tight">
+                {t('messages.manageChart')}
+              </h2>
+              <ul className="divide-y">
+                <li>
+                  <Link className={manageItemClassName} to={`/charts/${chart.id}/update`}>
+                    {t('messages.updateSongAndCharts')}
+                    <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    ref={editButton}
+                    type="button"
+                    className={manageItemClassName}
+                    onClick={() => {
+                      setSaved(false)
+                      setEditing(true)
+                    }}
+                  >
+                    {t('messages.editInformation')}
+                    <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                  </button>
+                </li>
+                {isOwner && (
+                  <li>
+                    <button
+                      type="button"
+                      className={manageItemClassName}
+                      onClick={() => setCoverEditing(true)}
+                    >
+                      {coverSource(chart) ? t('messages.changeCover') : t('messages.addCover')}
+                      <CaretRightIcon className="text-muted-foreground" aria-hidden="true" />
+                    </button>
+                  </li>
+                )}
+                {isOwner && (
+                  <li>
+                    <button
+                      type="button"
+                      className={cn(manageItemClassName, 'text-destructive hover:text-destructive')}
+                      onClick={() => setConfirm(true)}
+                    >
+                      {t('messages.deleteChart')}
+                    </button>
+                  </li>
+                )}
+              </ul>
               {confirm && (
                 <Modal
                   title={t('messages.deleteThisChart')}
@@ -596,22 +711,10 @@ export function Detail() {
                   {t('messages.theChartAndDownloadLinkWillNoLongerBePublicAfterDeletion')}
                 </Modal>
               )}
-            </div>
+            </section>
           )}
-        </section>
+        </aside>
       </div>
-      <ChartActivity key={`${chart.id}:${chart.tjaHash}:${chart.audioHash}`} chart={chart} />
-      <CommentSection
-        chart={chart}
-        focusId={commentId}
-        onCountChange={(delta) =>
-          setChart((current) =>
-            current?.id === chart.id
-              ? { ...current, commentCount: Math.max(0, current.commentCount + delta) }
-              : current,
-          )
-        }
-      />
-    </>
+    </div>
   )
 }

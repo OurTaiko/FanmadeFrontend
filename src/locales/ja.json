@@ -405,7 +405,10 @@
     "playerFullscreen": "全画面",
     "playerDrumVolume": "太鼓音量",
     "doubleCourse": "{{course}} ダブル",
-    "selectPlayerSide": "プレイヤー側を選択"
+    "selectPlayerSide": "プレイヤー側を選択",
+    "manageChart": "管理",
+    "chartSections": "譜面の詳細",
+    "chartTab": "譜面"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 創作譜面",
@@ -511,7 +514,8 @@
     "commentsHeading_other": "コメント · {{count}}",
     "replyCount_other": "返信 {{count}} 件",
     "moreReplies_other": "ほかの返信 {{count}} 件を見る",
-    "points_other": "{{count}} ポイント"
+    "points_other": "{{count}} ポイント",
+    "approval": "高評価"
   },
   "notificationCenter": {
     "title": "通知",

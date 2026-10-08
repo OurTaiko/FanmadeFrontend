@@ -3,8 +3,7 @@ import { formatLocale, i18n } from '@/i18n'
 import { useTranslation } from 'react-i18next'
 import { endpoints } from '@/api/endpoints'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
-import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/user-avatar'
 import {
@@ -57,11 +56,20 @@ const tabButtonClassName =
 const difficultyTabClassName =
   'bg-transparent text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] hover:bg-transparent hover:text-[var(--difficulty-fg)] focus-visible:ring-[var(--difficulty-fg)] data-active:hover:bg-[var(--difficulty-bg)] data-active:bg-[var(--difficulty-bg)] data-active:text-[var(--difficulty-fg)] dark:bg-transparent dark:text-[color-mix(in_oklab,var(--difficulty-fg)_65%,transparent)] dark:hover:bg-transparent dark:hover:text-[var(--difficulty-fg)] dark:data-active:hover:bg-[var(--difficulty-bg)] dark:data-active:bg-[var(--difficulty-bg)] dark:data-active:text-[var(--difficulty-fg)]'
 
-export function ChartActivity({ chart }: { chart: Chart }) {
+export type ActivityTab = 'image' | 'preview' | 'leaderboard'
+
+export function ChartActivity({
+  chart,
+  tab,
+  onTabChange,
+}: {
+  chart: Chart
+  tab: ActivityTab
+  onTabChange: (tab: ActivityTab) => void
+}) {
   const { t } = useTranslation()
 
   const [course, setCourse] = useState(() => defaultDifficulty(chart.difficulties))
-  const [tab, setTab] = useState<'image' | 'preview' | 'leaderboard'>('image')
   const [source, setSource] = useState('')
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -102,78 +110,19 @@ export function ChartActivity({ chart }: { chart: Chart }) {
   return (
     <Tabs
       value={tab}
-      onValueChange={(value) => setTab(value as typeof tab)}
-      className="min-w-0 gap-6"
+      onValueChange={(value) => onTabChange(value as ActivityTab)}
+      className="min-w-0 gap-5 rounded-2xl bg-white p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] sm:p-6 dark:bg-card"
       aria-label={t('messages.chartPreviewAndLeaderboard')}
       data-testid="chart-activity"
     >
       <section
-        className="flex min-w-0 items-center justify-start gap-3 overflow-x-auto py-1"
+        className="flex min-w-0 flex-wrap items-center justify-between gap-3"
         aria-label={t('messages.chartContentAndDifficultySelection')}
       >
-        <Tabs
-          value={group?.base ?? ''}
-          onValueChange={(value) => {
-            const next = groups.find((g) => g.base === value)
-            if (!next) return
-            // Keep the chosen side when switching between double courses.
-            const side = course.slice(baseCourse(course).length)
-            setCourse(
-              next.sides.find((d) => d.course === `${next.base}${side}`)?.course ??
-                next.sides[0].course,
-            )
-          }}
-          className="shrink-0"
+        <TabsList
+          aria-label={t('messages.songDetails')}
+          className={cn(tabButtonGroupClassName, tab === 'leaderboard' && 'max-lg:hidden')}
         >
-          <TabsList aria-label={t('messages.selectDifficulty')} className={tabButtonGroupClassName}>
-            {groups.map((g) => (
-              <TabsTrigger
-                key={g.base}
-                value={g.base}
-                className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[g.base]}`}
-              >
-                {groupName(g)}
-                <span
-                  className="inline-flex items-center gap-1 tabular-nums"
-                  aria-label={g.sides
-                    .map((d) => t('common.stars', { count: d.level }))
-                    .filter((label, index, all) => all.indexOf(label) === index)
-                    .join(' / ')}
-                >
-                  <StarIcon weight="fill" className="size-3" aria-hidden="true" />
-                  {groupLevel(g)}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        {group?.double && (
-          <Tabs
-            value={course}
-            onValueChange={(value) => setCourse(String(value))}
-            className="shrink-0"
-          >
-            <TabsList
-              aria-label={t('messages.selectPlayerSide')}
-              className={tabButtonGroupClassName}
-            >
-              {group.sides.map((d) => (
-                <TabsTrigger key={d.course} value={d.course} className={tabButtonClassName}>
-                  {d.course.slice(-2).toUpperCase()}
-                  <span
-                    className="inline-flex items-center gap-1 tabular-nums"
-                    aria-label={t('common.stars', { count: d.level })}
-                  >
-                    <StarIcon weight="fill" className="size-3" aria-hidden="true" />
-                    {d.level}
-                  </span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        )}
-        <Separator orientation="vertical" className="h-6 data-vertical:self-center" />
-        <TabsList aria-label={t('messages.songDetails')} className={tabButtonGroupClassName}>
           <TabsTrigger value="image" className={tabButtonClassName}>
             <FileMusic size={18} />
             {t('messages.chartImage')}
@@ -182,13 +131,80 @@ export function ChartActivity({ chart }: { chart: Chart }) {
             <FileMusic size={18} />
             {t('messages.chartPreview')}
           </TabsTrigger>
-          <TabsTrigger value="leaderboard" className={tabButtonClassName}>
+          {/* Below lg the page tabs open the leaderboard. */}
+          <TabsTrigger value="leaderboard" className={cn(tabButtonClassName, 'max-lg:hidden')}>
             <Trophy size={18} />
             {t('messages.leaderboard')}
           </TabsTrigger>
         </TabsList>
+        <div className="-mx-1 flex min-w-0 max-w-full items-center gap-3 overflow-x-auto px-1 py-1">
+          <Tabs
+            value={group?.base ?? ''}
+            onValueChange={(value) => {
+              const next = groups.find((g) => g.base === value)
+              if (!next) return
+              // Keep the chosen side when switching between double courses.
+              const side = course.slice(baseCourse(course).length)
+              setCourse(
+                next.sides.find((d) => d.course === `${next.base}${side}`)?.course ??
+                  next.sides[0].course,
+              )
+            }}
+            className="shrink-0"
+          >
+            <TabsList
+              aria-label={t('messages.selectDifficulty')}
+              className={tabButtonGroupClassName}
+            >
+              {groups.map((g) => (
+                <TabsTrigger
+                  key={g.base}
+                  value={g.base}
+                  className={`${tabButtonClassName} ${difficultyTabClassName} ${difficultyTabColors[g.base]}`}
+                >
+                  {groupName(g)}
+                  <span
+                    className="inline-flex items-center gap-1 tabular-nums"
+                    aria-label={g.sides
+                      .map((d) => t('common.stars', { count: d.level }))
+                      .filter((label, index, all) => all.indexOf(label) === index)
+                      .join(' / ')}
+                  >
+                    <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+                    {groupLevel(g)}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          {group?.double && (
+            <Tabs
+              value={course}
+              onValueChange={(value) => setCourse(String(value))}
+              className="shrink-0"
+            >
+              <TabsList
+                aria-label={t('messages.selectPlayerSide')}
+                className={tabButtonGroupClassName}
+              >
+                {group.sides.map((d) => (
+                  <TabsTrigger key={d.course} value={d.course} className={tabButtonClassName}>
+                    {d.course.slice(-2).toUpperCase()}
+                    <span
+                      className="inline-flex items-center gap-1 tabular-nums"
+                      aria-label={t('common.stars', { count: d.level })}
+                    >
+                      <StarIcon weight="fill" className="size-3" aria-hidden="true" />
+                      {d.level}
+                    </span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+        </div>
       </section>
-      <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6">
+      <div className="min-w-0">
         <TabsContent value="image">
           {tab === 'image' &&
             (error ? (
@@ -241,7 +257,7 @@ export function ChartActivity({ chart }: { chart: Chart }) {
         <TabsContent value="leaderboard">
           {tab === 'leaderboard' && <ChartLeaderboard key={course} chart={chart} course={course} />}
         </TabsContent>
-      </Card>
+      </div>
     </Tabs>
   )
 }

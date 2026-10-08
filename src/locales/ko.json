@@ -405,7 +405,10 @@
     "playerFullscreen": "전체 화면",
     "playerDrumVolume": "북 소리 음량",
     "doubleCourse": "{{course}} 더블",
-    "selectPlayerSide": "플레이어 쪽 선택"
+    "selectPlayerSide": "플레이어 쪽 선택",
+    "manageChart": "관리",
+    "chartSections": "채보 정보 구역",
+    "chartTab": "채보"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 창작 채보",
@@ -511,7 +514,8 @@
     "commentsHeading_other": "댓글 · {{count}}",
     "replyCount_other": "답글 {{count}}개",
     "moreReplies_other": "답글 {{count}}개 더 보기",
-    "points_other": "{{count}}점"
+    "points_other": "{{count}}점",
+    "approval": "추천"
   },
   "notificationCenter": {
     "title": "알림",

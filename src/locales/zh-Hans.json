@@ -405,7 +405,10 @@
     "playerFullscreen": "全屏",
     "playerDrumVolume": "鼓声音量",
     "doubleCourse": "{{course}} 双打",
-    "selectPlayerSide": "选择玩家侧"
+    "selectPlayerSide": "选择玩家侧",
+    "manageChart": "管理",
+    "chartSections": "谱面详情分区",
+    "chartTab": "谱面"
   },
   "common": {
     "siteTitle": "OurTaiko Fanmade · 自制谱面",
@@ -511,7 +514,8 @@
     "commentsHeading_other": "评论 · {{count}}",
     "replyCount_other": "{{count}} 条回复",
     "moreReplies_other": "查看另外 {{count}} 条回复",
-    "points_other": "{{count}} 分"
+    "points_other": "{{count}} 分",
+    "approval": "好评"
   },
   "notificationCenter": {
     "title": "通知",
