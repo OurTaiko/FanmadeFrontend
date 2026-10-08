@@ -222,6 +222,7 @@
     "fileValidationFailed": "文件校验未通过",
     "localValidationPassed": "本地校验通过",
     "songCover": "歌曲封面",
+    "keepCoverUnlessSelected": "不选择新封面则保留原封面。",
     "difficultiesAndCreators": "难度与制作者",
     "creatorNamesAreFilledFromMakerYouCanEditEachOne": "已用谱面中的 MAKER 填入默认署名，你可以分别修改。",
     "noMakerWasSpecifiedEnterACreatorForEachDifficulty": "谱面未填写 MAKER，你可以分别填写各难度的制作者。",

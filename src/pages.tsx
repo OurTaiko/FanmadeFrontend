@@ -512,7 +512,7 @@ export function Detail() {
           }}
         />
       )}
-      {coverEditing && isOwner && (
+      {coverEditing && canManage && (
         <CoverDialog
           chart={chart}
           onDismiss={() => setCoverEditing(false)}
@@ -665,7 +665,7 @@ export function Detail() {
                     />
                   </button>
                 </li>
-                {isOwner && (
+                {canManage && (
                   <li>
                     <button
                       type="button"

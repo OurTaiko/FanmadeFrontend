@@ -222,6 +222,7 @@
     "fileValidationFailed": "File validation failed",
     "localValidationPassed": "Local validation passed",
     "songCover": "Song cover",
+    "keepCoverUnlessSelected": "Leave this empty to keep the current cover.",
     "difficultiesAndCreators": "Difficulties and creators",
     "creatorNamesAreFilledFromMakerYouCanEditEachOne": "Creator names are filled from MAKER. You can edit each one.",
     "noMakerWasSpecifiedEnterACreatorForEachDifficulty": "No MAKER was specified. Enter a creator for each difficulty.",

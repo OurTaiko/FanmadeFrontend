@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
+import sharp from 'sharp'
 import type { Chart } from '../src/api/types'
 
 const audio = readFileSync('../backend/internal/audio/testdata/cbr.mp3')
@@ -39,8 +40,10 @@ const original: Chart = {
   ],
 }
 
-for (const replaceAudio of [false, true]) {
-  test(`replace chart ${replaceAudio ? 'and audio' : 'retaining audio'}, confirm destructive update`, async ({
+for (const { actor, replaceAudio } of ['owner', 'admin'].flatMap((actor) =>
+  [false, true].map((replaceAudio) => ({ actor, replaceAudio })),
+)) {
+  test(`${actor} replaces chart ${replaceAudio ? 'with audio and cover' : 'retaining audio and cover'}, confirm destructive update`, async ({
     page,
   }) => {
     const errors: string[] = []
@@ -49,14 +52,22 @@ for (const replaceAudio of [false, true]) {
     let submitted: FormData | undefined
     let attempts = 0
     let requestKey = ''
+    const cover = await sharp({
+      create: { width: 40, height: 30, channels: 3, background: '#0071e3' },
+    })
+      .png()
+      .toBuffer()
+    await page.route('**/api/v1/**', (route) =>
+      route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 20, unreadCount: 0 } }),
+    )
     await page.route('**/api/v1/me', (route) =>
       route.fulfill({
         json: {
           user: {
-            id: 'owner',
+            id: actor,
             username: 'tester',
             nickname: '测试昵称',
-            isAdmin: false,
+            isAdmin: actor === 'admin',
             emailVerified: true,
           },
           csrfToken: 'csrf',
@@ -118,6 +129,17 @@ for (const replaceAudio of [false, true]) {
     await page.getByRole('tab', { name: '谱面介绍', exact: true }).click()
     await expect(page.getByLabel('投稿说明')).toHaveValue('Keep description')
     await page.getByRole('tab', { name: '文件与封面', exact: true }).click()
+    const coverPicker = page.getByLabel('选择 JPG/JPEG、PNG 或 WebP 封面')
+    await expect(coverPicker).toBeVisible()
+    await expect(page.getByText('不选择新封面则保留原封面。')).toBeVisible()
+    if (replaceAudio) {
+      await coverPicker.setInputFiles({
+        name: 'replacement.png',
+        mimeType: 'image/png',
+        buffer: cover,
+      })
+      await expect(page.getByAltText('待上传的封面预览')).toBeVisible()
+    }
     await page
       .getByLabel('选择 TJA 谱面')
       .setInputFiles({ name: 'updated.tja', mimeType: 'text/plain', buffer: Buffer.from(source) })
@@ -130,6 +152,10 @@ for (const replaceAudio of [false, true]) {
       await expect(page.getByRole('dialog', { name: '本地校验通过' })).toBeVisible()
       await page.getByRole('button', { name: '知道了', exact: true }).click()
     }
+    await page.screenshot({
+      path: `/tmp/fanmade-update-cover-${actor}-${replaceAudio}.png`,
+      fullPage: true,
+    })
     await page.getByRole('tab', { name: '试听', exact: true }).click()
     await page.getByLabel('试听开始（秒）').fill('0.1')
     await page.getByLabel('试听结束（秒）').fill('0.3')
@@ -160,6 +186,12 @@ for (const replaceAudio of [false, true]) {
     expect(submitted?.has('expectedVersionId')).toBe(false)
     expect(submitted?.get('confirmReset')).toBe('true')
     expect(submitted?.has('audio')).toBe(replaceAudio)
+    expect(submitted?.has('cover')).toBe(replaceAudio)
+    if (replaceAudio) {
+      const selectedCover = submitted?.get('cover') as File
+      expect(selectedCover.name).toBe('replacement.png')
+      expect(Buffer.from(await selectedCover.arrayBuffer())).toEqual(cover)
+    }
     expect(submitted?.get('description')).toBe(original.description)
     expect(JSON.parse(String(submitted?.get('difficultyMakers')))).toEqual([
       { course: 'Hard', maker: 'A' },

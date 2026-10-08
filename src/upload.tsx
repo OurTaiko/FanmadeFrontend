@@ -220,7 +220,7 @@ export function UploadPage({ existing }: { existing?: Chart }) {
       const form = new FormData()
       form.append('tja', prepared.file)
       if (audio) form.append('audio', audio)
-      if (cover && !existing) form.append('cover', cover)
+      if (cover) form.append('cover', cover)
       if (existing) {
         form.append('confirmReset', 'true')
       }
@@ -401,19 +401,22 @@ export function UploadPage({ existing }: { existing?: Chart }) {
                   </Notice>
                 )}
               </Card>
-              {!existing && (
-                <Card className="min-w-0 gap-4 rounded-2xl p-6 shadow-none ring-0">
-                  <h2 className="text-base font-semibold">{t('messages.songCover')}</h2>
-                  <CoverPicker
-                    file={cover}
-                    disabled={busy}
-                    onChange={(file) => {
-                      setCover(file)
-                      requestKey.current = createRequestKey()
-                    }}
-                  />
-                </Card>
-              )}
+              <Card className="min-w-0 gap-4 rounded-2xl p-6 shadow-none ring-0">
+                <h2 className="text-base font-semibold">{t('messages.songCover')}</h2>
+                {existing && (
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {t('messages.keepCoverUnlessSelected')}
+                  </p>
+                )}
+                <CoverPicker
+                  file={cover}
+                  disabled={busy}
+                  onChange={(file) => {
+                    setCover(file)
+                    requestKey.current = createRequestKey()
+                  }}
+                />
+              </Card>
             </TabsContent>
             <TabsContent value="categories" className="pt-4">
               <Card className="min-w-0 border p-5 shadow-none ring-0 sm:p-6 gap-4">

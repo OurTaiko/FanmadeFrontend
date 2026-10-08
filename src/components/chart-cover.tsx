@@ -45,7 +45,7 @@ export function ChartCover({ chart, className }: { chart: Chart; className?: str
   )
 }
 
-// The owner replaces the cover from the chart page's management actions.
+// Owners and administrators replace covers from the chart page's management actions.
 export function CoverDialog({
   chart,
   onSaved,

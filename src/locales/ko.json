@@ -222,6 +222,7 @@
     "fileValidationFailed": "파일 검증에 실패했습니다",
     "localValidationPassed": "로컬 검증을 통과했습니다",
     "songCover": "곡 표지",
+    "keepCoverUnlessSelected": "새 표지를 선택하지 않으면 기존 표지가 유지됩니다.",
     "difficultiesAndCreators": "난이도 및 제작자",
     "creatorNamesAreFilledFromMakerYouCanEditEachOne": "MAKER에서 제작자 이름을 가져왔습니다. 각각 수정할 수 있습니다.",
     "noMakerWasSpecifiedEnterACreatorForEachDifficulty": "MAKER가 없습니다. 각 난이도의 제작자를 입력할 수 있습니다.",

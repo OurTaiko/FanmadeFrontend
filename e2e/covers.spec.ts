@@ -100,7 +100,7 @@ for (const format of ['PNG/JPG', 'WebP', 'JPEG']) {
           replacement.buffer,
         )
         if (failSave) return route.fulfill({ status: 503, json: { message: '封面暂时无法保存' } })
-        chart = { ...chart, coverHash: 'new-cover' }
+        chart = { ...chart, coverHash: currentUser === 'admin' ? 'admin-cover' : 'new-cover' }
         return route.fulfill({ json: { coverHash: chart.coverHash } })
       }
       if (path === `/api/v1/charts/${id}/cover`)
@@ -228,7 +228,15 @@ for (const format of ['PNG/JPG', 'WebP', 'JPEG']) {
         await page.screenshot({ path: `/tmp/fanmade-cover-detail-${colorScheme}-${width}.png` })
       }
     }
-    for (const user of [null, 'other', 'admin']) {
+    currentUser = 'admin'
+    await page.reload()
+    await page.getByRole('button', { name: '修改封面', exact: true }).click()
+    await picker.setInputFiles(replacement)
+    await page.getByRole('button', { name: '保存封面', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: '修改歌曲封面' })).toHaveCount(0)
+    await expect(page.getByAltText('Cover test的封面')).toHaveAttribute('src', /admin-cover/)
+    await expect(page.getByRole('button', { name: '删除作品', exact: true })).toHaveCount(0)
+    for (const user of [null, 'other']) {
       currentUser = user
       await page.reload()
       await expect(page.getByAltText('Cover test的封面')).toBeVisible()
