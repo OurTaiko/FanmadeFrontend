@@ -40,6 +40,11 @@ import { CommentSection } from './comments'
 import { VoteControl } from '@/components/vote-control'
 import type { Vote, VoteResult } from './api/types'
 
+// unfc and unperfect only reorder for a signed-in player; the vote orders
+// apply to everyone.
+const chartOrders = ['unfc', 'unperfect', 'hot', 'top', 'comments'] as const
+type ChartOrder = (typeof chartOrders)[number]
+
 export function Library({
   mine = false,
   ownerId,
@@ -75,7 +80,9 @@ export function Library({
   const q = params.get('q') || '',
     course = isSupportedCourse(params.get('course') || '') ? params.get('course')! : '',
     level = /^(?:[1-9]|10)$/.test(params.get('level') || '') ? params.get('level')! : '',
-    order = ['unfc', 'unperfect'].includes(params.get('order') || '') ? params.get('order')! : '',
+    order = chartOrders.includes(params.get('order') as ChartOrder)
+      ? (params.get('order') as ChartOrder)
+      : '',
     owner = mine ? '' : ownerId || params.get('owner') || '',
     page = Math.min(10000, Math.max(1, Math.floor(Number(params.get('page')) || 1)))
   useEffect(() => {
@@ -175,9 +182,15 @@ export function Library({
           {!searchPending && !loading && !error && data && <span>{data.total}</span>}
         </h2>
         <span className="text-sm text-muted-foreground">
-          {user && order
-            ? t(order === 'unfc' ? 'messages.unfcFirst' : 'messages.unperfectFirst')
-            : t('messages.sortedByPublishDate')}
+          {order === 'hot'
+            ? t('interactions.orderHot')
+            : order === 'top'
+              ? t('interactions.orderTop')
+              : order === 'comments'
+                ? t('interactions.orderComments')
+                : user && order
+                  ? t(order === 'unfc' ? 'messages.unfcFirst' : 'messages.unperfectFirst')
+                  : t('messages.sortedByPublishDate')}
         </span>
       </div>
       {error ? (
