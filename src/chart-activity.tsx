@@ -87,7 +87,7 @@ export function ChartActivity({
       try {
         const response = await fetch(endpoints.resource({ id }, 'tja'), {
           signal: controller.signal,
-          credentials: 'include',
+          credentials: 'omit',
         })
         if (!response.ok)
           throw new Error(i18n.t('messages.chartHttpError', { status: response.status }))
