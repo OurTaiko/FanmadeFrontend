@@ -129,13 +129,13 @@ export default function EmbeddedPlayer({
     const timeout = window.setTimeout(() => controller.abort(), 120_000)
     async function load() {
       try {
-        // Only the host downloads public audio. No cookies or cross-origin redirects
-        // are forwarded to the CDN iframe; transfer the encoded bytes themselves.
+        // Follow the public audio endpoint's CDN redirect without cookies, then
+        // transfer the encoded bytes to the player iframe.
         const response = await fetch(audio, {
           signal: controller.signal,
           credentials: 'omit',
-          mode: 'same-origin',
-          redirect: 'error',
+          mode: 'cors',
+          redirect: 'follow',
         })
         if (!response.ok) throw new Error('AUDIO_DOWNLOAD_FAILED')
         const limit = 100 * 1024 * 1024
