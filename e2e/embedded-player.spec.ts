@@ -123,6 +123,14 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
   await page.getByRole('button', { name: '观看谱面', exact: true }).click()
   const frame = page.frameLocator('iframe')
+  const playerBuild = await (await page.request.get('/player-build.json')).json()
+  await expect
+    .poll(async () => {
+      const src = await page.locator('iframe').getAttribute('src')
+      return src ? new URL(src).pathname : ''
+    })
+    .toBe(playerBuild.path)
+  console.log('Testing player:', playerBuild.path)
   const loadedCount = () =>
     page.evaluate(
       () =>
@@ -287,6 +295,81 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
     expect(result?.Good).toBe(notes)
   }
   await page.screenshot({ path: 'test-results/embedded-branches.png' })
+  // Exercise both expression thresholds and the counters in the shipped WASM.
+  const expressionChart = `TITLE:Expression thresholds
+BPM:120
+OFFSET:0
+COURSE:Oni
+LEVEL:1
+BALLOON:5
+#START
+${'1'.repeat(49)},
+01000000,
+${'1'.repeat(100)},
+0,
+5008,
+6008,
+7008,
+1,
+#END`
+  const beforeExpressions = await finishedCount()
+  await page.evaluate((chartText) => {
+    document.querySelector('iframe')!.contentWindow!.postMessage(
+      {
+        channel: 'ourtaiko-view',
+        version: 1,
+        type: 'load',
+        requestId: 'expression-check',
+        payload: {
+          chartText,
+          audioUrl: new URL('/fixture-audio.wav', location.href).href,
+          audioType: 'wav',
+          course: 'Oni',
+          practice: true,
+          autoPlay: true,
+          replay: false,
+        },
+      },
+      location.origin,
+    )
+  }, expressionChart)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          (
+            window as unknown as { playerEvents: Array<{ type: string; requestId: string }> }
+          ).playerEvents.some((e) => e.type === 'loaded' && e.requestId === 'expression-check'),
+        ),
+      { timeout: 30000 },
+    )
+    .toBe(true)
+  await openMenu('Measure')
+  await confirmPages(2)
+  await expect.poll(async () => (await state()).good, { timeout: 15000 }).toBe(50)
+  await expect.poll(async () => Number((await state()).time)).toBeGreaterThan(2.55)
+  await page.screenshot({ path: 'test-results/embedded-expression-50.png' })
+  await expect.poll(async () => (await state()).good, { timeout: 15000 }).toBe(150)
+  await expect.poll(async () => Number((await state()).time)).toBeGreaterThan(6.3)
+  await page.screenshot({ path: 'test-results/embedded-expression-150.png' })
+  await expect.poll(finishedCount, { timeout: 30000 }).toBe(beforeExpressions + 1)
+  const expressionResult = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          playerEvents: Array<{
+            type: string
+            payload: { Good: number; Bad: number; Rolls: number }
+          }>
+        }
+      ).playerEvents
+        .filter((e) => e.type === 'finished')
+        .at(-1)?.payload,
+  )
+  expect(expressionResult?.Good).toBe(151)
+  expect(expressionResult?.Bad).toBe(0)
+  expect(expressionResult?.Rolls).toBeGreaterThan(0)
+
   // Also exercise WAV through the same browser PCM decoder without reloading WASM.
   await page.evaluate((chartText) => {
     document.querySelector('iframe')!.contentWindow!.postMessage(
@@ -321,6 +404,7 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
     .toBe(true)
   expect((await state()).paused).toBe(true)
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('tab', { name: '谱面', exact: true }).click()
   await expect
     .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
     .toBe(true)
