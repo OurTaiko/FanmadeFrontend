@@ -24,9 +24,7 @@ if [ "$revision" != "$latest" ]; then
   echo "Skipping superseded frontend revision $revision; main is now $latest"
   exit 0
 fi
-git lfs install --local
 git merge --ff-only "$revision"
-git lfs pull "$remote"
 test "$(git rev-parse HEAD)" = "$revision" || { echo 'Frontend checkout differs from requested revision'; exit 1; }
 git submodule update --init --recursive
 pnpm install --frozen-lockfile

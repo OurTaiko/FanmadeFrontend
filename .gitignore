@@ -17,3 +17,7 @@ bin/
 /public/icons/icon-32.png
 /public/icons/icon-192.png
 /public/icons/icon-512.png
+
+# The embedded Unity player is hosted on CloudFront.
+/public/player/
+/public/player-build.json

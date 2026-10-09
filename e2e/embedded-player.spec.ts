@@ -149,7 +149,7 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   const playerBuild = buildDir
     ? { path: fixturePath }
     : await (
-        await page.request.get(process.env.PLAYER_TEST_MANIFEST_URL || '/player-build.json')
+        await page.request.get(process.env.PLAYER_TEST_MANIFEST_URL || `${cdn}/player-build.json`)
       ).json()
   await expect
     .poll(async () => {

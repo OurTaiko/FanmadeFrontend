@@ -46,7 +46,9 @@ export default function EmbeddedPlayer({
     async function resolvePlayer() {
       try {
         const url = await resolvePlayerUrl({
-          manifestUrl: import.meta.env.VITE_PLAYER_MANIFEST_URL || '/player-build.json',
+          manifestUrl:
+            import.meta.env.VITE_PLAYER_MANIFEST_URL ||
+            'https://d2mguycu233w0q.cloudfront.net/player-build.json',
           parentOrigin: window.location.origin,
           signal: controller.signal,
         })

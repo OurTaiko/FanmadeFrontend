@@ -199,4 +199,3 @@ Procfile          text
 *.*ignore         text
 # Prevents massive diffs from built files
 dist/**           binary
-public/player/**/*.unityweb filter=lfs diff=lfs merge=lfs -text

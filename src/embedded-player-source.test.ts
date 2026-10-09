@@ -37,16 +37,4 @@ describe('player version discovery', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 403 })))
     await expect(resolvePlayerUrl(options())).rejects.toThrow('PLAYER_MANIFEST_UNAVAILABLE')
   })
-
-  it('resolves local development manifests relative to the host', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(Response.json({ path: '/player/aaaaaaaaaaaaaaaa/index.html' }))
-    vi.stubGlobal('fetch', fetchMock)
-    const local = new URL(
-      await resolvePlayerUrl({ ...options(), manifestUrl: '/player-build.json' }),
-    )
-    expect(local.origin).toBe(options().parentOrigin)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
 })
