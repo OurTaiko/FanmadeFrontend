@@ -6,7 +6,7 @@ describe('embedded player boundary', () => {
   const event = (
     source: Window,
     messageOrigin = origin,
-    data: unknown = { channel: 'ourtaiko-view', version: 1, type: 'ready' },
+    data: unknown = { channel: 'ourtaiko-view', type: 'ready' },
   ) => ({ source, origin: messageOrigin, data }) as MessageEvent
   it('accepts messages only from the configured iframe and origin', () => {
     expect(isPlayerMessage(event(frame), frame, origin)).toBe(true)
@@ -15,21 +15,15 @@ describe('embedded player boundary', () => {
     expect(isPlayerMessage(event(frame), null, origin)).toBe(false)
     expect(
       isPlayerMessage(
-        event(frame, origin, { channel: 'ourtaiko-view', version: 2, type: 'ready' }),
+        event(frame, origin, { channel: 'other-channel', type: 'ready' }),
         frame,
         origin,
       ),
     ).toBe(false)
   })
   it('keeps practice controls in both modes and reserves replay as disabled', () => {
-    const practice = playerLoad(
-      'a',
-      'TITLE:测试',
-      'https://example.com/audio.ogg',
-      'Oni',
-      'practice',
-    )
-    const auto = playerLoad('b', 'TITLE:测试', 'https://example.com/audio.ogg', 'Edit', 'auto')
+    const practice = playerLoad('a', 'TITLE:测试', new ArrayBuffer(4), 'Oni', 'practice')
+    const auto = playerLoad('b', 'TITLE:测试', new ArrayBuffer(4), 'Edit', 'auto')
     expect(practice.payload).toMatchObject({
       practice: true,
       autoPlay: false,
@@ -48,21 +42,13 @@ describe('embedded player boundary', () => {
 
 describe('branch selection', () => {
   it('leaves the route to the in-game practice menu', () => {
-    const load = playerLoad(
-      'a',
-      '#START\n#END',
-      'https://example.com/audio',
-      'Edit',
-      'practice',
-      'wav',
-    )
+    const load = playerLoad('a', '#START\n#END', new ArrayBuffer(4), 'Edit', 'practice', 'wav')
     expect(load.payload).not.toHaveProperty('branch')
     expect(load.payload).toMatchObject({ autoPlay: false, audioType: 'wav', course: 'Edit' })
   })
   it('sends the drum volume as an integer from 0 to 100', () => {
     expect(playerDrumVolume('a', 42.4)).toEqual({
       channel: 'ourtaiko-view',
-      version: 1,
       type: 'setDrumVolume',
       requestId: 'a',
       payload: { volume: 42 },

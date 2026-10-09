@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import type { Chart } from '../src/api/types'
 
 // Deterministic chart with real OGG and WAV decoding: no production score writes.
@@ -83,6 +84,27 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
 }) => {
   test.setTimeout(180000)
   page.setDefaultTimeout(15000)
+  const buildDir = process.env.PLAYER_TEST_BUILD_DIR
+  const cdn = 'https://d2mguycu233w0q.cloudfront.net'
+  const fixturePath = '/player/cccccccccccccccc/index.html'
+  if (buildDir) {
+    await page.route(`${cdn}/player-build.json`, (route) =>
+      route.fulfill({
+        json: { path: fixturePath },
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      }),
+    )
+    await page.route(`${cdn}/player/cccccccccccccccc/**`, (route) => {
+      const name = new URL(route.request().url()).pathname.split('/').slice(3).join('/')
+      const contentType = name.endsWith('.html')
+        ? 'text/html'
+        : name.endsWith('.js')
+          ? 'application/javascript'
+          : 'application/octet-stream'
+      return route.fulfill({ body: readFileSync(resolve(buildDir, name)), contentType })
+    })
+  }
+  const audioFrames: string[] = []
   const errors: string[] = []
   const writes: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -90,6 +112,7 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
     if (message.type() === 'error') console.log('browser:', message.text())
   })
   page.on('request', (r) => {
+    if (new URL(r.url()).pathname.endsWith('/audio')) audioFrames.push(r.frame().url())
     if (r.method() === 'POST' && r.url().includes('/api/')) writes.push(r.url())
   })
   await page.addInitScript(() => {
@@ -123,7 +146,11 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
   await page.getByRole('button', { name: '观看谱面', exact: true }).click()
   const frame = page.frameLocator('iframe')
-  const playerBuild = await (await page.request.get('/player-build.json')).json()
+  const playerBuild = buildDir
+    ? { path: fixturePath }
+    : await (
+        await page.request.get(process.env.PLAYER_TEST_MANIFEST_URL || '/player-build.json')
+      ).json()
   await expect
     .poll(async () => {
       const src = await page.locator('iframe').getAttribute('src')
@@ -171,8 +198,8 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
         }
         window.addEventListener('message', receive)
         frame.contentWindow!.postMessage(
-          { channel: 'ourtaiko-view', version: 1, type: 'getState', requestId },
-          location.origin,
+          { channel: 'ourtaiko-view', type: 'getState', requestId },
+          new URL(document.querySelector('iframe')!.src).origin,
         )
       })
     })
@@ -253,7 +280,10 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   await page.evaluate(() => {
     const target = document.querySelector('iframe')!.contentWindow!
     for (const type of ['restart', 'start'])
-      target.postMessage({ channel: 'ourtaiko-view', version: 1, type }, location.origin)
+      target.postMessage(
+        { channel: 'ourtaiko-view', type },
+        new URL(document.querySelector('iframe')!.src).origin,
+      )
   })
   await page.waitForTimeout(1800)
   const canvas = frame.locator('canvas')
@@ -313,16 +343,16 @@ ${'1'.repeat(100)},
 1,
 #END`
   const beforeExpressions = await finishedCount()
-  await page.evaluate((chartText) => {
+  await page.evaluate(async (chartText) => {
+    const audioBytes = await (await fetch('/fixture-audio.wav')).arrayBuffer()
     document.querySelector('iframe')!.contentWindow!.postMessage(
       {
         channel: 'ourtaiko-view',
-        version: 1,
         type: 'load',
         requestId: 'expression-check',
         payload: {
           chartText,
-          audioUrl: new URL('/fixture-audio.wav', location.href).href,
+          audioBytes,
           audioType: 'wav',
           course: 'Oni',
           practice: true,
@@ -330,7 +360,8 @@ ${'1'.repeat(100)},
           replay: false,
         },
       },
-      location.origin,
+      new URL(document.querySelector('iframe')!.src).origin,
+      [audioBytes],
     )
   }, expressionChart)
   await expect
@@ -371,16 +402,16 @@ ${'1'.repeat(100)},
   expect(expressionResult?.Rolls).toBeGreaterThan(0)
 
   // Also exercise WAV through the same browser PCM decoder without reloading WASM.
-  await page.evaluate((chartText) => {
+  await page.evaluate(async (chartText) => {
+    const audioBytes = await (await fetch('/fixture-audio.wav')).arrayBuffer()
     document.querySelector('iframe')!.contentWindow!.postMessage(
       {
         channel: 'ourtaiko-view',
-        version: 1,
         type: 'load',
         requestId: 'wav-check',
         payload: {
           chartText,
-          audioUrl: new URL('/fixture-audio.wav', location.href).href,
+          audioBytes,
           audioType: 'wav',
           course: 'Oni',
           practice: true,
@@ -388,7 +419,8 @@ ${'1'.repeat(100)},
           replay: false,
         },
       },
-      location.origin,
+      new URL(document.querySelector('iframe')!.src).origin,
+      [audioBytes],
     )
   }, source)
   await expect
@@ -411,5 +443,7 @@ ${'1'.repeat(100)},
   await page.getByRole('tab', { name: '谱面图片', exact: true }).click()
   await expect(page.locator('iframe')).toHaveCount(0)
   expect(writes).toEqual([])
+  expect(audioFrames.length).toBeGreaterThan(0)
+  expect(audioFrames.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true)
   expect(errors).toEqual([])
 })

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { endpoints } from '@/api/endpoints'
 import type { Chart } from '@/api/types'
+import { resolvePlayerUrl } from './embedded-player-source'
 import {
   defaultDrumVolume,
   isPlayerMessage,
@@ -44,24 +45,12 @@ export default function EmbeddedPlayer({
     const timeout = window.setTimeout(() => controller.abort(), 30_000)
     async function resolvePlayer() {
       try {
-        let path = import.meta.env.VITE_PLAYER_URL
-        if (!path) {
-          const response = await fetch(`/player-build.json?t=${Date.now()}`, {
-            cache: 'no-store',
-            signal: controller.signal,
-          })
-          if (!response.ok) throw new Error('PLAYER_MANIFEST_UNAVAILABLE')
-          const build = await response.json()
-          if (
-            typeof build.path !== 'string' ||
-            !/^\/player\/[a-f0-9]{16}\/index\.html$/.test(build.path)
-          )
-            throw new Error('PLAYER_MANIFEST_INVALID')
-          path = build.path
-        }
-        const url = new URL(path, window.location.href)
-        url.searchParams.set('parentOrigin', window.location.origin)
-        if (!controller.signal.aborted) setPlayerUrl(url.href)
+        const url = await resolvePlayerUrl({
+          manifestUrl: import.meta.env.VITE_PLAYER_MANIFEST_URL || '/player-build.json',
+          parentOrigin: window.location.origin,
+          signal: controller.signal,
+        })
+        if (!controller.signal.aborted) setPlayerUrl(url)
       } catch {
         if (!disposed) {
           setError('PLAYER_MANIFEST_UNAVAILABLE')
@@ -82,7 +71,7 @@ export default function EmbeddedPlayer({
   const send = useCallback(
     (type: string) => {
       iframe.current?.contentWindow?.postMessage(
-        { channel: playerChannel, version: 1, type, requestId: request.current },
+        { channel: playerChannel, type, requestId: request.current },
         playerOrigin,
       )
     },
@@ -134,10 +123,45 @@ export default function EmbeddedPlayer({
     setError('')
     setStatus('loading')
     const audio = new URL(endpoints.resource({ id: chartId }, 'audio'), window.location.href).href
-    iframe.current?.contentWindow?.postMessage(
-      playerLoad(id, source, audio, course, mode, audioType),
-      playerOrigin,
-    )
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 120_000)
+    async function load() {
+      try {
+        // Only the host downloads public audio. No cookies or cross-origin redirects
+        // are forwarded to the CDN iframe; transfer the encoded bytes themselves.
+        const response = await fetch(audio, {
+          signal: controller.signal,
+          credentials: 'omit',
+          mode: 'same-origin',
+          redirect: 'error',
+        })
+        if (!response.ok) throw new Error('AUDIO_DOWNLOAD_FAILED')
+        const limit = 100 * 1024 * 1024
+        if (Number(response.headers.get('Content-Length')) > limit)
+          throw new Error('AUDIO_TOO_LARGE')
+        const bytes = await response.arrayBuffer()
+        if (!bytes.byteLength || bytes.byteLength > limit) throw new Error('INVALID_AUDIO_SIZE')
+        if (controller.signal.aborted || request.current !== id) return
+        iframe.current?.contentWindow?.postMessage(
+          playerLoad(id, source, bytes, course, mode!, audioType),
+          playerOrigin,
+          [bytes],
+        )
+      } catch (error) {
+        if (disposed || request.current !== id) return
+        setError(error instanceof Error ? error.message : 'AUDIO_DOWNLOAD_FAILED')
+        setStatus('error')
+      } finally {
+        window.clearTimeout(timeout)
+      }
+    }
+    let disposed = false
+    void load()
+    return () => {
+      disposed = true
+      controller.abort()
+      window.clearTimeout(timeout)
+    }
   }, [ready, mode, source, chartId, course, playerOrigin, audioType])
 
   useEffect(() => {
