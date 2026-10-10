@@ -29,6 +29,7 @@ describe('embedded player boundary', () => {
       autoPlay: false,
       replay: false,
       course: 'Oni',
+      audioDecode: 'native',
     })
     expect(auto.payload).toMatchObject({
       practice: true,
@@ -41,6 +42,18 @@ describe('embedded player boundary', () => {
 })
 
 describe('branch selection', () => {
+  it('allows an explicit software decode request without changing playback mode', () => {
+    const load = playerLoad(
+      'soft',
+      '#START\n#END',
+      new ArrayBuffer(4),
+      'Oni',
+      'auto',
+      'ogg',
+      'software',
+    )
+    expect(load.payload).toMatchObject({ audioDecode: 'software', autoPlay: true, practice: true })
+  })
   it('leaves the route to the in-game practice menu', () => {
     const load = playerLoad('a', '#START\n#END', new ArrayBuffer(4), 'Edit', 'practice', 'wav')
     expect(load.payload).not.toHaveProperty('branch')

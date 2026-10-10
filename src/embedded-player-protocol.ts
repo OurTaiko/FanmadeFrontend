@@ -1,5 +1,6 @@
 export const playerChannel = 'ourtaiko-view'
 export type PlayerMode = 'practice' | 'auto'
+export type PlayerAudioDecode = 'native' | 'software'
 export function playerLoad(
   requestId: string,
   chartText: string,
@@ -7,6 +8,7 @@ export function playerLoad(
   course: string,
   mode: PlayerMode,
   audioType = 'ogg',
+  audioDecode: PlayerAudioDecode = 'native',
 ) {
   return {
     channel: playerChannel,
@@ -16,6 +18,7 @@ export function playerLoad(
       chartText,
       audioBytes,
       audioType,
+      audioDecode,
       course,
       practice: true,
       autoPlay: mode === 'auto',

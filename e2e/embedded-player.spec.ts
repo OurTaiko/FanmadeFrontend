@@ -145,6 +145,8 @@ test('real Unity player: auto, finish reset, practice, course change and unload'
   )
   await page.getByRole('tab', { name: '谱面预览', exact: true }).click()
   await page.getByRole('button', { name: '观看谱面', exact: true }).click()
+  // Keep Unity's frame-driven loading active; offscreen iframes may be throttled.
+  await page.locator('iframe').scrollIntoViewIfNeeded()
   const frame = page.frameLocator('iframe')
   const playerBuild = buildDir
     ? { path: fixturePath }

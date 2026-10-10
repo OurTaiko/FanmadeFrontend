@@ -5,12 +5,12 @@ import { Slider } from '@/components/ui/slider'
 import { endpoints } from '@/api/endpoints'
 import type { Chart } from '@/api/types'
 import { resolvePlayerUrl } from './embedded-player-source'
+import { PlayerAudioLoad } from './embedded-player-audio'
 import {
   defaultDrumVolume,
   isPlayerMessage,
   playerChannel,
   playerDrumVolume,
-  playerLoad,
   type PlayerMode,
 } from './embedded-player-protocol'
 
@@ -28,6 +28,7 @@ export default function EmbeddedPlayer({
   const audioType = chart.audioName.split('.').pop()?.toLowerCase() || 'ogg'
   const iframe = useRef<HTMLIFrameElement>(null)
   const request = useRef('')
+  const audioLoad = useRef<PlayerAudioLoad | null>(null)
   const [mode, setMode] = useState<PlayerMode | null>(null)
   const [ready, setReady] = useState(false)
   const [status, setStatus] = useState('idle')
@@ -100,6 +101,7 @@ export default function EmbeddedPlayer({
         return
       }
       if (data.requestId && data.requestId !== request.current) return
+      if (audioLoad.current?.receive(data)) return
       if (data.type === 'error') {
         setError(
           data.payload?.detail
@@ -108,6 +110,7 @@ export default function EmbeddedPlayer({
         )
         setStatus('error')
       } else if (data.type === 'exit') {
+        audioLoad.current?.dispose()
         setMode(null)
         setPlayerUrl('')
         setReady(false)
@@ -120,49 +123,34 @@ export default function EmbeddedPlayer({
 
   useEffect(() => {
     if (!ready || !mode || !source) return
-    const id = crypto.randomUUID()
-    request.current = id
-    setError('')
-    setStatus('loading')
     const audio = new URL(endpoints.resource({ id: chartId }, 'audio'), window.location.href).href
-    const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), 120_000)
-    async function load() {
-      try {
-        // Follow the public audio endpoint's CDN redirect without cookies, then
-        // transfer the encoded bytes to the player iframe.
-        const response = await fetch(audio, {
-          signal: controller.signal,
-          credentials: 'omit',
-          mode: 'cors',
-          redirect: 'follow',
-        })
-        if (!response.ok) throw new Error('AUDIO_DOWNLOAD_FAILED')
-        const limit = 100 * 1024 * 1024
-        if (Number(response.headers.get('Content-Length')) > limit)
-          throw new Error('AUDIO_TOO_LARGE')
-        const bytes = await response.arrayBuffer()
-        if (!bytes.byteLength || bytes.byteLength > limit) throw new Error('INVALID_AUDIO_SIZE')
-        if (controller.signal.aborted || request.current !== id) return
-        iframe.current?.contentWindow?.postMessage(
-          playerLoad(id, source, bytes, course, mode!, audioType),
-          playerOrigin,
-          [bytes],
-        )
-      } catch (error) {
-        if (disposed || request.current !== id) return
-        setError(error instanceof Error ? error.message : 'AUDIO_DOWNLOAD_FAILED')
+    const load = new PlayerAudioLoad({
+      audioUrl: audio,
+      chartText: source,
+      course,
+      mode,
+      audioType,
+      post: (message, transfer) => {
+        const target = iframe.current?.contentWindow
+        if (!target) throw new Error('PLAYER_UNAVAILABLE')
+        target.postMessage(message, playerOrigin, transfer)
+      },
+      onRequest: (id) => {
+        request.current = id
+        setError('')
+        setStatus('loading')
+      },
+      onError: (code) => {
+        setError(code)
         setStatus('error')
-      } finally {
-        window.clearTimeout(timeout)
-      }
-    }
-    let disposed = false
-    void load()
+      },
+    })
+    audioLoad.current = load
+    void load.start()
     return () => {
-      disposed = true
-      controller.abort()
-      window.clearTimeout(timeout)
+      load.dispose()
+      if (audioLoad.current === load) audioLoad.current = null
+      request.current = ''
     }
   }, [ready, mode, source, chartId, course, playerOrigin, audioType])
 
@@ -180,6 +168,7 @@ export default function EmbeddedPlayer({
     setMode(value)
   }
   function reload() {
+    audioLoad.current?.dispose()
     setPlayerUrl('')
     setReady(false)
     setError('')
@@ -207,6 +196,7 @@ export default function EmbeddedPlayer({
           <Button
             variant="ghost"
             onClick={() => {
+              audioLoad.current?.dispose()
               send('unload')
               setMode(null)
               setPlayerUrl('')
